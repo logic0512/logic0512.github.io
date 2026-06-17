@@ -1,0 +1,1418 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>卡片设计系统 · v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ─────────────────────────────────────────────
+     字体策略：全部统一思源黑体，靠字重做层次
+     - 200 ExtraLight → 装饰性引号
+     - 300 Light     → 正文、媒体卡 caption
+     - 400 Regular   → 情绪引文（粗一档让情感更稳）
+     - 500 Medium    → accent 文字、播放键
+     - tabular-nums  → 日期/时长（仍然等宽对齐）
+
+     ─────────────────────────────────────────────
+     设计系统规则（落代码时必须遵守）
+
+     ▸ 内容排版
+       - 卡片正文垂直居中，不顶天不贴地
+       - 装饰引号是水印性质，不参与主体布局
+       - 横向阅读保留左对齐（中文阅读习惯）
+
+     ▸ 内容溢出
+       - 文字超过卡片可容纳行数 → 末尾用 "…" 省略号截断
+       - 不能硬裁切半行、不能让卡片撑高
+       - 行数限制按卡片实际能装的来定（一般 3 行）
+
+     ▸ 交互
+       - 点卡片 → 弹出"展开卡片"，完整展示所有内容（图/视频/文/音频原样）
+       - 点卡片右上角"编辑"按钮 → 切到添加界面，修改/删除
+       - 点卡片右上角"删除"按钮 → 确认后删除
+       - 这三种交互必须明确区分，不能混淆
+
+     ▸ 权重 / 标题
+       - 无权重点（不打分）
+       - 无标题概念（只显示日期 + 内容）
+     ───────────────────────────────────────────── */
+  :root {
+    --font-han: "Source Han Sans SC", "Noto Sans SC", -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  }
+  /* 兼容旧变量名 */
+  :root {
+    --font-mono: var(--font-han);
+    --font-ui: var(--font-han);
+    --font-serif: var(--font-han);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; min-height: 100vh; }
+  body {
+    font-family: var(--font-han);
+    font-weight: 300;
+    color: rgba(20,20,20,0.85);
+    transition: background 600ms ease;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ───── 8 颗星「身份变量」── 用 App 列表页里在用的真实配色 ─────
+     变量含义：
+       --page-bg     : 整页背景（对应 App 里 lm-overlay 的 bg）
+       --card-bg     : 卡片底色
+       --card-text   : 正文/主文字色
+       --card-mute   : 副文字/日期/类型角标色
+       --card-accent : 强调色（按钮、引号、播放键）
+       --card-border : 卡片边框（从 accent 派生）
+       --card-shadow : 卡片阴影
+       --tone        : light | dark，控制顶部 picker 和 legend 的玻璃色调 */
+
+  body.planet-hiking {
+    /* 行星：深绿底卡片 + 浅绿文字，背景是夜森林 */
+    --page-bg:
+      radial-gradient(ellipse 60% 50% at 30% 35%, rgba(255,220,150,0.28), transparent 60%),
+      radial-gradient(ellipse 55% 60% at 75% 70%, rgba(60,110,40,0.45), transparent 65%),
+      linear-gradient(180deg, #2a3a22 0%, #14241a 100%);
+    --card-bg: rgba(8,25,12,0.92);
+    --card-text: rgba(230,250,215,0.95);
+    --card-mute: rgba(230,250,215,0.6);
+    --card-accent: #b4dc82;
+    --card-border: rgba(180,220,130,0.28);
+    --card-shadow: 0 12px 36px -16px rgba(0,0,0,0.55);
+    --tone: dark;
+  }
+  body.planet-beizi {
+    /* 被子：白底卡片 + 深蓝文字，背景浅蓝渐变 */
+    --page-bg:
+      radial-gradient(ellipse 70% 50% at 50% 60%, rgba(160,200,230,0.4), transparent 65%),
+      linear-gradient(180deg, #c8d8e6 0%, #708ca8 100%);
+    --card-bg: rgba(255,255,255,0.94);
+    --card-text: rgba(30,55,80,0.92);
+    --card-mute: rgba(30,55,80,0.55);
+    --card-accent: #5a88b0;
+    --card-border: rgba(90,136,176,0.28);
+    --card-shadow: 0 12px 36px -16px rgba(50,80,120,0.4);
+    --tone: light;
+  }
+  body.planet-healing {
+    /* 治愈：米黄底卡片 + 深棕文字 + 暖金 accent，背景紫+暖光 */
+    --page-bg:
+      radial-gradient(circle at 50% 45%, rgba(245,200,120,0.45), transparent 45%),
+      radial-gradient(ellipse 80% 70% at 50% 55%, rgba(120,70,170,0.55), transparent 70%),
+      linear-gradient(135deg, #b89478 0%, #6a4c84 50%, #3a2858 100%);
+    --card-bg: rgba(255,250,235,0.94);
+    --card-text: rgba(90,60,10,0.92);
+    --card-mute: rgba(90,60,10,0.55);
+    --card-accent: #f5c840;
+    --card-border: rgba(245,200,120,0.42);
+    --card-shadow: 0 12px 36px -16px rgba(60,30,90,0.5);
+    --tone: dark;
+  }
+  body.planet-flower {
+    /* 花：粉白底卡片 + 深红文字，背景粉橙绿 */
+    --page-bg:
+      radial-gradient(circle at 74% 18%, rgba(255,240,190,0.45), transparent 38%),
+      radial-gradient(circle at 38% 72%, rgba(200,220,150,0.4), transparent 48%),
+      linear-gradient(138deg, #fff3f5 0%, #fadce0 24%, #e8c8b0 52%, #c0d098 100%);
+    --card-bg: rgba(255,248,252,0.94);
+    --card-text: rgba(88,10,38,0.92);
+    --card-mute: rgba(88,10,38,0.55);
+    --card-accent: #c03870;
+    --card-border: rgba(192,56,112,0.26);
+    --card-shadow: 0 12px 36px -16px rgba(170,40,100,0.32);
+    --tone: light;
+  }
+  body.planet-sea {
+    /* 海：米黄底卡片 + 深蓝文字（用户喜欢的"米黄"！），背景米黄→深蓝渐变 */
+    --page-bg:
+      linear-gradient(180deg, #fbf6e8 0%, #efe6d2 32%, #d9ecf1 56%, #7fc3e2 78%, #1f8ec8 100%);
+    --card-bg: rgba(252,247,232,0.96);
+    --card-text: rgba(20,55,90,0.92);
+    --card-mute: rgba(20,55,90,0.55);
+    --card-accent: #0879c0;
+    --card-border: rgba(8,121,192,0.24);
+    --card-shadow: 0 12px 36px -16px rgba(20,80,140,0.35);
+    --tone: light;
+  }
+  body.planet-starry {
+    /* 繁星：米黄卡片浮在深空（核心反转：卡片是暖光、背景是夜空）*/
+    --page-bg:
+      radial-gradient(circle at 30% 30%, rgba(240,216,112,0.3), transparent 12%),
+      radial-gradient(circle at 70% 50%, rgba(240,216,112,0.25), transparent 8%),
+      linear-gradient(180deg, #050c1c 0%, #0a1530 100%);
+    --card-bg: rgba(252,248,232,0.92);
+    --card-text: rgba(75,55,15,0.92);
+    --card-mute: rgba(75,55,15,0.55);
+    --card-accent: #f0d870;
+    --card-border: rgba(240,216,112,0.35);
+    --card-shadow: 0 14px 42px -16px rgba(0,0,0,0.65);
+    --tone: dark;
+  }
+  body.planet-cloud {
+    /* 云：米白底卡片 + 深紫文字，背景紫粉橙渐变 */
+    --page-bg:
+      radial-gradient(ellipse 55% 45% at 30% 55%, rgba(255,215,175,0.55), transparent 65%),
+      radial-gradient(ellipse 50% 50% at 72% 35%, rgba(215,190,240,0.45), transparent 60%),
+      linear-gradient(148deg, #d8c8ee 0%, #fff4ee 50%, #f0d0b5 100%);
+    --card-bg: rgba(255,252,250,0.94);
+    --card-text: rgba(40,30,80,0.92);
+    --card-mute: rgba(40,30,80,0.55);
+    --card-accent: #7888c0;
+    --card-border: rgba(120,136,192,0.28);
+    --card-shadow: 0 12px 36px -16px rgba(80,60,140,0.32);
+    --tone: light;
+  }
+  body.planet-tree {
+    /* 树：浅绿底卡片浮在深森林背景里 */
+    --page-bg:
+      radial-gradient(ellipse 30% 70% at 50% 60%, rgba(60,90,55,0.4), transparent 50%),
+      linear-gradient(180deg, #0a1810 0%, #020806 100%);
+    --card-bg: rgba(240,245,235,0.92);
+    --card-text: rgba(30,55,30,0.92);
+    --card-mute: rgba(30,55,30,0.55);
+    --card-accent: #9db898;
+    --card-border: rgba(157,184,152,0.32);
+    --card-shadow: 0 12px 36px -16px rgba(0,0,0,0.5);
+    --tone: dark;
+  }
+
+  body { background: var(--page-bg, #f0f0f0); }
+
+  /* ───── 顶部 picker（仅 demo 用，App 里不会有）───── */
+  .topbar {
+    position: fixed;
+    top: 28px; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    align-items: center;
+  }
+  .picker {
+    display: flex;
+    gap: 14px;
+    padding: 10px 18px;
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 999px;
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    box-shadow: 0 8px 32px -12px rgba(0,0,0,0.12);
+  }
+  /* dark tone 星球（行星/治愈/繁星/树）→ picker 用深色毛玻璃 */
+  body.planet-hiking .picker,
+  body.planet-healing .picker,
+  body.planet-starry .picker,
+  body.planet-tree .picker {
+    background: rgba(15,22,40,0.55);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .picker button {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 0;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .picker button:hover { transform: scale(1.18); }
+  .picker button.on {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.85), 0 2px 6px rgba(0,0,0,0.2);
+  }
+  body.planet-hiking .picker button.on,
+  body.planet-healing .picker button.on,
+  body.planet-starry .picker button.on,
+  body.planet-tree .picker button.on {
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.4), 0 0 12px rgba(255,255,255,0.18);
+  }
+
+  .planet-name {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    letter-spacing: 0.32em;
+    color: var(--card-mute);
+    text-transform: uppercase;
+    min-width: 88px;
+  }
+
+  /* ───── 类型说明 chips（8 种）───── */
+  .type-legend {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    display: flex;
+    gap: 0;
+    padding: 8px 4px;
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 999px;
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: 0 6px 24px -10px rgba(0,0,0,0.12);
+  }
+  body.planet-hiking .type-legend,
+  body.planet-healing .type-legend,
+  body.planet-starry .type-legend,
+  body.planet-tree .type-legend {
+    background: rgba(15,22,40,0.55);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .type-legend span {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: var(--card-mute);
+    padding: 4px 11px;
+    white-space: nowrap;
+  }
+  .type-legend span + span { border-left: 1px solid var(--card-border); }
+
+  /* ───── 主网格 ───── */
+  .canvas {
+    min-height: 100vh;
+    padding: 100px 56px 90px;
+    display: flex;
+    justify-content: center;
+  }
+  .grid {
+    width: 100%;
+    max-width: 1280px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+    align-content: start;
+  }
+
+  /* ───── 卡片骨架（8 种共用）───── */
+  .card {
+    position: relative;
+    aspect-ratio: 5 / 4;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    overflow: hidden;
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    box-shadow: var(--card-shadow);
+    transition: transform 280ms cubic-bezier(0.34, 1.4, 0.64, 1),
+                box-shadow 280ms ease;
+    opacity: 0;
+    animation: card-in 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    cursor: pointer;
+  }
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 42px -18px rgba(0,0,0,0.28);
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .grid > .card:nth-child(1) { animation-delay: 40ms; }
+  .grid > .card:nth-child(2) { animation-delay: 110ms; }
+  .grid > .card:nth-child(3) { animation-delay: 180ms; }
+  .grid > .card:nth-child(4) { animation-delay: 250ms; }
+  .grid > .card:nth-child(5) { animation-delay: 320ms; }
+  .grid > .card:nth-child(6) { animation-delay: 390ms; }
+  .grid > .card:nth-child(7) { animation-delay: 460ms; }
+  .grid > .card:nth-child(8) { animation-delay: 530ms; }
+
+  /* 日期：所有类型共用 */
+  .card .date {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    z-index: 4;
+    font-family: var(--font-han);
+    font-weight: 500;
+    font-size: 10px;
+    color: var(--card-mute);
+    letter-spacing: 0.28em;
+    font-variant-numeric: tabular-nums;
+  }
+  /* 媒体型卡片日期改白色 */
+  .card[data-type="image"] .date,
+  .card[data-type="video-h"] .date,
+  .card[data-type="video-v"] .date,
+  .card[data-type="image-text-h"] .date,
+  .card[data-type="video-text-h"] .date,
+  .card[data-type="media-text-v"] .date {
+    color: rgba(255,255,255,0.86);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  /* 竖屏左右分栏：日期回到左栏（媒体上）所以仍是白色 */
+
+  /* 类型角标 */
+  .card .type-mark {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 4;
+    font-family: var(--font-han);
+    font-weight: 500;
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    color: var(--card-mute);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .card[data-type="image"] .type-mark,
+  .card[data-type="video-h"] .type-mark,
+  .card[data-type="video-v"] .type-mark,
+  .card[data-type="image-text-h"] .type-mark,
+  .card[data-type="video-text-h"] .type-mark {
+    color: rgba(255,255,255,0.75);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  /* hover 工具 */
+  .card .tools {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 6;
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  .card:hover .tools { opacity: 1; }
+  .card:hover .type-mark { opacity: 0; }
+  .card .tools button {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(8px);
+    border: 0;
+    color: white;
+    font-size: 11px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .card .tools button.del:hover { background: rgba(220,80,80,0.85); }
+
+  /* ─── ① 纯文字 ───
+     - body 真正垂直 + 水平居中
+     - 没有装饰引号（让正文自己说话）
+     - 超长用 … 省略号截断（line-clamp 配合 text-overflow）*/
+  .card[data-type="text"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 28px;
+  }
+  .card[data-type="text"] .body {
+    font-family: var(--font-han);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.85;
+    color: var(--card-text);
+    letter-spacing: 0.04em;
+    text-align: left;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    word-break: break-word;
+  }
+
+  /* ─── ② 声音 ─── */
+  .card[data-type="audio"] {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 30px 26px;
+  }
+  .card[data-type="audio"] .play-btn {
+    flex-shrink: 0;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--card-accent) 14%, transparent);
+    border: 1px solid var(--card-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 200ms ease;
+  }
+  .card[data-type="audio"]:hover .play-btn {
+    background: color-mix(in srgb, var(--card-accent) 22%, transparent);
+    transform: scale(1.04);
+  }
+  .card[data-type="audio"] .play-btn svg {
+    width: 18px; height: 18px;
+    color: var(--card-accent);
+    margin-left: 3px;
+  }
+  .card[data-type="audio"] .audio-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .card[data-type="audio"] .wave {
+    display: flex;
+    align-items: center;
+    gap: 2.5px;
+    height: 28px;
+  }
+  .card[data-type="audio"] .wave span {
+    flex: 1;
+    background: color-mix(in srgb, var(--card-accent) 60%, transparent);
+    border-radius: 1.5px;
+    min-height: 4px;
+  }
+  .card[data-type="audio"] .audio-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .card[data-type="audio"] .audio-label {
+    font-family: var(--font-han);
+    font-weight: 400;
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: var(--card-text);
+  }
+  .card[data-type="audio"] .duration-text {
+    font-family: var(--font-han);
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--card-accent);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+  }
+
+  /* ─── ③ 纯图（无文）─── */
+  .card[data-type="image"] {
+    background: #1a1a1a;
+  }
+  .card[data-type="image"] .media {
+    position: absolute;
+    inset: 0;
+    background: var(--media, linear-gradient(135deg, #4a5566, #2a3140));
+    background-size: cover;
+    background-position: center;
+  }
+  .card[data-type="image"] .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+      rgba(0,0,0,0.32) 0%,
+      rgba(0,0,0,0) 30%,
+      rgba(0,0,0,0) 100%);
+  }
+
+  /* ─── ④ 纯视频·横（无文）─── */
+  .card[data-type="video-h"] {
+    background: #0a0e16;
+  }
+  .card[data-type="video-h"] .frame {
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    transform: translateY(-50%);
+    aspect-ratio: 16 / 9;
+    background: var(--media, linear-gradient(135deg, #3a4456, #1a2030));
+    background-size: cover;
+    background-position: center;
+  }
+  .card[data-type="video-h"] .frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.5) 100%);
+  }
+
+  /* ─── ⑤ 纯视频·竖（无文）─── */
+  .card[data-type="video-v"] {
+    background: #0a0e16;
+  }
+  .card[data-type="video-v"] .frame {
+    position: absolute;
+    top: 12px; bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    aspect-ratio: 9 / 16;
+    background: var(--media, linear-gradient(135deg, #4a5468, #1f2838));
+    background-size: cover;
+    background-position: center;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .card[data-type="video-v"] .frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.55) 100%);
+  }
+
+  /* 视频通用：播放 overlay + 时长 chip */
+  .card .play-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    transition: all 200ms ease;
+  }
+  .card[data-type="video-v"] .play-overlay,
+  .card[data-type="media-text-v"] .play-overlay {
+    width: 38px; height: 38px;
+  }
+  .card:hover .play-overlay {
+    background: rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  .card .play-overlay svg {
+    width: 14px; height: 14px;
+    color: white;
+    margin-left: 2px;
+  }
+  .card .duration-chip {
+    position: absolute;
+    top: 14px; right: 16px;
+    z-index: 4;
+    font-family: var(--font-han);
+    font-weight: 500;
+    font-size: 10px;
+    padding: 3px 8px;
+    background: rgba(0,0,0,0.5);
+    color: rgba(255,255,255,0.94);
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+  .card[data-type="video-h"] .type-mark,
+  .card[data-type="video-v"] .type-mark,
+  .card[data-type="video-text-h"] .type-mark { display: none; }
+
+  /* ─── ⑥ 图 + 文（横屏图）─── */
+  .card[data-type="image-text-h"] {
+    background: #1a1a1a;
+  }
+  .card[data-type="image-text-h"] .media {
+    position: absolute;
+    inset: 0;
+    background: var(--media, linear-gradient(135deg, #4a5566, #2a3140));
+    background-size: cover;
+    background-position: center;
+  }
+  .card[data-type="image-text-h"] .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+      rgba(0,0,0,0.3) 0%,
+      rgba(0,0,0,0) 28%,
+      rgba(0,0,0,0) 48%,
+      rgba(0,0,0,0.85) 100%);
+  }
+  .card[data-type="image-text-h"] .caption {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    z-index: 3;
+    font-family: var(--font-han);
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 1.58;
+    color: rgba(255,255,255,0.96);
+    letter-spacing: 0.04em;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.85);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /* ─── ⑦ 视频 + 文（横屏视频）─── */
+  .card[data-type="video-text-h"] {
+    background: #0a0e16;
+  }
+  .card[data-type="video-text-h"] .media {
+    position: absolute;
+    inset: 0;
+    background: var(--media, linear-gradient(135deg, #3a4456, #1a2030));
+    background-size: cover;
+    background-position: center;
+  }
+  .card[data-type="video-text-h"] .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg,
+      rgba(0,0,0,0.32) 0%,
+      rgba(0,0,0,0) 28%,
+      rgba(0,0,0,0) 50%,
+      rgba(0,0,0,0.88) 100%);
+  }
+  .card[data-type="video-text-h"] .play-overlay { top: 42%; }
+  .card[data-type="video-text-h"] .caption {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    z-index: 4;
+    font-family: var(--font-han);
+    font-weight: 400;
+    font-size: 13px;
+    line-height: 1.58;
+    color: rgba(255,255,255,0.96);
+    letter-spacing: 0.04em;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.85);
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  /* ─── ⑧ 竖屏媒体 + 文（左右分栏）─── */
+  .card[data-type="media-text-v"] {
+    display: grid;
+    grid-template-columns: 44% 1fr;
+    background: var(--card-bg);
+  }
+  .card[data-type="media-text-v"] .media {
+    position: relative;
+    background: var(--media, linear-gradient(135deg, #3a4456, #1a2030));
+    background-size: cover;
+    background-position: center;
+    border-right: 1px solid var(--card-border);
+  }
+  .card[data-type="media-text-v"] .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.22) 0%, transparent 40%);
+  }
+  .card[data-type="media-text-v"] .duration-chip {
+    bottom: 10px; left: 10px;
+    top: auto; right: auto;
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+  .card[data-type="media-text-v"] .body {
+    padding: 28px 18px 22px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .card[data-type="media-text-v"] .body .caption {
+    font-family: var(--font-han);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.72;
+    color: var(--card-text);
+    letter-spacing: 0.03em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+    word-break: break-word;
+  }
+  .card[data-type="media-text-v"] .date {
+    /* 在媒体栏上，白色 */
+  }
+  .card[data-type="media-text-v"] .type-mark {
+    /* 在右栏，深色 */
+    color: var(--card-mute);
+    text-shadow: none;
+  }
+
+  /* ═══════════════════════════════════════════
+     展开卡片（点小卡片弹出 / 居中浮层）
+     ─ 设计语言跟小卡片一致（同色、同字体、同氛围）
+     ─ 媒体类按原比例完整显示
+     ─ 文字超长 → 卡片内部纵向滚动（不撑屏）
+     ─ 关闭：点背景 / × / ESC
+     ═══════════════════════════════════════════ */
+  .expand-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(24px) saturate(110%);
+    -webkit-backdrop-filter: blur(24px) saturate(110%);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    opacity: 0;
+    transition: opacity 280ms ease;
+  }
+  .expand-backdrop.open {
+    display: flex;
+    opacity: 1;
+  }
+
+  .expand-card {
+    position: relative;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.55);
+    overflow: hidden;
+    max-height: 88vh;
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.94);
+    transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .expand-backdrop.open .expand-card {
+    transform: scale(1);
+  }
+
+  .expand-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 10;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    border: 0;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 160ms ease, transform 160ms ease;
+  }
+  .expand-close:hover {
+    background: rgba(0,0,0,0.75);
+    transform: scale(1.06);
+  }
+
+  .expand-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 22px 26px 0;
+  }
+  .expand-card[data-type="image"] .expand-header,
+  .expand-card[data-type="video-h"] .expand-header,
+  .expand-card[data-type="video-v"] .expand-header,
+  .expand-card[data-type="image-text-h"] .expand-header,
+  .expand-card[data-type="video-text-h"] .expand-header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 5;
+    padding: 18px 56px 18px 22px;
+    color: rgba(255,255,255,0.9);
+    background: linear-gradient(180deg, rgba(0,0,0,0.45), transparent);
+  }
+  .expand-header .date {
+    position: static;
+    font-family: var(--font-han);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--card-mute);
+    font-variant-numeric: tabular-nums;
+  }
+  .expand-card[data-type="image"] .expand-header .date,
+  .expand-card[data-type="video-h"] .expand-header .date,
+  .expand-card[data-type="video-v"] .expand-header .date,
+  .expand-card[data-type="image-text-h"] .expand-header .date,
+  .expand-card[data-type="video-text-h"] .expand-header .date {
+    color: rgba(255,255,255,0.92);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+  .expand-header .type-mark {
+    position: static;
+    font-family: var(--font-han);
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--card-mute);
+    opacity: 0.7;
+  }
+  .expand-card[data-type="image"] .expand-header .type-mark,
+  .expand-card[data-type="video-h"] .expand-header .type-mark,
+  .expand-card[data-type="video-v"] .expand-header .type-mark,
+  .expand-card[data-type="image-text-h"] .expand-header .type-mark,
+  .expand-card[data-type="video-text-h"] .expand-header .type-mark {
+    color: rgba(255,255,255,0.8);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+
+  /* 展开 · 文字类（可滚动） */
+  .expand-card[data-type="text"] .expand-body-text {
+    padding: 28px 36px 38px;
+    overflow-y: auto;
+    font-family: var(--font-han);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.95;
+    color: var(--card-text);
+    letter-spacing: 0.04em;
+    white-space: pre-wrap;
+  }
+
+  /* 展开 · 媒体（图/视频）按比例完整 */
+  .expand-card[data-type="image"],
+  .expand-card[data-type="video-h"],
+  .expand-card[data-type="video-v"] {
+    max-width: 880px;
+  }
+  .expand-card[data-type="image"] .expand-media,
+  .expand-card[data-type="video-h"] .expand-media,
+  .expand-card[data-type="video-v"] .expand-media {
+    width: 100%;
+    max-height: 88vh;
+    background: var(--media, #1a1a1a) center / cover no-repeat;
+  }
+  .expand-card[data-type="image"] .expand-media {
+    aspect-ratio: 4 / 3;
+  }
+  .expand-card[data-type="video-h"] .expand-media {
+    aspect-ratio: 16 / 9;
+  }
+  .expand-card[data-type="video-v"] .expand-media {
+    aspect-ratio: 9 / 16;
+    max-height: 86vh;
+    margin: 0 auto;
+    max-width: 480px;
+  }
+  .expand-card[data-type="video-h"],
+  .expand-card[data-type="video-v"] {
+    background: #0a0e16;
+  }
+  .expand-card .expand-play {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    border: 1.5px solid rgba(255,255,255,0.55);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    cursor: pointer;
+    transition: all 200ms ease;
+  }
+  .expand-card .expand-play:hover {
+    background: rgba(255,255,255,0.28);
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  .expand-card .expand-play svg {
+    width: 18px; height: 18px;
+    color: white;
+    margin-left: 3px;
+  }
+  .expand-card .expand-duration-chip {
+    position: absolute;
+    top: 18px;
+    right: 56px;
+    z-index: 5;
+    font-family: var(--font-han);
+    font-weight: 500;
+    font-size: 10.5px;
+    padding: 3px 9px;
+    background: rgba(0,0,0,0.55);
+    color: rgba(255,255,255,0.95);
+    border-radius: 4px;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 展开 · 音频 */
+  .expand-card[data-type="audio"] {
+    max-width: 540px;
+  }
+  .expand-card[data-type="audio"] .expand-audio {
+    padding: 18px 32px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .expand-card[data-type="audio"] .audio-row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .expand-card[data-type="audio"] .big-play {
+    flex-shrink: 0;
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--card-accent) 14%, transparent);
+    border: 1.5px solid var(--card-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 200ms ease;
+  }
+  .expand-card[data-type="audio"] .big-play:hover {
+    background: color-mix(in srgb, var(--card-accent) 22%, transparent);
+    transform: scale(1.04);
+  }
+  .expand-card[data-type="audio"] .big-play svg {
+    width: 24px; height: 24px;
+    color: var(--card-accent);
+    margin-left: 4px;
+  }
+  .expand-card[data-type="audio"] .big-wave {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 56px;
+  }
+  .expand-card[data-type="audio"] .big-wave span {
+    flex: 1;
+    background: color-mix(in srgb, var(--card-accent) 55%, transparent);
+    border-radius: 2px;
+    min-height: 5px;
+  }
+  .expand-card[data-type="audio"] .audio-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: var(--font-han);
+  }
+  .expand-card[data-type="audio"] .audio-meta-row .label {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--card-text);
+    letter-spacing: 0.04em;
+  }
+  .expand-card[data-type="audio"] .audio-meta-row .dur {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--card-accent);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+  }
+
+  /* 展开 · 媒体 + 文字（堆叠：媒体上、文字下、可滚）*/
+  .expand-card[data-type="image-text-h"],
+  .expand-card[data-type="video-text-h"],
+  .expand-card[data-type="media-text-v"] {
+    max-width: 760px;
+  }
+  .expand-card[data-type="image-text-h"] .expand-media,
+  .expand-card[data-type="video-text-h"] .expand-media {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: var(--media, #1a1a1a) center / cover no-repeat;
+    flex-shrink: 0;
+  }
+  .expand-card[data-type="media-text-v"] .expand-media {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--media, #1a1a1a) center / cover no-repeat;
+    flex-shrink: 0;
+  }
+  .expand-card[data-type="image-text-h"] .expand-text,
+  .expand-card[data-type="video-text-h"] .expand-text,
+  .expand-card[data-type="media-text-v"] .expand-text {
+    padding: 22px 30px 32px;
+    overflow-y: auto;
+    font-family: var(--font-han);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.85;
+    color: var(--card-text);
+    letter-spacing: 0.04em;
+    white-space: pre-wrap;
+  }
+
+  /* 滚动条美化 */
+  .expand-card *::-webkit-scrollbar { width: 6px; }
+  .expand-card *::-webkit-scrollbar-track { background: transparent; }
+  .expand-card *::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--card-accent) 30%, transparent);
+    border-radius: 3px;
+  }
+
+</style>
+</head>
+<body class="planet-beizi">
+
+  <div class="topbar">
+    <span class="planet-name" id="pname">BEIZI</span>
+    <div class="picker" id="picker">
+      <button data-p="beizi"  data-name="BEIZI"   style="background:#8eb8d4" class="on" title="被子"></button>
+      <button data-p="hiking" data-name="HIKING"  style="background:#7ab048" title="行星"></button>
+      <button data-p="healing" data-name="HEALING" style="background:#d8a850" title="治愈"></button>
+      <button data-p="flower" data-name="FLOWER"  style="background:#e08aba" title="花"></button>
+      <button data-p="sea"    data-name="SEA"     style="background:#3e95c2" title="海"></button>
+      <button data-p="starry" data-name="STARRY"  style="background:#e8d070" title="繁星"></button>
+      <button data-p="cloud"  data-name="CLOUD"   style="background:#c8b0e8" title="云"></button>
+      <button data-p="tree"   data-name="TREE"    style="background:#5a8a5a" title="树"></button>
+    </div>
+  </div>
+
+  <div class="type-legend">
+    <span>① 文字</span>
+    <span>② 声音</span>
+    <span>③ 图</span>
+    <span>④ 视频·横</span>
+    <span>⑤ 视频·竖</span>
+    <span>⑥ 图+文</span>
+    <span>⑦ 视频+文</span>
+    <span>⑧ 竖媒+文</span>
+  </div>
+
+  <div class="canvas">
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- 展开卡片浮层 -->
+  <div class="expand-backdrop" id="expand">
+    <div class="expand-card" id="expandCard">
+      <!-- 内容由 JS 注入 -->
+    </div>
+  </div>
+
+<script>
+  // Demo 数据：每颗星都演示 8 种类型 → 看每种类型在不同色系下的美术
+  // 真 App 里：每颗星的输入能力 + 用户实际录入的内容形态 → 决定卡片用哪种模板
+  const SAMPLE = {
+    beizi: [
+      { type:'text',          d:'05.27', body:'三天没接到他电话。知道他大概只是忙，但还是会反复检查手机。' },
+      { type:'audio',         d:'05.20', caption:'妈妈的留言', dur:'1:24' },
+      { type:'image',         d:'05.14', media:'linear-gradient(135deg, #4a5d75, #1f2c3e)' },
+      { type:'video-h',       d:'05.06', dur:'0:18', media:'linear-gradient(135deg, #3a4a60, #15202e)' },
+      { type:'video-v',       d:'04.28', dur:'0:24', media:'linear-gradient(135deg, #506276, #2a3848)' },
+      { type:'image-text-h',  d:'04.20', caption:'下了一整天的雨，心里也跟着潮潮的。', media:'linear-gradient(135deg, #4a5d75, #1f2c3e)' },
+      { type:'video-text-h',  d:'04.14', caption:'凌晨的窗外。', dur:'0:35', media:'linear-gradient(135deg, #3a4a60, #15202e)' },
+      { type:'media-text-v',  d:'04.06', caption:'今天又想起它了。十六年了。', media:'linear-gradient(135deg, #506276, #2a3848)' },
+    ],
+    hiking: [
+      { type:'image-text-h',  d:'05.27', caption:'傍晚回程，每个转弯都变得柔和。', media:'linear-gradient(135deg, #4a6230, #1f3a18)' },
+      { type:'video-h',       d:'05.25', dur:'0:18', media:'linear-gradient(135deg, #5a7a38, #2d4a20)' },
+      { type:'text',          d:'05.23', body:'把水壶拿出来的时候，忽然发现自己已经走了很远。' },
+      { type:'image',         d:'05.20', media:'linear-gradient(135deg, #2d4a20, #14280f)' },
+      { type:'audio',         d:'05.18', caption:'山顶的风', dur:'0:54' },
+      { type:'video-v',       d:'05.14', dur:'0:32', media:'linear-gradient(135deg, #3a5a28, #1d3818)' },
+      { type:'video-text-h',  d:'05.10', caption:'店员陪我从早走到中午。', dur:'0:45', media:'linear-gradient(135deg, #4a6230, #1f3a18)' },
+      { type:'media-text-v',  d:'05.06', caption:'背包整理好，已经像出门了。', media:'linear-gradient(135deg, #3a5a28, #1d3818)' },
+    ],
+    healing: [
+      { type:'audio',         d:'05.21', caption:'她说我在', dur:'0:08' },
+      { type:'image-text-h',  d:'05.17', caption:'坐在窗边十分钟，心里安静下来。', media:'linear-gradient(135deg, #a87838, #4a3010)' },
+      { type:'text',          d:'05.10', body:'那天只是很普通的一句提醒，却让我觉得自己被放在心上。' },
+      { type:'image',         d:'05.04', media:'linear-gradient(135deg, #9a6828, #3e2208)' },
+      { type:'video-h',       d:'04.28', dur:'0:22', media:'linear-gradient(135deg, #a87838, #4a3010)' },
+      { type:'media-text-v',  d:'04.21', caption:'回家的路上每盏灯都还亮着。', media:'linear-gradient(135deg, #b88848, #582d10)' },
+      { type:'text',          d:'04.14', body:'他说没什么大事的时候，我突然眼睛酸了。' },
+      { type:'video-v',       d:'04.07', dur:'0:48', media:'linear-gradient(135deg, #9a6828, #3e2208)' },
+    ],
+    flower: [
+      { type:'image',         d:'05.24', media:'linear-gradient(135deg, #e8a0c0, #b04068)' },
+      { type:'text',          d:'05.18', body:'结婚那天她回头看了我一眼，我就跟着哭了。' },
+      { type:'video-text-h',  d:'05.12', caption:'我顺口提过一次，他三个月后还记得。', dur:'0:20', media:'linear-gradient(135deg, #f0b8d4, #c06080)' },
+      { type:'audio',         d:'05.06', caption:'告白录音', dur:'0:36' },
+      { type:'image-text-h',  d:'04.28', caption:'吵架之后第一次见面。', media:'linear-gradient(135deg, #e8b0c8, #b85878)' },
+      { type:'text',          d:'04.20', body:'三年没见，坐下就有话说。' },
+      { type:'video-v',       d:'04.14', dur:'0:12', media:'linear-gradient(135deg, #e8a0c0, #b04068)' },
+      { type:'media-text-v',  d:'04.06', caption:'第一次给自己买花，放在床头三天。', media:'linear-gradient(135deg, #f0b8d4, #c06080)' },
+    ],
+    sea: [
+      { type:'text',          d:'05.18', body:'最近事情太多，脑子里总像有一团打不开的线。' },
+      { type:'audio',         d:'05.13', caption:'凌晨自言', dur:'2:08' },
+      { type:'image-text-h',  d:'05.06', caption:'体检前一晚，明明知道没事却一夜没睡好。', media:'linear-gradient(135deg, #a0d0e0, #4090b8)' },
+      { type:'text',          d:'04.29', body:'辞职的念头又冒出来，比上次更强烈。' },
+      { type:'video-v',       d:'04.22', dur:'0:24', media:'linear-gradient(135deg, #88c0dc, #2080b0)' },
+      { type:'image',         d:'04.15', media:'linear-gradient(135deg, #98c8d8, #3088b0)' },
+      { type:'media-text-v',  d:'04.08', caption:'一些说不出口的小担心，交给今天的海风。', media:'linear-gradient(135deg, #a0d0e0, #4090b8)' },
+      { type:'video-h',       d:'04.01', dur:'0:30', media:'linear-gradient(135deg, #88c0dc, #2080b0)' },
+    ],
+    starry: [
+      { type:'image-text-h',  d:'05.09', caption:'本来以为放弃的事，居然走到了今天。', media:'linear-gradient(135deg, #2a3050, #0a1020)' },
+      { type:'text',          d:'05.04', body:'把零散的想法收进了一个清晰的结构里。这是很久没有的踏实。' },
+      { type:'video-h',       d:'04.28', dur:'1:20', media:'linear-gradient(135deg, #3a4060, #151c30)' },
+      { type:'image',         d:'04.21', media:'linear-gradient(135deg, #2a3050, #0a1020)' },
+      { type:'audio',         d:'04.14', caption:'录取通知', dur:'0:18' },
+      { type:'media-text-v',  d:'04.07', caption:'读完一本 480 页的书。', media:'linear-gradient(135deg, #3a4060, #151c30)' },
+      { type:'video-v',       d:'03.30', dur:'0:42', media:'linear-gradient(135deg, #2a3050, #0a1020)' },
+      { type:'text',          d:'03.22', body:'第一次跑完三公里没停。' },
+    ],
+    cloud: [
+      { type:'text',          d:'05.22', body:'突然意识到，没必要把每件事都做对。' },
+      { type:'image',         d:'05.10', media:'linear-gradient(135deg, #d8c8ee, #8070a8)' },
+      { type:'media-text-v',  d:'05.04', caption:'这个聚会跳过，应该没人会怪我。', media:'linear-gradient(135deg, #d0c0e8, #7060a0)' },
+      { type:'image-text-h',  d:'04.28', caption:'想去看海，一个人，订了机票就走。', media:'linear-gradient(135deg, #e0d0f0, #9080b8)' },
+      { type:'text',          d:'04.21', body:'已经想了很久，今天忽然没那么难下决定。' },
+      { type:'audio',         d:'04.14', caption:'清晨的鸟', dur:'0:50' },
+      { type:'video-v',       d:'04.07', dur:'0:18', media:'linear-gradient(135deg, #d8c8ee, #8070a8)' },
+      { type:'video-text-h',  d:'03.30', caption:'坐错了方向，反而看到了没见过的窗景。', dur:'0:24', media:'linear-gradient(135deg, #e0d0f0, #9080b8)' },
+    ],
+    tree: [
+      { type:'image-text-h',  d:'05.15', caption:'凌晨四点的海，连风都很轻。', media:'linear-gradient(135deg, #2a4030, #0a2010)' },
+      { type:'text',          d:'05.08', body:'最后一班地铁，整节车厢只有我。' },
+      { type:'image',         d:'05.02', media:'linear-gradient(135deg, #3a5040, #182618)' },
+      { type:'audio',         d:'04.26', caption:'河边自语', dur:'1:42' },
+      { type:'text',          d:'04.20', body:'一个人吃了顿很久没吃的麻辣烫，把汤都喝完了。' },
+      { type:'video-v',       d:'04.12', dur:'0:28', media:'linear-gradient(135deg, #2a4030, #0a2010)' },
+      { type:'media-text-v',  d:'04.04', caption:'整个晚上没说一句话，吃了一顿饭、看了一部电影。', media:'linear-gradient(135deg, #3a5040, #182618)' },
+      { type:'video-h',       d:'03.27', dur:'0:36', media:'linear-gradient(135deg, #2a4030, #0a2010)' },
+    ],
+  };
+
+  const PLAY_SVG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  const TOOLS = '<div class="tools"><button title="编辑">✎</button><button class="del" title="删除">×</button></div>';
+
+  function waveBars() {
+    const seeds = [0.35, 0.6, 0.5, 0.85, 0.7, 0.55, 0.9, 0.45, 0.75, 0.6, 0.5, 0.8, 0.65, 0.4, 0.75, 0.55, 0.85, 0.5, 0.7, 0.6];
+    return seeds.map(h => `<span style="height:${Math.round(h*100)}%"></span>`).join('');
+  }
+
+  const typeMark = {
+    text:         'TEXT',
+    audio:        'AUDIO',
+    image:        'IMG',
+    'video-h':    'VIDEO',
+    'video-v':    'VIDEO',
+    'image-text-h': 'IMG · TXT',
+    'video-text-h': 'VIDEO · TXT',
+    'media-text-v': 'MEDIA · TXT',
+  };
+
+  const renderers = {
+    text: r => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="type-mark">${typeMark.text}</div>
+      <div class="body">${r.body}</div>`,
+    audio: r => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="type-mark">${typeMark.audio}</div>
+      <div class="play-btn">${PLAY_SVG}</div>
+      <div class="audio-body">
+        <div class="wave">${waveBars()}</div>
+        <div class="audio-meta">
+          <span class="audio-label">${r.caption || ''}</span>
+          <span class="duration-text">${r.dur}</span>
+        </div>
+      </div>`,
+    image: r => `
+      ${TOOLS}
+      <div class="media" style="--media:${r.media};"></div>
+      <div class="date">${r.d}</div>
+      <div class="type-mark">${typeMark.image}</div>`,
+    'video-h': r => `
+      ${TOOLS}
+      <div class="frame" style="--media:${r.media};"></div>
+      <div class="play-overlay">${PLAY_SVG}</div>
+      <div class="date">${r.d}</div>
+      <div class="duration-chip">${r.dur}</div>`,
+    'video-v': r => `
+      ${TOOLS}
+      <div class="frame" style="--media:${r.media};"></div>
+      <div class="play-overlay">${PLAY_SVG}</div>
+      <div class="date">${r.d}</div>
+      <div class="duration-chip">${r.dur}</div>`,
+    'image-text-h': r => `
+      ${TOOLS}
+      <div class="media" style="--media:${r.media};"></div>
+      <div class="date">${r.d}</div>
+      <div class="type-mark">${typeMark['image-text-h']}</div>
+      <div class="caption">${r.caption}</div>`,
+    'video-text-h': r => `
+      ${TOOLS}
+      <div class="media" style="--media:${r.media};"></div>
+      <div class="play-overlay">${PLAY_SVG}</div>
+      <div class="date">${r.d}</div>
+      <div class="duration-chip">${r.dur}</div>
+      <div class="caption">${r.caption}</div>`,
+    'media-text-v': r => `
+      ${TOOLS}
+      <div class="media" style="--media:${r.media};">
+        <div class="date">${r.d}</div>
+        ${r.dur ? `<div class="play-overlay">${PLAY_SVG}</div><div class="duration-chip">${r.dur}</div>` : ''}
+      </div>
+      <div class="body">
+        <div class="type-mark">${typeMark['media-text-v']}</div>
+        <div class="caption">${r.caption}</div>
+      </div>`,
+  };
+
+  const grid = document.getElementById('grid');
+  const picker = document.getElementById('picker');
+  const pname = document.getElementById('pname');
+  const expand = document.getElementById('expand');
+  const expandCard = document.getElementById('expandCard');
+
+  // 给 demo 加一段长文，演示展开后滚动
+  const LONG_TEXT = `三天没接到他电话。知道他大概只是忙，但还是会反复检查手机。
+
+每隔一会儿就翻出来，看看有没有未接。明明知道响起会有震动会有声音，但还是忍不住要去翻。
+
+晚上躺下之后，又想了一遍白天他可能在做什么。可能在加班，可能在跟人吃饭，可能就是单纯地不想说话。这三种里我最怕第三种。
+
+但又告诉自己，他不是那种人。也许只是真的太忙。也许明天就会响。也许……`;
+
+  function render(p) {
+    const data = SAMPLE[p] || SAMPLE.beizi;
+    // 让第一张 text 卡用长文本演示截断 + 展开后能滚
+    grid.innerHTML = data.map((r, i) => {
+      const rec = (r.type === 'text' && i === 0) ? { ...r, body: LONG_TEXT } : r;
+      return `<div class="card" data-type="${r.type}" data-idx="${i}">${renderers[r.type](rec)}</div>`;
+    }).join('');
+  }
+
+  // ─── 展开卡片 ───
+  const PLAY_BIG = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  const CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  function bigWave() {
+    const seeds = [0.3,0.55,0.45,0.7,0.6,0.5,0.85,0.65,0.95,0.7,0.55,0.8,0.4,0.6,0.75,0.5,0.85,0.65,0.5,0.7,0.6,0.45,0.8,0.55,0.7,0.5,0.85,0.6,0.4,0.65,0.55,0.8,0.5,0.7,0.6];
+    return seeds.map(h => `<span style="height:${Math.round(h*100)}%"></span>`).join('');
+  }
+
+  const expandRenderers = {
+    text: r => `
+      <button class="expand-close">${CLOSE_SVG}</button>
+      <div class="expand-header">
+        <span class="date">${r.d}</span>
+        <span class="type-mark">TEXT</span>
+      </div>
+      <div class="expand-body-text">${r.body}</div>`,
+    audio: r => `
+      <button class="expand-close">${CLOSE_SVG}</button>
+      <div class="expand-header">
+        <span class="date">${r.d}</span>
+        <span class="type-mark">AUDIO</span>
+      </div>
+      <div class="expand-audio">
+        <div class="audio-row">
+          <div class="big-play">${PLAY_BIG}</div>
+          <div class="big-wave">${bigWave()}</div>
+        </div>
+        <div class="audio-meta-row">
+          <span class="label">${r.caption || ''}</span>
+          <span class="dur">${r.dur}</span>
+        </div>
+      </div>`,
+    image: r => `
+      <button class="expand-close">${CLOSE_SVG}</button>
+      <div class="expand-header">
+        <span class="date">${r.d}</span>
+        <span class="type-mark">IMG</span>
+      </div>
+      <div class="expand-media" style="--media:${r.media};"></div>`,
+    'video-h': r => `
+      <button class="expand-close">${CLOSE_SVG}</button>
+      <div class="expand-header">
+        <span class="date">${r.d}</span>
+      </div>
+      <div class="expand-duration-chip">${r.dur}</div>
+      <div class="expand-media" style="--media:${r.media};">
+        <div class="expand-play">${PLAY_BIG}</div>
+      </div>`,
+    'video-v': r => `
+      <button class="expand-close">${CLOSE_SVG}</button>
+      <div class="expand-header">
+        <span class="date">${r.d}</span>
+      </div>
+      <div class="expand-duration-chip">${r.dur}</div>
+      <div class="expand-media" style="--media:${r.media};">
+        <div class="expand-play">${PLAY_BIG}</div>
+      </div>`,
+    'image-text-h': r => `
+      <button class="expand-close">${CLOSE_SVG}</button>
+      <div class="expand-header">
+        <span class="date">${r.d}</span>
+        <span class="type-mark">IMG · TXT</span>
+      </div>
+      <div class="expand-media" style="--media:${r.media};"></div>
+      <div class="expand-text">${r.caption}</div>`,
+    'video-text-h': r => `
+      <button class="expand-close">${CLOSE_SVG}</button>
+      <div class="expand-header">
+        <span class="date">${r.d}</span>
+      </div>
+      <div class="expand-duration-chip">${r.dur}</div>
+      <div class="expand-media" style="--media:${r.media};">
+        <div class="expand-play">${PLAY_BIG}</div>
+      </div>
+      <div class="expand-text">${r.caption}</div>`,
+    'media-text-v': r => `
+      <button class="expand-close">${CLOSE_SVG}</button>
+      <div class="expand-header">
+        <span class="date">${r.d}</span>
+        <span class="type-mark">MEDIA · TXT</span>
+      </div>
+      <div class="expand-media" style="--media:${r.media};">
+        ${r.dur ? `<div class="expand-duration-chip">${r.dur}</div><div class="expand-play">${PLAY_BIG}</div>` : ''}
+      </div>
+      <div class="expand-text">${r.caption}</div>`,
+  };
+
+  function openExpand(planet, idx) {
+    const data = SAMPLE[planet] || SAMPLE.beizi;
+    const r = data[idx];
+    if (!r) return;
+    const rec = (r.type === 'text' && idx === 0) ? { ...r, body: LONG_TEXT } : r;
+    expandCard.setAttribute('data-type', r.type);
+    expandCard.innerHTML = expandRenderers[r.type](rec);
+    expand.classList.add('open');
+  }
+  function closeExpand() {
+    expand.classList.remove('open');
+  }
+
+  grid.addEventListener('click', e => {
+    // 编辑/删除按钮独立行为，阻止冒泡触发展开
+    if (e.target.closest('.tools')) return;
+    const card = e.target.closest('.card');
+    if (!card) return;
+    const currentPlanet = document.body.className.replace('planet-', '');
+    openExpand(currentPlanet, parseInt(card.dataset.idx, 10));
+  });
+  expand.addEventListener('click', e => {
+    if (e.target.closest('.expand-close') || e.target === expand) closeExpand();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && expand.classList.contains('open')) closeExpand();
+  });
+
+  picker.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-p]');
+    if (!btn) return;
+    picker.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    document.body.className = 'planet-' + btn.dataset.p;
+    pname.textContent = btn.dataset.name;
+    render(btn.dataset.p);
+  });
+
+  render('beizi');
+</script>
+</body>
+</html>

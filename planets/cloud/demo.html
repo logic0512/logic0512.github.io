@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云星 · B8 · 满</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden;
+  font-family: -apple-system, 'PingFang SC', sans-serif; }
+
+body {
+  background:
+    radial-gradient(ellipse 55% 45% at 30% 55%, rgba(255,210,170,0.55) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 72% 35%, rgba(210,185,240,0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 55% 80%, rgba(255,235,200,0.40) 0%, transparent 60%),
+    linear-gradient(148deg, #d8c8ee 0%, #eee0f8 18%, #fff4ee 38%, #ffe8d8 58%, #f8d8c0 78%, #f0d0b5 100%);
+  cursor: grab;
+}
+body.drag { cursor: grabbing; }
+body.no-drag { cursor: default; }
+
+.layer { position: fixed; inset: 0; overflow: visible; will-change: transform; }
+#lyr-decor  { z-index: 1; pointer-events: none; }
+#lyr-record { z-index: 2; }
+
+/* CSS 动画 */
+@keyframes drift { to { transform: translateX(-3400px); } }
+@keyframes float1 { 0%,100%{transform:translateY(0px)}   50%{transform:translateY(-12px)} }
+@keyframes float2 { 0%,100%{transform:translateY(-7px)}  50%{transform:translateY(9px)}  }
+@keyframes float3 { 0%,100%{transform:translateY(0px)}   35%{transform:translateY(-9px)} 68%{transform:translateY(6px)} }
+@keyframes float4 { 0%,100%{transform:translateY(-4px)}  50%{transform:translateY(11px)} }
+@keyframes wobble { 0%,100%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} }
+@keyframes appear { 0%{opacity:0; transform:scale(0.6)} 60%{opacity:1; transform:scale(1.06)} 100%{opacity:1; transform:scale(1)} }
+@keyframes breathe { 0%,100%{opacity:.50} 50%{opacity:.92} }
+@keyframes pulseBtn {
+  0%,100% { box-shadow: 0 8px 28px rgba(50,40,100,0.14), 0 0 0 0 rgba(80,112,168,0.34); }
+  70%     { box-shadow: 0 8px 28px rgba(50,40,100,0.14), 0 0 0 18px rgba(80,112,168,0); }
+}
+
+.cr { cursor: pointer; }
+.cr .cloud-body {
+  filter: drop-shadow(0 8px 22px rgba(50,40,120,0.22));
+  transition: filter .22s, opacity .35s;
+}
+.cr:hover .cloud-body { filter: drop-shadow(0 10px 26px rgba(50,40,120,0.30)) brightness(1.07); }
+.cr.active .cloud-body { filter: drop-shadow(0 12px 30px rgba(50,40,120,0.36)) brightness(1.11); }
+.cr.appearing .cloud-body { animation: appear .55s cubic-bezier(.2,.8,.2,1); }
+.cr.dying .cloud-body { animation: appear .42s cubic-bezier(.4,0,.6,1) reverse forwards; }
+.cr.del-mode .wobble-g { animation: wobble .28s ease-in-out infinite; transform-origin: center; }
+.cr.del-mode .cloud-body { filter: drop-shadow(0 4px 14px rgba(200,80,80,0.32)) brightness(1.05); }
+
+/* 阅读卡片 */
+.rcard {
+  position: fixed; z-index: 200;
+  background: rgba(255,252,250,0.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(80,112,168,0.22);
+  box-shadow: 0 22px 64px rgba(50,40,100,0.16);
+  border-radius: 16px; padding: 22px 24px 18px;
+  min-width: 220px; max-width: 380px;
+  max-height: 68vh; overflow-y: auto;
+  pointer-events: none; opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .30s, transform .30s;
+}
+.rcard.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+.rcard-text { font-size:14.5px; line-height:1.78; color:rgba(40,30,80,0.86); letter-spacing:.02em; white-space:pre-wrap; }
+.rcard-date { margin-top:14px; padding-top:10px; border-top:1px solid rgba(80,112,168,0.12);
+  font-size:11px; color:rgba(80,112,168,0.62); letter-spacing:.12em; }
+.rcard-x {
+  position:absolute; top:10px; right:14px;
+  background:none; border:none; cursor:pointer;
+  color:rgba(40,30,80,0.28); font-size:18px; line-height:1; transition:color .15s;
+}
+.rcard-x:hover { color:rgba(40,30,80,0.65); }
+
+/* 中央录入面板 */
+.input-mask {
+  position: fixed; inset: 0; z-index: 280;
+  background: rgba(40,30,80,0.18);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none;
+  transition: opacity .30s;
+}
+.input-mask.show { opacity: 1; pointer-events: auto; }
+
+.input-panel {
+  position: fixed; left: 50%; top: 50%; z-index: 290;
+  width: min(520px, calc(100% - 48px));
+  background: rgba(255,252,250,0.95);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(80,112,168,0.22);
+  border-radius: 22px;
+  padding: 26px 30px 24px;
+  box-shadow: 0 30px 80px rgba(50,40,100,0.22);
+  opacity: 0; pointer-events: none;
+  transform: translate(-50%, calc(-50% + 16px));
+  transition: opacity .32s cubic-bezier(.2,.8,.2,1), transform .32s cubic-bezier(.2,.8,.2,1);
+}
+.input-mask.show ~ .input-panel {
+  opacity: 1; pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+.input-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.input-label { font-size: 13px; color: rgba(40,30,80,0.58); letter-spacing: .14em; }
+.input-x { background: none; border: none; cursor: pointer; color: rgba(40,30,80,0.30); font-size: 18px; line-height: 1; }
+.input-x:hover { color: rgba(40,30,80,0.70); }
+.input-area {
+  width: 100%;
+  min-height: 56px;
+  max-height: 36vh;
+  background: transparent; border: none; outline: none; resize: none;
+  font: 15px/1.78 -apple-system, 'PingFang SC', sans-serif;
+  color: rgba(40,30,80,0.88); letter-spacing: .02em;
+  padding: 8px 0 4px;
+}
+.input-area::placeholder { color: rgba(40,30,80,0.30); }
+.input-area::-webkit-scrollbar { width: 5px; }
+.input-area::-webkit-scrollbar-thumb { background: rgba(80,112,168,0.22); border-radius: 5px; }
+.input-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid rgba(80,112,168,0.12);
+}
+.input-count { font-size: 11px; color: rgba(80,112,168,0.50); letter-spacing: .10em; }
+.input-ok {
+  background: rgba(80,112,168,0.14);
+  border: 1px solid rgba(80,112,168,0.38);
+  color: rgba(40,30,80,0.80);
+  padding: 9px 24px; border-radius: 22px;
+  font-size: 13px; cursor: pointer; letter-spacing: .1em;
+  transition: background .2s, color .2s;
+}
+.input-ok:hover { background: rgba(80,112,168,0.24); color: rgba(40,30,80,0.95); }
+.input-ok:disabled { opacity: .42; cursor: default; }
+.input-ok:disabled:hover { background: rgba(80,112,168,0.14); }
+
+/* 删除确认 */
+.del-confirm {
+  position: fixed; z-index: 220;
+  background: rgba(255,252,250,0.94);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(200,80,80,0.30);
+  box-shadow: 0 18px 50px rgba(120,40,40,0.20);
+  border-radius: 14px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+  pointer-events: none; opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .22s, transform .22s;
+}
+.del-confirm.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+.del-confirm-txt { font-size: 13px; color: rgba(40,30,80,0.82); letter-spacing: .04em; }
+.del-yes, .del-no {
+  background: transparent; border: none; cursor: pointer;
+  font-size: 12.5px; padding: 6px 12px; border-radius: 12px;
+  letter-spacing: .08em; transition: background .15s, color .15s;
+}
+.del-yes { color: rgba(200,70,70,0.85); border: 1px solid rgba(200,70,70,0.32); }
+.del-yes:hover { background: rgba(200,70,70,0.12); color: rgba(180,50,50,1); }
+.del-no { color: rgba(40,30,80,0.55); }
+.del-no:hover { color: rgba(40,30,80,0.85); }
+
+/* 多页提示 */
+.page-hint {
+  position: fixed; right: 28px; top: 50%; z-index: 100;
+  pointer-events: none; opacity: 0;
+  font-size: 12px; letter-spacing: .12em; color: rgba(40,30,80,0.55);
+  background: rgba(255,252,250,0.78);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(80,112,168,0.20);
+  padding: 8px 14px; border-radius: 18px;
+  transform: translateY(-50%);
+  transition: opacity .40s, right .40s;
+  animation: hintBob 2.6s ease-in-out infinite;
+}
+.page-hint.show { opacity: 1; }
+@keyframes hintBob { 0%,100% { transform: translateY(-50%) translateX(0); } 50% { transform: translateY(-50%) translateX(-8px); } }
+
+/* 卡片编辑按钮 */
+.rcard-edit {
+  position: absolute; bottom: 14px; right: 18px;
+  background: none; border: 1px solid rgba(80,112,168,0.32);
+  color: rgba(80,112,168,0.78);
+  font-size: 11px; padding: 4px 10px; border-radius: 12px;
+  cursor: pointer; letter-spacing: .08em;
+  transition: background .15s, color .15s;
+}
+.rcard-edit:hover { background: rgba(80,112,168,0.10); color: rgba(40,30,80,0.90); }
+
+/* 输入面板字数提示 */
+.input-count.warn { color: rgba(220,140,60,0.85); }
+.input-count.danger { color: rgba(200,80,80,0.92); }
+.input-clear {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; color: rgba(80,112,168,0.62);
+  padding: 4px 8px; margin-left: 6px;
+  letter-spacing: .08em; display: none;
+}
+.input-clear.show { display: inline-block; }
+.input-clear:hover { color: rgba(40,30,80,0.85); }
+
+/* 空状态 */
+.empty-hint {
+  position: fixed; left: 50%; top: 54%; transform: translate(-50%,-50%);
+  z-index: 100; pointer-events: none;
+  font-size: 14px; color: rgba(40,30,80,0.50);
+  letter-spacing: .16em; text-align: center;
+  animation: breathe 4s ease-in-out infinite;
+}
+.empty-hint .small { display: block; margin-top: 8px; font-size: 11px; letter-spacing: .20em; opacity: .65; }
+
+/* UI chrome */
+.brand { position:fixed; top:28px; left:36px; color:rgba(40,30,80,0.80); pointer-events:none; z-index:100; }
+.brand-name { font-size:21px; font-weight:400; letter-spacing:.14em; }
+.brand-kw   { font-size:11px; opacity:.48; margin-top:4px; letter-spacing:.12em; }
+.ver { position:fixed; top:32px; right:36px; z-index:100;
+  font-size:10px; letter-spacing:.18em; color:rgba(80,112,168,0.48);
+  border:1px solid rgba(80,112,168,0.26); padding:4px 12px; border-radius:20px; pointer-events:none; }
+.hint {
+  position:fixed; bottom:88px; left:50%; transform:translateX(-50%); z-index:100;
+  font-size:11px; color:rgba(40,30,80,0.32); letter-spacing:.10em;
+  white-space:nowrap; pointer-events:none; transition: opacity .3s;
+}
+.btn-add {
+  position:fixed; bottom:38px; right:44px; z-index:110;
+  background:transparent; border:1px solid rgba(80,112,168,0.48);
+  color:rgba(40,30,80,0.72); width:54px; height:54px; border-radius:50%;
+  font-size:20px; cursor:pointer; line-height:52px; text-align:center;
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  box-shadow:0 8px 28px rgba(50,40,100,0.14);
+  transition:background .2s, box-shadow .2s, transform .2s;
+}
+.btn-add:hover { background:rgba(80,112,168,0.10); transform:translateY(-1px); }
+.btn-add.pulse { animation: pulseBtn 2.6s ease-in-out infinite; }
+</style>
+</head>
+<body data-demo="true">
+<script>
+window.__DEMO_RECORDS = [
+  { text:'答应朋友的事突然取消，意外多出来的下午', date:'2024年5月' },
+  { text:'那天骑车去了郊外，风很大，什么都不想', date:'2024年3月' },
+  { text:'辞掉那份工作的下午，走在街上突然很轻松。两年的紧绷一下子卸下来，肩膀都松了。我买了一杯冰美式，找了一家公园坐下，看人来人往，没有任何要去的地方。那种「没什么要做」的感觉，是最久违的自由。', date:'2023年11月' },
+  { text:'一个人在海边待到天黑，看着海浪发呆', date:'2024年5月' },
+  { text:'坐高铁路过一片油菜花田，没有下车', date:'2024年4月' },
+  { text:'半夜睡不着，爬上天台看了很久的星星', date:'2024年1月' },
+  { text:'在陌生城市迷路了，反而觉得很好玩', date:'2023年8月' },
+  { text:'把手机调成静音，在公园坐了两个小时', date:'2024年2月' },
+  { text:'雨天没带伞，索性就走在雨里', date:'2024年6月' },
+  { text:'把所有日程清空，一整天只是看书喝茶', date:'2024年7月' },
+  { text:'一个人去看了场没人推荐的电影', date:'2023年9月' },
+  { text:'下班绕路回家，走过没走过的桥', date:'2024年8月' },
+];
+</script>
+
+<!-- 装饰云：偏柔和模糊 -->
+<svg class="layer" id="lyr-decor" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <filter id="fd-decor" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"/>
+  </filter>
+  <filter id="fds-decor" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 14 -5"/>
+  </filter>
+</defs>
+<g id="decor-clouds"></g>
+</svg>
+
+<!-- 记录云：清晰饱满 -->
+<svg class="layer" id="lyr-record" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <filter id="fd-rec" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"/>
+  </filter>
+  <filter id="fds-rec" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 14 -5"/>
+  </filter>
+</defs>
+<g id="record-clouds"></g>
+</svg>
+
+<div class="rcard" id="rcard">
+  <button class="rcard-x" id="rcard-x">×</button>
+  <div class="rcard-text" id="rcard-text"></div>
+  <div class="rcard-date" id="rcard-date"></div>
+  <button class="rcard-edit" id="rcard-edit">改</button>
+</div>
+
+<div class="input-mask" id="input-mask"></div>
+<div class="input-panel" id="input-panel">
+  <div class="input-head">
+    <span class="input-label">把一个自由的瞬间放进云里</span>
+    <button class="input-x" id="input-x">×</button>
+  </div>
+  <textarea class="input-area" id="input-area" placeholder="那个让你感到自由的瞬间……" maxlength="500"></textarea>
+  <div class="input-foot">
+    <div>
+      <span class="input-count" id="input-count-wrap"><span id="input-count">0</span> / 500</span>
+      <button class="input-clear" id="input-clear" type="button">清空</button>
+    </div>
+    <button class="input-ok" id="input-ok" disabled>放进云里</button>
+  </div>
+</div>
+
+<div class="del-confirm" id="del-confirm">
+  <span class="del-confirm-txt">让这朵云飘走？</span>
+  <button class="del-yes" id="del-yes">删除</button>
+  <button class="del-no" id="del-no">取消</button>
+</div>
+
+<div class="empty-hint" id="empty-hint" style="display:none;">
+  把你第一个自由的瞬间放进云里
+  <span class="small">点右下角 ✦ 开始</span>
+</div>
+
+<div class="page-hint" id="page-hint">→ 还有 <span id="page-hint-count">0</span> 朵</div>
+
+<div class="brand"><div class="brand-name">云星</div><div class="brand-kw">自由</div></div>
+<div class="ver">B8 · 满</div>
+<div class="hint" id="hint">拖拽探索云海 · 点击查看 · 长按删除</div>
+<button class="btn-add" id="btn-add" title="把这个念头放进云里">✦</button>
+
+<script>
+const W = window.innerWidth, H = window.innerHeight;
+const NS = 'http://www.w3.org/2000/svg';
+const BUMP_LIFT = 0.75;
+
+// ── 装饰云形库（10 朵）──
+const DECOR_SHAPES = [
+  { base:{w:110, h:12}, bumps:[[25,22],[60,30],[95,24]] },
+  { base:{w:130, h:12}, bumps:[[35,32],[95,30]] },
+  { base:{w:120, h:12}, bumps:[[25,18],[85,40]] },
+  { base:{w:160, h:12}, bumps:[[25,22],[65,26],[100,26],[140,22]] },
+  { base:{w:170, h:12}, bumps:[[30,32],[75,28],[120,22],[155,16]] },
+  { base:{w:180, h:12}, bumps:[[25,22],[60,28],[95,32],[130,28],[165,22]] },
+  { base:{w:220, h:10}, bumps:[[25,18],[60,22],[95,22],[130,22],[165,22],[200,18]] },
+  { base:{w:170, h:12}, bumps:[[35,24],[75,40],[115,24],[150,20]] },
+  { base:{w:160, h:12}, bumps:[[30,20],[70,26],[120,40]] },
+  { base:{w:130, h:12}, bumps:[[40,32],[65,36],[95,32]] },
+];
+
+// ── 记录云形库（15 朵）──
+const RECORD_SHAPES = [
+  { base:{w:100, h:14}, bumps:[[50,48]] },
+  { base:{w:120, h:14}, bumps:[[30,28],[80,50]] },
+  { base:{w:110, h:14}, bumps:[[35,42],[80,42]] },
+  { base:{w:130, h:14}, bumps:[[35,32],[90,48]] },
+  { base:{w:140, h:14}, bumps:[[30,32],[70,48],[110,32]] },
+  { base:{w:170, h:14}, bumps:[[45,34],[90,50],[140,34]] },
+  { base:{w:150, h:16}, bumps:[[35,40],[75,42],[120,40]] },
+  { base:{w:150, h:14}, bumps:[[30,28],[75,38],[120,48]] },
+  { base:{w:140, h:14}, bumps:[[40,46],[75,40],[110,46]] },
+  { base:{w:160, h:14}, bumps:[[30,24],[65,28],[110,48],[150,28]] },
+  { base:{w:140, h:14}, bumps:[[40,52],[90,40],[125,26]] },
+  { base:{w:160, h:14}, bumps:[[30,32],[65,40],[105,40],[140,32]] },
+  { base:{w:200, h:16}, bumps:[[40,34],[85,42],[135,42],[180,34]] },
+  { base:{w:200, h:16}, bumps:[[40,30],[85,48],[135,42],[185,30]] },
+  { base:{w:180, h:16}, bumps:[[45,40],[95,50],[145,40]] },
+];
+
+// ── 初始数据：从 localStorage 读，没有就空 ──
+const STORAGE_KEY = 'cloud-star-records';
+const DEMO_MODE = document.body.dataset.demo === 'true';
+let _recIdSeed = 0;
+function ensureRecId(rec) { if (!rec._id) rec._id = `r${++_recIdSeed}`; return rec._id; }
+
+let RECORDS = (() => {
+  if (DEMO_MODE) return window.__DEMO_RECORDS || [];
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(stored) ? stored : [];
+  } catch { return []; }
+})();
+// 修复 _id 冲突：扫描已有 _id 的数字后缀，把 seed 推进到 max
+RECORDS.forEach(r => {
+  if (r._id) {
+    const n = parseInt(String(r._id).replace(/\D/g, ''), 10);
+    if (!isNaN(n) && n > _recIdSeed) _recIdSeed = n;
+  }
+});
+RECORDS.forEach(ensureRecId);
+
+function saveRecords() {
+  if (DEMO_MODE) return;
+  try {
+    const toSave = RECORDS.map(({ text, date, _id, _pageIdx, _zoneIdx }) =>
+      ({ text, date, _id, _pageIdx, _zoneIdx }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch (e) {}
+}
+
+// ── 工具函数 ──
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function rnd(a,b){ return a + Math.random()*(b-a); }
+function svgEl(tag,attrs={}){
+  const e=document.createElementNS(NS,tag);
+  for(const[k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  return e;
+}
+function hash(str){ let h=0; for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))|0; return h; }
+function seededRnd(seed){ const x=Math.sin(seed)*10000; return x-Math.floor(x); }
+
+// ── 状态 ──
+const drag={on:false,lx:0,ly:0}, off={x:0,y:0}, ine={x:0,y:0};
+// 拖拽范围根据当前记录页数动态计算
+// 1 页（≤8 朵记录）：不能水平拖
+// N 页：可往左拖到第 N 页，不能右拖
+function computeMaxDrag() {
+  // 用实际的 max _pageIdx，而非 length/8（因为可能有空 zone）
+  let maxPage = 0;
+  RECORDS.forEach(r => {
+    if (typeof r._pageIdx === 'number' && r._pageIdx > maxPage) maxPage = r._pageIdx;
+  });
+  return {
+    xMin: -W * maxPage,
+    xMax: 0,
+    y: H * 0.26,
+  };
+}
+let MAX = computeMaxDrag();
+const lyrDecor  = document.getElementById('lyr-decor');
+const lyrRecord = document.getElementById('lyr-record');
+const decorG    = document.getElementById('decor-clouds');
+const recordG   = document.getElementById('record-clouds');
+let activeEl = null;
+let suppressDrag = false;
+
+const FLOATS = ['float1','float2','float3','float4'];
+
+// ── 装饰云：18 个实例铺满天空，3 个深度层 ──
+// [shapeIdx, scale, alpha, leftX, topY, driftDur, driftDelay, floatIdx, floatDur, floatDelay]
+// 装饰云：洗牌池保证 10 个形状全用上，4 层铺满天空，避让记录 zone
+function generateDecorInstances() {
+  let seed = 7349;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  const rng = (a, b) => a + rnd() * (b - a);
+  const xMin = -0.40, xMax = 2.20;
+
+  // 洗牌池：每用完 10 个 shape 就重新洗牌，确保全部 10 朵都被用，且不连续重复
+  let shapeQueue = [];
+  function pickShape() {
+    if (shapeQueue.length === 0) {
+      shapeQueue = [0,1,2,3,4,5,6,7,8,9];
+      for (let i = shapeQueue.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [shapeQueue[i], shapeQueue[j]] = [shapeQueue[j], shapeQueue[i]];
+      }
+    }
+    return shapeQueue.shift();
+  }
+
+  // 跳过记录 zone（避免叠在一起），margin = 0.05
+  const REC_ZONE_BOUNDS = [
+    [0.36, 0.64, 0.44, 0.58], [0.05, 0.22, 0.28, 0.42], [0.78, 0.95, 0.28, 0.42],
+    [0.05, 0.22, 0.55, 0.68], [0.78, 0.95, 0.55, 0.68], [0.35, 0.55, 0.22, 0.32],
+    [0.55, 0.75, 0.62, 0.72], [0.20, 0.40, 0.62, 0.72],
+  ];
+  function inRecordZone(xN, yN) {
+    const pageIdx = Math.floor(xN);
+    const x = xN - pageIdx;
+    for (const [zXmin, zXmax, zYmin, zYmax] of REC_ZONE_BOUNDS) {
+      // 外扩 0.02：装饰云中心稍离记录 zone 边界，避免视觉干扰
+      // 装饰云在记录附近时会被 z-index 2 的记录盖住一部分，不会真冲突
+      if (x >= zXmin - 0.02 && x <= zXmax + 0.02 &&
+          yN >= zYmin - 0.02 && yN <= zYmax + 0.02) return true;
+    }
+    return false;
+  }
+
+  // [yMin, yMax, sMin, sMax, aMin, aMax, count, minDx, minDy]
+  // min_dy 全部大于云高，inRecordZone margin 0.10，中间层稀疏 5 朵
+  const layers = [
+    [0.07, 0.20, 0.55, 0.68, 0.45, 0.60, 18, 0.14, 0.11],   // 顶
+    [0.22, 0.42, 0.55, 0.68, 0.42, 0.55, 20, 0.14, 0.11],   // 上中（不再躲记录 zone）
+    [0.52, 0.74, 0.55, 0.68, 0.45, 0.58, 20, 0.14, 0.11],   // 下中（不再躲记录 zone）
+    [0.78, 0.92, 0.62, 0.75, 0.58, 0.72, 18, 0.16, 0.11],   // 底
+  ];
+
+  // 跨层全局碰撞检查：避免不同层间的云堆叠
+  const allPlaced = [];
+  layers.forEach(([yMin, yMax, sMin, sMax, aMin, aMax, count, mdx, mdy]) => {
+    let placedInLayer = 0;
+    let tries = 0;
+    while (placedInLayer < count && tries < 1500) {
+      tries++;
+      const xN = rng(xMin, xMax);
+      const yN = rng(yMin, yMax);
+      // 不再躲记录 zone：靠 z-index 2 的记录云自然盖住底下的装饰云
+      // 空状态下装饰云充满中间，满状态下被记录云遮挡（自然层次）
+      // 跨层检查 + max 间距（按要求更严格那一方）
+      let clash = false;
+      for (const p of allPlaced) {
+        const checkX = Math.max(p.mdx, mdx);
+        const checkY = Math.max(p.mdy, mdy);
+        if (Math.abs(p.xN - xN) < checkX && Math.abs(p.yN - yN) < checkY) { clash = true; break; }
+      }
+      if (clash) continue;
+      allPlaced.push({
+        xN, yN, mdx, mdy,
+        si: pickShape(),
+        sc: rng(sMin, sMax),
+        al: rng(aMin, aMax),
+        dd: rng(220, 290),
+        ddel: -rnd() * 200,
+        fi: Math.floor(rnd() * 4),
+        fd: rng(8, 13),
+        fdel: -rnd() * 6,
+      });
+      placedInLayer++;
+    }
+  });
+  return allPlaced.map(p => [p.si, p.sc, p.al, p.xN * W, p.yN * H, p.dd, p.ddel, p.fi, p.fd, p.fdel]);
+}
+const DECOR_INSTANCES = generateDecorInstances();
+
+// ── 渲染装饰云 ──
+DECOR_INSTANCES.forEach(([si, scale, alpha, lx, ty, dur, del, fi, fdur, fdel]) => {
+  const sh = DECOR_SHAPES[si];
+  const sw = sh.base.w * scale;
+  const baseH = sh.base.h * scale;
+
+  // 漂移外层
+  const driftG = svgEl('g');
+  driftG.style.cssText = `animation:drift ${dur}s linear ${del}s infinite;`;
+
+  // 浮动中层
+  const floatG = svgEl('g');
+  floatG.style.cssText = `animation:${FLOATS[fi]} ${fdur}s ease-in-out ${fdel}s infinite;`;
+
+  // 位置层
+  const posG = svgEl('g', { transform:`translate(${lx},${ty})` });
+
+  // 阴影：不透明 fill + group opacity（避开 gooey 阈值 bug）
+  const shadowG = svgEl('g', { filter:'url(#fds-decor)', opacity: String(alpha * 0.55) });
+  shadowG.appendChild(svgEl('ellipse', {
+    cx: sw/2, cy: baseH/2 + 8,
+    rx: sw*0.40, ry: 5,
+    fill: 'rgba(160,130,200,1)',
+  }));
+  posG.appendChild(shadowG);
+
+  // 云体：不透明 fill + group opacity，确保 gooey 阈值正确生效
+  const bodyG = svgEl('g', { filter:'url(#fd-decor)', opacity: String(alpha) });
+  const fill = 'rgba(255,251,244,1)';
+  bodyG.appendChild(svgEl('rect', {
+    x: 0, y: -baseH/2,
+    width: sw, height: baseH,
+    rx: baseH/2, ry: baseH/2,
+    fill,
+  }));
+  sh.bumps.forEach(([x, r]) => {
+    bodyG.appendChild(svgEl('circle', {
+      cx: x*scale, cy: -baseH/2 - r*scale*BUMP_LIFT,
+      r: r*scale, fill,
+    }));
+  });
+  posG.appendChild(bodyG);
+
+  floatG.appendChild(posG);
+  driftG.appendChild(floatG);
+  decorG.appendChild(driftG);
+});
+
+// ── 记录云排列：8 朵/页，超出 8 朵翻到下一页（往右）
+// 每个 zone 是矩形范围，记录在范围内 hash 随机位置
+const PAGE_ZONES = [
+  // [xMin, xMax, yMin, yMax, baseScale]
+  // 全部 zone 限定在 y 0.22-0.72（红框范围内）
+  [0.36, 0.64, 0.44, 0.58, 1.10],  // 0 中央主位（最新记录）
+  [0.05, 0.22, 0.28, 0.42, 0.95],  // 1 中左高
+  [0.78, 0.95, 0.28, 0.42, 0.95],  // 2 中右高
+  [0.05, 0.22, 0.55, 0.68, 0.95],  // 3 中左低
+  [0.78, 0.95, 0.55, 0.68, 0.95],  // 4 中右低
+  [0.35, 0.55, 0.22, 0.32, 0.85],  // 5 中央顶
+  [0.55, 0.75, 0.62, 0.72, 0.95],  // 6 中央底偏右
+  [0.20, 0.40, 0.62, 0.72, 0.95],  // 7 中央底偏左
+];
+
+// 给记录分配 zone：当前页找空位随机选；当前页满了跳下一页
+function assignZoneToNewRecord(rec) {
+  const pageOcc = new Map();
+  RECORDS.forEach(r => {
+    if (r === rec) return;
+    if (typeof r._pageIdx !== 'number') return;
+    if (!pageOcc.has(r._pageIdx)) pageOcc.set(r._pageIdx, new Set());
+    pageOcc.get(r._pageIdx).add(r._zoneIdx);
+  });
+  let targetPage = 0;
+  while ((pageOcc.get(targetPage)?.size || 0) >= 8) targetPage++;
+  const used = pageOcc.get(targetPage) || new Set();
+  const available = [];
+  for (let z = 0; z < 8; z++) if (!used.has(z)) available.push(z);
+  rec._pageIdx = targetPage;
+  rec._zoneIdx = available[Math.floor(Math.random() * available.length)];
+}
+
+function layoutRecords() {
+  RECORDS.forEach((rec) => {
+    // 老记录/demo 记录没有 zone 分配 → 现场补
+    if (typeof rec._pageIdx !== 'number' || typeof rec._zoneIdx !== 'number') {
+      assignZoneToNewRecord(rec);
+    }
+
+    const s = hash(rec.text + rec.date);
+    rec._shapeIdx = Math.abs(s) % RECORD_SHAPES.length;
+    rec._float    = FLOATS[Math.abs(s) % 4];
+    rec._fDur     = 7 + seededRnd(s+1) * 4;
+    rec._fDel     = -seededRnd(s+2) * 6;
+
+    const zone = PAGE_ZONES[rec._zoneIdx];
+    const fx = seededRnd(s + 3);
+    const fy = seededRnd(s + 4);
+    const xN = zone[0] + fx * (zone[1] - zone[0]) + rec._pageIdx;
+    const yN = zone[2] + fy * (zone[3] - zone[2]);
+
+    rec.pos = { x: xN * W, y: yN * H };
+    rec._scale = zone[4] * Math.pow(0.88, rec._pageIdx);
+  });
+}
+
+function renderRecords() {
+  layoutRecords();
+  MAX = computeMaxDrag();  // 记录数变了 → 重算拖拽范围
+
+  // 收集现有 cloud 元素（按 rec._id 索引）
+  const existing = new Map();
+  recordG.querySelectorAll('g[data-rec-id]').forEach(el => {
+    if (!el.classList.contains('dying')) existing.set(el.dataset.recId, el);
+  });
+
+  // 删除掉不在 RECORDS 里的旧云
+  const liveIds = new Set(RECORDS.map(r => r._id));
+  existing.forEach((el, id) => {
+    if (!liveIds.has(id)) {
+      el.classList.add('dying');
+      setTimeout(() => el.remove(), 420);
+    }
+  });
+
+  // 渲染：existing → 更新位置（CSS transition 自动滑动）；new → 创建
+  RECORDS.forEach((rec, i) => {
+    let el = existing.get(rec._id);
+    if (el) {
+      // 已存在，仅更新位置 + scale（如 page 变了）
+      el.style.transform = `translate(${rec.pos.x}px, ${rec.pos.y}px) scale(${rec._scale / (el._scale || rec._scale)})`;
+      // 实际重渲染规模差异通过整个 transform 处理；这里简化只迁移位置
+      el.style.transform = `translate(${rec.pos.x}px, ${rec.pos.y}px)`;
+      el._scale = rec._scale;
+    } else {
+      el = buildRecordCloud(rec, i, i === 0 && rec._isNew);
+      recordG.appendChild(el);
+    }
+  });
+
+  RECORDS.forEach(r => delete r._isNew);
+  updateEmptyState();
+  updatePageHint();
+}
+
+function buildRecordCloud(rec, i, isNew) {
+  const sh = RECORD_SHAPES[rec._shapeIdx];
+  const scale = rec._scale;
+  const sw = sh.base.w * scale;
+  const baseH = sh.base.h * scale;
+
+  // 外层：位置移动（CSS transition）
+  const moveWrap = svgEl('g');
+  moveWrap.dataset.recId = rec._id;
+  moveWrap.style.transform = `translate(${rec.pos.x}px, ${rec.pos.y}px)`;
+  moveWrap.style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)';
+  moveWrap._scale = scale;
+
+  // 浮动动画层
+  const floatWrap = svgEl('g');
+  floatWrap.classList.add('cr');
+  if (isNew) floatWrap.classList.add('appearing');
+  floatWrap.style.cssText = `animation:${rec._float} ${rec._fDur}s ease-in-out ${rec._fDel}s infinite;`;
+
+  // 抖动子层（删除模式用）
+  const wobble = svgEl('g');
+  wobble.classList.add('wobble-g');
+
+  // 阴影
+  const shadowG = svgEl('g', { filter:'url(#fds-rec)' });
+  shadowG.appendChild(svgEl('ellipse', {
+    cx: sw/2, cy: baseH/2 + 10,
+    rx: sw*0.38, ry: 6,
+    fill: 'rgba(100,70,180,0.22)',
+  }));
+  wobble.appendChild(shadowG);
+
+  // 云体（饱满白 + 锐利）
+  const bodyG = svgEl('g', { filter:'url(#fd-rec)' });
+  bodyG.classList.add('cloud-body');
+  const FILL = 'rgba(255,255,255,0.97)';
+  bodyG.appendChild(svgEl('rect', {
+    x: 0, y: -baseH/2,
+    width: sw, height: baseH,
+    rx: baseH/2, ry: baseH/2,
+    fill: FILL,
+  }));
+  sh.bumps.forEach(([x, r]) => {
+    bodyG.appendChild(svgEl('circle', {
+      cx: x*scale, cy: -baseH/2 - r*scale*BUMP_LIFT,
+      r: r*scale, fill: FILL,
+    }));
+  });
+  wobble.appendChild(bodyG);
+
+  floatWrap.appendChild(wobble);
+  moveWrap.appendChild(floatWrap);
+
+  attachInteraction(floatWrap, rec);
+  return moveWrap;
+}
+
+// ── 交互（点击 vs 长按）──
+const LONG_MS = 580;
+function attachInteraction(el, rec) {
+  let pressTimer = null, pressX = 0, pressY = 0, longFired = false;
+
+  const start = (x, y) => {
+    longFired = false; pressX = x; pressY = y;
+    pressTimer = setTimeout(() => {
+      longFired = true; pressTimer = null;
+      enterDeleteMode(el, rec);
+    }, LONG_MS);
+  };
+  const moveCancel = (x, y) => {
+    if (!pressTimer) return;
+    if (Math.abs(x-pressX) > 6 || Math.abs(y-pressY) > 6) {
+      clearTimeout(pressTimer); pressTimer = null;
+    }
+  };
+  const endCancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+
+  el.addEventListener('mousedown', e => { if (suppressDrag) return; start(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', e => moveCancel(e.clientX, e.clientY));
+  window.addEventListener('mouseup', endCancel);
+  el.addEventListener('touchstart', e => { const t = e.touches[0]; start(t.clientX, t.clientY); }, {passive:true});
+  window.addEventListener('touchmove', e => { const t = e.touches[0]; if (t) moveCancel(t.clientX, t.clientY); }, {passive:true});
+  window.addEventListener('touchend', endCancel);
+
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    if (longFired) { longFired = false; return; }
+    if (el.classList.contains('del-mode')) return;
+    if (activeEl && activeEl !== el) activeEl.classList.remove('active');
+    activeEl = el;
+    el.classList.add('active');
+    openCard(rec);
+  });
+}
+
+// ── 阅读卡片 ──
+const rcard = document.getElementById('rcard');
+const rcTxt = document.getElementById('rcard-text');
+const rcDat = document.getElementById('rcard-date');
+
+let _currentCardRec = null;
+
+function getCloudExtent(rec) {
+  const sh = RECORD_SHAPES[rec._shapeIdx];
+  const scale = rec._scale;
+  const sw = sh.base.w * scale;
+  const baseH = sh.base.h * scale;
+  const maxBumpR = Math.max(...sh.bumps.map(b => b[1])) * scale;
+  const topExtent = baseH/2 + maxBumpR * 1.75;     // 鼓包顶离中心
+  const bottomExtent = baseH/2 + 17;                // shadow 底离中心
+  return { sw, baseH, topExtent, bottomExtent };
+}
+
+function openCard(rec) {
+  _currentCardRec = rec;
+  const { sw, topExtent, bottomExtent } = getCloudExtent(rec);
+  rcTxt.textContent = rec.text;
+  rcDat.textContent = rec.date;
+  rcard.style.left = '-9999px';
+  rcard.style.top  = '-9999px';
+  rcard.classList.add('show');
+  requestAnimationFrame(() => {
+    const cw = rcard.offsetWidth, ch = rcard.offsetHeight;
+    const sx = rec.pos.x + off.x, sy = rec.pos.y + off.y * 0.38;
+    let left = sx + sw/2 - cw/2;
+    let top  = sy - topExtent - ch - 10;          // 优先放云上方
+    if (top < 12) top = sy + bottomExtent + 14;   // 上方放不下就放下方
+    rcard.style.left = clamp(left, 12, W-cw-12) + 'px';
+    rcard.style.top  = clamp(top,  12, H-ch-12) + 'px';
+  });
+}
+function closeCard() {
+  rcard.classList.remove('show');
+  _currentCardRec = null;
+  if (activeEl) { activeEl.classList.remove('active'); activeEl = null; }
+}
+document.getElementById('rcard-x').addEventListener('click', closeCard);
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cr,.rcard,.btn-add,.input-panel,.input-mask,.del-confirm')) {
+    closeCard(); closeDelete();
+  }
+});
+
+// ── 删除模式 ──
+let pendingDelete = null;
+const delConfirm = document.getElementById('del-confirm');
+
+function enterDeleteMode(el, rec) {
+  closeCard();
+  if (pendingDelete) pendingDelete.el.classList.remove('del-mode');
+  pendingDelete = { el, rec };
+  el.classList.add('del-mode');
+  suppressDrag = true;
+
+  const { sw, topExtent, bottomExtent } = getCloudExtent(rec);
+  const sx = rec.pos.x + off.x, sy = rec.pos.y + off.y * 0.38;
+  delConfirm.style.left = '-9999px';
+  delConfirm.style.top  = '-9999px';
+  delConfirm.classList.add('show');
+  requestAnimationFrame(() => {
+    const cw = delConfirm.offsetWidth, ch = delConfirm.offsetHeight;
+    let left = sx + sw/2 - cw/2;
+    let top  = sy - topExtent - ch - 8;          // 优先放云上方（按实际鼓包高度）
+    if (top < 12) top = sy + bottomExtent + 10;  // 上方不够就放下方
+    delConfirm.style.left = clamp(left, 12, W-cw-12) + 'px';
+    delConfirm.style.top  = clamp(top,  12, H-ch-12) + 'px';
+  });
+}
+function closeDelete() {
+  if (pendingDelete) pendingDelete.el.classList.remove('del-mode');
+  pendingDelete = null;
+  delConfirm.classList.remove('show');
+  suppressDrag = false;
+}
+document.getElementById('del-yes').addEventListener('click', () => {
+  if (!pendingDelete) return;
+  const { el, rec } = pendingDelete;
+  el.classList.add('dying');
+  el.classList.remove('del-mode');
+  delConfirm.classList.remove('show');
+  setTimeout(() => {
+    const idx = RECORDS.indexOf(rec);
+    if (idx >= 0) RECORDS.splice(idx, 1);
+    pendingDelete = null;
+    suppressDrag = false;
+    saveRecords();
+    renderRecords();
+  }, 420);
+});
+document.getElementById('del-no').addEventListener('click', closeDelete);
+
+// ── 卡片编辑按钮 ──
+document.getElementById('rcard-edit').addEventListener('click', e => {
+  e.stopPropagation();
+  if (!_currentCardRec) return;
+  const rec = _currentCardRec;
+  closeCard();
+  openInput(rec);  // 传入要编辑的 rec
+});
+
+// ── 中央录入面板 ──
+const inputMask = document.getElementById('input-mask');
+const inputArea = document.getElementById('input-area');
+const inputCount = document.getElementById('input-count');
+const inputCountWrap = document.getElementById('input-count-wrap');
+const inputClear = document.getElementById('input-clear');
+const inputOk = document.getElementById('input-ok');
+let _editingRec = null;  // 当前正在编辑的 rec（null = 新建）
+
+function openInput(editRec) {
+  closeCard(); closeDelete();
+  suppressDrag = true;
+  document.body.classList.add('no-drag');
+  _editingRec = editRec || null;
+  inputArea.value = editRec ? editRec.text : '';
+  inputOk.textContent = editRec ? '保存修改' : '放进云里';
+  inputArea.dispatchEvent(new Event('input'));  // 触发字数/状态更新
+  autoSize();
+  inputMask.classList.add('show');
+  setTimeout(() => inputArea.focus(), 260);
+}
+function closeInput(skipConfirm) {
+  const dirty = inputArea.value.trim().length > 0 &&
+                (!_editingRec || inputArea.value.trim() !== _editingRec.text);
+  if (dirty && !skipConfirm) {
+    if (!confirm('丢弃这条记录？')) return;
+  }
+  inputMask.classList.remove('show');
+  suppressDrag = false;
+  document.body.classList.remove('no-drag');
+  _editingRec = null;
+}
+function autoSize() {
+  inputArea.style.height = 'auto';
+  inputArea.style.height = Math.min(inputArea.scrollHeight, window.innerHeight * 0.36) + 'px';
+}
+inputArea.addEventListener('input', () => {
+  autoSize();
+  const len = inputArea.value.length;
+  inputCount.textContent = len;
+  inputCountWrap.classList.toggle('warn', len > 400 && len <= 450);
+  inputCountWrap.classList.toggle('danger', len > 450);
+  inputClear.classList.toggle('show', len > 0);
+  inputOk.disabled = inputArea.value.trim().length < 1;
+});
+inputClear.addEventListener('click', () => {
+  inputArea.value = '';
+  inputArea.focus();
+  inputArea.dispatchEvent(new Event('input'));
+});
+// Cmd/Ctrl+Enter 提交
+inputArea.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    if (!inputOk.disabled) inputOk.click();
+  }
+});
+document.getElementById('btn-add').addEventListener('click', () => openInput());
+document.getElementById('input-x').addEventListener('click', () => closeInput());
+inputMask.addEventListener('click', () => closeInput());
+inputOk.addEventListener('click', () => {
+  const text = inputArea.value.trim();
+  if (!text) return;
+  if (_editingRec) {
+    // 编辑模式：替换文字（_id 保留 → renderRecords 不重建，平滑过渡）
+    _editingRec.text = text;
+    _editingRec = null;
+  } else {
+    // 新建模式
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月`;
+    const newRec = { text, date: dateStr, _isNew: true };
+    ensureRecId(newRec);
+    assignZoneToNewRecord(newRec);  // 现在就分配 zone（随机选当前页空位）
+    RECORDS.unshift(newRec);
+  }
+  saveRecords();
+  closeInput(true);  // skipConfirm
+  renderRecords();
+  // 视野回中
+  const t0 = performance.now();
+  const sx = off.x, sy = off.y;
+  const dur = 420;
+  function anim(t){
+    const k = clamp((t-t0)/dur, 0, 1);
+    const e = 1 - Math.pow(1-k, 3);
+    off.x = sx * (1-e); off.y = sy * (1-e);
+    if (k < 1) requestAnimationFrame(anim);
+  }
+  requestAnimationFrame(anim);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (inputMask.classList.contains('show')) closeInput();
+    else if (pendingDelete) closeDelete();
+    else closeCard();
+  }
+});
+
+// ── 空状态 ──
+const emptyHint = document.getElementById('empty-hint');
+const btnAdd = document.getElementById('btn-add');
+const hint = document.getElementById('hint');
+function updateEmptyState() {
+  const empty = RECORDS.length === 0;
+  emptyHint.style.display = empty ? 'block' : 'none';
+  btnAdd.classList.toggle('pulse', empty);
+  hint.style.opacity = empty ? '0' : '1';
+}
+
+// ── 多页导航提示 ──
+const pageHintEl = document.getElementById('page-hint');
+const pageHintCount = document.getElementById('page-hint-count');
+function updatePageHint() {
+  // 在 page 1 之外（_pageIdx > 0）的记录数量
+  const overflow = RECORDS.filter(r => (r._pageIdx || 0) > 0).length;
+  const atFirstPage = off.x > -W * 0.15;
+  if (overflow > 0 && atFirstPage) {
+    pageHintCount.textContent = overflow;
+    pageHintEl.classList.add('show');
+  } else {
+    pageHintEl.classList.remove('show');
+  }
+}
+
+// ── 拖拽 ──
+window.addEventListener('mousedown', e => {
+  if (suppressDrag) return;
+  if (e.target.closest('.btn-add,.rcard,.input-panel,.input-mask,.del-confirm,.cr')) return;
+  drag.on=true; drag.lx=e.clientX; drag.ly=e.clientY;
+  ine.x=ine.y=0; document.body.classList.add('drag'); closeCard();
+});
+window.addEventListener('mousemove', e => {
+  if (!drag.on) return;
+  const dx=e.clientX-drag.lx, dy=e.clientY-drag.ly;
+  drag.lx=e.clientX; drag.ly=e.clientY;
+  ine.x=dx; ine.y=dy;
+  off.x=clamp(off.x+dx,MAX.xMin,MAX.xMax);
+  off.y=clamp(off.y+dy,-MAX.y,MAX.y);
+});
+window.addEventListener('mouseup', ()=>{ drag.on=false; document.body.classList.remove('drag'); });
+
+window.addEventListener('touchstart', e=>{
+  if (suppressDrag) return;
+  if (e.target.closest('.btn-add,.rcard,.input-panel,.input-mask,.del-confirm,.cr')) return;
+  const t=e.touches[0]; drag.on=true; drag.lx=t.clientX; drag.ly=t.clientY; ine.x=ine.y=0;
+},{passive:true});
+window.addEventListener('touchmove', e=>{
+  if(!drag.on) return;
+  e.preventDefault();
+  const t=e.touches[0], dx=t.clientX-drag.lx, dy=t.clientY-drag.ly;
+  drag.lx=t.clientX; drag.ly=t.clientY; ine.x=dx; ine.y=dy;
+  off.x=clamp(off.x+dx,MAX.xMin,MAX.xMax); off.y=clamp(off.y+dy,-MAX.y,MAX.y);
+},{passive:false});
+window.addEventListener('touchend',()=>{ drag.on=false; });
+
+// ── 主循环：2 层 transform ──
+(function tick(){
+  if (!drag.on){
+    off.x=clamp(off.x+ine.x,MAX.xMin,MAX.xMax);
+    off.y=clamp(off.y+ine.y,-MAX.y,MAX.y);
+    ine.x*=0.88; ine.y*=0.88;
+  }
+  lyrDecor.style.transform  = `translate(${off.x*0.32}px,${off.y*0.14}px)`;
+  lyrRecord.style.transform = `translate(${off.x}px,${off.y*0.38}px)`;
+  updatePageHint();
+  requestAnimationFrame(tick);
+})();
+
+// 启动
+renderRecords();
+</script>
+</body>
+</html>

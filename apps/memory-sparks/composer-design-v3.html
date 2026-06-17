@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>添加界面设计 · v3（自然不分类型）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ──────────────────────────────────────────────
+     v3 · 思路转向
+     - 砍掉"先选输入类型"的概念（用户不该被强迫先思考分类）
+     - 文字区是主体（永远存在、永远聚焦）
+     - 媒体是补充：底部小图标按一下 → 直接展开缩略
+     - 每颗星按 inputCapabilities 决定底部出现哪些图标
+     - 不做朋友圈样：避免白卡 + 微信绿 + 九宫格 + 发表按钮
+     - 用一张纸的隐喻：日期在角、写字在中、加料在底
+     ────────────────────────────────────────────── */
+  :root {
+    --font-han: "Noto Sans SC", "Source Han Sans SC", -apple-system, "PingFang SC", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; min-height: 100vh; }
+  body {
+    font-family: var(--font-han);
+    font-weight: 300;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    transition: background 600ms ease;
+  }
+
+  /* ── 三颗星的纸张色 + 墨水色 ── */
+  body.planet-flower {
+    --page-bg:
+      radial-gradient(ellipse 70% 50% at 50% 30%, #f9e0e3 0%, #e8c0c0 60%, #b88090 100%);
+    --paper: #fffafa;
+    --paper-edge: rgba(74, 15, 36, 0.04);
+    --ink: #4a0f24;
+    --ink-soft: rgba(74, 15, 36, 0.62);
+    --ink-faint: rgba(74, 15, 36, 0.18);
+    --accent: #c84a6e;
+    /* 花的纸有微妙的"棉的纤维"感 */
+    --paper-texture: radial-gradient(ellipse 100% 80% at 0% 0%, rgba(200, 74, 110, 0.04), transparent 60%);
+  }
+  body.planet-cloud {
+    --page-bg:
+      radial-gradient(ellipse 60% 50% at 40% 30%, #e8d8ee 0%, #e0d0d8 60%, #b8a8b8 100%);
+    --paper: #fcfbff;
+    --paper-edge: rgba(42, 24, 80, 0.04);
+    --ink: #2a1850;
+    --ink-soft: rgba(42, 24, 80, 0.62);
+    --ink-faint: rgba(42, 24, 80, 0.15);
+    --accent: #6a5aa0;
+    --paper-texture: radial-gradient(ellipse 100% 80% at 100% 0%, rgba(106, 90, 160, 0.04), transparent 60%);
+  }
+  body.planet-starry {
+    --page-bg:
+      radial-gradient(ellipse 90% 70% at 50% 30%, #1c2548 0%, #0c1532 50%, #050b1a 100%);
+    --paper: #18213a;
+    --paper-edge: rgba(248, 236, 192, 0.04);
+    --ink: #f8ecc0;
+    --ink-soft: rgba(248, 236, 192, 0.62);
+    --ink-faint: rgba(248, 236, 192, 0.14);
+    --accent: #e8c060;
+    --paper-texture: radial-gradient(ellipse 100% 80% at 50% 100%, rgba(232, 192, 96, 0.06), transparent 60%);
+  }
+  body { background: var(--page-bg, #f0f0f0); color: var(--ink); }
+
+  /* ── 顶部 demo 切换（极隐形）── */
+  .demo-bar {
+    position: fixed;
+    top: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    opacity: 0.65;
+    transition: opacity 220ms ease;
+  }
+  .demo-bar:hover { opacity: 1; }
+  .demo-bar .planet-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .demo-bar .planet-dot:hover { transform: scale(1.3); }
+  .demo-bar .planet-dot.on { transform: scale(1.4); }
+  .demo-bar .planet-dot.on::after {
+    content: '';
+    display: block;
+    width: 16px;
+    height: 1px;
+    background: var(--ink);
+    margin: 6px auto 0;
+    opacity: 0.55;
+  }
+
+  /* ── 主舞台 ── */
+  .stage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 32px 80px;
+  }
+
+  /* ── 纸 ── */
+  .paper {
+    position: relative;
+    width: 100%;
+    max-width: 580px;
+    background: var(--paper);
+    background-image: var(--paper-texture, none);
+    border-radius: 18px;
+    box-shadow:
+      0 0 0 1px var(--paper-edge),
+      0 30px 80px -28px rgba(0,0,0,0.28),
+      0 8px 28px -10px rgba(0,0,0,0.1);
+    animation: paper-in 540ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    overflow: hidden;
+  }
+  body.planet-starry .paper {
+    box-shadow:
+      0 0 0 1px var(--paper-edge),
+      0 30px 80px -28px rgba(0,0,0,0.72),
+      0 8px 28px -10px rgba(0,0,0,0.42);
+  }
+  @keyframes paper-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ── 顶角：日期 + 关闭 ── */
+  .paper-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 26px 28px 0;
+  }
+  .paper-date {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+    text-transform: uppercase;
+  }
+  .paper-date .dot { opacity: 0.4; margin: 0 6px; }
+  .paper-close {
+    background: transparent;
+    border: 0;
+    padding: 4px;
+    margin: -4px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    opacity: 0.55;
+    transition: opacity 180ms ease;
+  }
+  .paper-close:hover { opacity: 1; }
+  .paper-close svg { width: 14px; height: 14px; display: block; }
+
+  /* ── 文字主体（永远是焦点）── */
+  .paper-write {
+    padding: 22px 36px 12px;
+  }
+  .paper-text {
+    width: 100%;
+    min-height: 220px;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    resize: none;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 300;
+    line-height: 1.95;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    padding: 0;
+    /* 让光标在视觉上跟着 accent */
+    caret-color: var(--accent);
+  }
+  .paper-text::placeholder { color: var(--ink-soft); opacity: 0.42; }
+
+  /* ── 媒体附加区（用户加了才出现）── */
+  .paper-media {
+    padding: 6px 36px 8px;
+    display: none;
+  }
+  .paper-media.has-content { display: block; }
+
+  /* 图：缩略横排 */
+  .media-images {
+    display: none;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .media-images.show { display: flex; }
+  .media-images .thumb {
+    position: relative;
+    width: calc((100% - 16px) / 3);
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    background: var(--ink-faint) center / cover no-repeat;
+    overflow: hidden;
+    cursor: zoom-in;
+  }
+  .media-images .thumb .x {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    opacity: 0;
+    transition: opacity 160ms ease;
+  }
+  .media-images .thumb:hover .x { opacity: 1; }
+
+  /* 视频：满宽 16:9 */
+  .media-video {
+    display: none;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #0a0e16;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .media-video.show { display: block; }
+  .media-video video { width: 100%; height: 100%; object-fit: cover; }
+  .media-video .x {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.65);
+    color: white;
+    border: 0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .media-video .x svg { width: 11px; height: 11px; }
+
+  /* ── 底部工具行：左侧加内容按钮 + 右侧操作 ── */
+  .paper-bottom {
+    padding: 14px 30px 22px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border-top: 1px solid var(--paper-edge);
+  }
+  .add-tool {
+    background: transparent;
+    border: 0;
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    border-radius: 8px;
+    transition: color 160ms ease, background 160ms ease;
+  }
+  .add-tool:hover {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+  }
+  .add-tool svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .add-tool input { display: none; }
+
+  .bottom-spacer { flex: 1; }
+
+  .act-cancel {
+    background: transparent;
+    border: 0;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+    transition: color 160ms ease;
+  }
+  .act-cancel:hover { color: var(--ink); }
+
+  .act-save {
+    background: transparent;
+    border: 0;
+    padding: 8px 14px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    position: relative;
+    transition: letter-spacing 200ms ease;
+  }
+  .act-save::after {
+    content: '';
+    position: absolute;
+    left: 14px; right: 14px;
+    bottom: 4px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0;
+    transform: scaleX(0.4);
+    transform-origin: left center;
+    transition: opacity 220ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .act-save:hover {
+    letter-spacing: 0.26em;
+  }
+  .act-save:hover::after { opacity: 1; transform: scaleX(1); }
+
+  .act-delete {
+    background: transparent;
+    border: 0;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    color: var(--ink-faint);
+    transition: color 160ms ease;
+  }
+  .act-delete:hover { color: #c84444; }
+
+  /* ── demo 提示 ── */
+  .demo-tip {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9.5px;
+    letter-spacing: 0.32em;
+    color: var(--ink-soft);
+    opacity: 0.45;
+    text-transform: uppercase;
+  }
+
+  /* ── 切配色时纸张的微变化 ── */
+  body.planet-flower .paper { }
+  body.planet-cloud .paper { }
+  body.planet-starry .paper {
+    background: linear-gradient(180deg, #1c2640 0%, #161e36 100%);
+  }
+</style>
+</head>
+<body class="planet-flower">
+
+  <!-- 隐形 demo 控制 -->
+  <div class="demo-bar">
+    <button class="planet-dot on" data-planet="flower"  style="background:#c84a6e" title="花星"></button>
+    <button class="planet-dot"    data-planet="cloud"   style="background:#6a5aa0" title="云星"></button>
+    <button class="planet-dot"    data-planet="starry"  style="background:#e8c060" title="繁星"></button>
+  </div>
+
+  <!-- 主舞台 -->
+  <div class="stage">
+    <div class="paper">
+
+      <!-- 顶角 -->
+      <div class="paper-top">
+        <div class="paper-date">05·31<span class="dot">·</span>周六</div>
+        <button class="paper-close" title="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 写字 -->
+      <div class="paper-write">
+        <textarea
+          class="paper-text"
+          id="textArea"
+          placeholder="写下你想留住的"
+          autofocus
+        ></textarea>
+      </div>
+
+      <!-- 媒体（用户加才出现）-->
+      <div class="paper-media" id="paperMedia">
+        <div class="media-video" id="mediaVideo"></div>
+        <div class="media-images" id="mediaImages"></div>
+      </div>
+
+      <!-- 底部工具行 -->
+      <div class="paper-bottom">
+        <!-- 加图（花/云/繁星都显示）-->
+        <label class="add-tool" id="addImageBtn">
+          <input type="file" accept="image/*" multiple id="imgInput"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <circle cx="9" cy="9" r="2"/>
+            <path d="M21 15l-5-5L5 21"/>
+          </svg>
+          图片
+        </label>
+
+        <!-- 加视频（仅繁星显示）-->
+        <label class="add-tool" id="addVideoBtn" style="display:none">
+          <input type="file" accept="video/*" id="videoInput"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 7l-7 5 7 5V7z"/>
+            <rect x="1" y="5" width="15" height="14" rx="2"/>
+          </svg>
+          视频
+        </label>
+
+        <div class="bottom-spacer"></div>
+
+        <button class="act-delete" id="delBtn" style="display:none">删除</button>
+        <button class="act-cancel" id="cancelBtn">取消</button>
+        <button class="act-save" id="saveBtn">记下</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-tip">DEMO · 文字是主体 · 媒体按需补充</div>
+
+<script>
+  // 每颗星允许的输入能力（跟主 App 的 inputCapabilities.js 对齐）
+  const CAPS = {
+    flower:  { image: true,  video: false, audio: false },
+    cloud:   { image: true,  video: false, audio: false },
+    starry:  { image: true,  video: true,  audio: false },
+  };
+
+  function applyCaps(planet) {
+    const c = CAPS[planet] || { image: true };
+    document.getElementById('addImageBtn').style.display = c.image ? '' : 'none';
+    document.getElementById('addVideoBtn').style.display = c.video ? '' : 'none';
+  }
+
+  // 切配色
+  document.querySelectorAll('.planet-dot').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.planet-dot').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      document.body.className = 'planet-' + btn.dataset.planet;
+      applyCaps(btn.dataset.planet);
+    });
+  });
+  applyCaps('flower');
+
+  // 加图
+  const imageList = document.getElementById('mediaImages');
+  const paperMedia = document.getElementById('paperMedia');
+  function updateMediaVisibility() {
+    const hasImg = imageList.querySelectorAll('.thumb').length > 0;
+    const hasVid = document.getElementById('mediaVideo').classList.contains('show');
+    imageList.classList.toggle('show', hasImg);
+    paperMedia.classList.toggle('has-content', hasImg || hasVid);
+  }
+  document.getElementById('imgInput').addEventListener('change', (e) => {
+    const files = [...e.target.files].filter(f => f.type.startsWith('image/'));
+    files.forEach(f => {
+      const url = URL.createObjectURL(f);
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      thumb.style.backgroundImage = `url("${url}")`;
+      thumb.innerHTML = '<button class="x">×</button>';
+      thumb.querySelector('.x').addEventListener('click', () => {
+        thumb.remove();
+        updateMediaVisibility();
+      });
+      imageList.appendChild(thumb);
+    });
+    updateMediaVisibility();
+    e.target.value = '';
+  });
+
+  // 加视频
+  const videoSlot = document.getElementById('mediaVideo');
+  document.getElementById('videoInput').addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    videoSlot.innerHTML = `
+      <video src="${url}" muted autoplay loop playsinline></video>
+      <button class="x">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    `;
+    videoSlot.classList.add('show');
+    videoSlot.querySelector('.x').addEventListener('click', () => {
+      videoSlot.classList.remove('show');
+      videoSlot.innerHTML = '';
+      e.target.value = '';
+      updateMediaVisibility();
+    });
+    updateMediaVisibility();
+  });
+
+  // 动作（demo）
+  document.getElementById('cancelBtn').addEventListener('click', () => alert('（demo）取消'));
+  document.getElementById('saveBtn').addEventListener('click', () => alert('（demo）保存'));
+  document.querySelector('.paper-close').addEventListener('click', () => alert('（demo）关闭'));
+
+  // 点 textarea 聚焦
+  document.querySelector('.paper').addEventListener('click', (e) => {
+    if (e.target.closest('.paper-bottom') || e.target.closest('.paper-media') || e.target.closest('.paper-close')) return;
+    document.getElementById('textArea').focus();
+  });
+</script>
+</body>
+</html>

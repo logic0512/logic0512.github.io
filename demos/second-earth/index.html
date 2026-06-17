@@ -1,0 +1,2202 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>寻找第二个地球 - 单观测点 3D 原型</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #05080d;
+        --cyan: #76d9ff;
+        --cyan-dim: #2e5a78;
+        --green: #63e6a8;
+        --yellow: #ffd166;
+        --red: #ff6b6b;
+        --text: #edf8ff;
+        --muted: #91aabb;
+        --stage-scale: 0.83;
+        --shell-offset-y: 6px;       /* 外壳整体垂直微调（调参面板定稿） */
+        --stage: min(
+          calc(88vw * var(--stage-scale)),
+          calc((100vh - 130px) * var(--stage-scale)),
+          calc(980px * var(--stage-scale))
+        );
+
+        /* —— 统一字号规范：5 级梯度，全部以 --stage 为基准，整体一起缩放 ——
+           viewBox 数字版（SVG placeArcText 用，viewBox≈1000≈stage）：
+           display 30 / title 21 / lead 18 / body 14.5 / label 12 / micro 10 */
+        --fs-display: calc(var(--stage) * 0.030);  /* H1 主标题 */
+        --fs-title:   calc(var(--stage) * 0.021);  /* 反馈句 */
+        --fs-lead:    calc(var(--stage) * 0.018);  /* 结算当前推理（醒目主行） */
+        --fs-body:    calc(var(--stage) * 0.0145); /* 仪表标签/值、读数、目标名、面板内主文字 */
+        --fs-label:   calc(var(--stage) * 0.0118); /* 面板标题、轴刻度、meta、eyebrow */
+        --fs-micro:   calc(var(--stage) * 0.0098); /* 键位图例、caption、小注 */
+
+        /* —— 中心曲线面板位置/尺寸（可被调试面板实时改写） —— */
+        --curve-top: 62%;
+        --curve-left: 50%;
+        --curve-width: 30%;
+        --curve-height: 16%;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 48%, rgba(18, 70, 96, 0.32), transparent 42%),
+          linear-gradient(180deg, #08121b 0%, var(--bg) 100%);
+        color: var(--text);
+        font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      }
+
+      .app {
+        width: 100vw;
+        height: 100vh;
+        padding: 0 24px;
+        display: grid;
+        grid-template-rows: 1fr;
+        gap: 0;
+      }
+
+      body[data-frame="telescope"],
+      body[data-frame="hybrid"],
+      body[data-frame="clean"] {
+        overflow: hidden;
+      }
+
+      /* 外壳超过视口高度时也保持上下居中（对称溢出/裁切），而不是滚动顶部对齐 */
+      body[data-frame="telescope"] .app,
+      body[data-frame="hybrid"] .app,
+      body[data-frame="clean"] .app {
+        height: 100vh;
+        min-height: 0;
+        grid-template-rows: 1fr;
+      }
+
+      header,
+      footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        min-height: 48px;
+      }
+
+      .eyebrow {
+        margin: 0 0 4px;
+        color: var(--cyan);
+        font-size: var(--fs-label);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(22px, 2.5vw, 34px);
+        letter-spacing: 0;
+      }
+
+      .phase-pill {
+        min-width: 150px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border: 1px solid rgba(118, 217, 255, 0.35);
+        background: rgba(6, 15, 23, 0.74);
+        color: var(--green);
+        font-weight: 700;
+      }
+
+      .stage-wrap {
+        position: relative;
+        min-height: 0;
+        display: grid;
+        place-items: center;
+        overflow: visible;
+      }
+
+      /* 绝对定位 + transform 居中：外壳比视口大时也从视口正中对称溢出，永远上下/左右居中 */
+      .window-shell {
+        --shell-scale: 1;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, calc(-50% + var(--shell-offset-y, 0px)));
+        width: calc(var(--stage) * var(--shell-scale));
+        height: calc(var(--stage) * var(--shell-scale));
+        display: grid;
+        place-items: center;
+        overflow: visible;
+      }
+
+      body[data-frame="telescope"] .window-shell {
+        --shell-scale: 1.38;
+      }
+
+      body[data-frame="hybrid"] .window-shell {
+        --shell-scale: 1.32;
+      }
+
+      body[data-frame="clean"] .window-shell {
+        --shell-scale: 1.34;
+      }
+
+      .round-stage {
+        position: relative;
+        width: var(--stage);
+        height: var(--stage);
+        z-index: 1;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid rgba(118, 217, 255, 0.32);
+        background:
+          radial-gradient(circle, transparent 0 30%, rgba(9, 25, 37, 0.22) 31%, rgba(2, 7, 12, 0.95) 100%),
+          conic-gradient(from -24deg, rgba(118, 217, 255, 0.05), rgba(118, 217, 255, 0.15), rgba(118, 217, 255, 0.05));
+        box-shadow: 0 0 70px rgba(35, 139, 190, 0.14);
+      }
+
+      .viewport-frame {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 100%;
+        height: 100%;
+        transform: translate(-50%, -50%);
+        object-fit: contain;
+        pointer-events: none;
+        z-index: 8;
+        display: none;
+        opacity: 0.82;
+        filter: drop-shadow(0 0 calc(var(--stage) * 0.035) rgba(60, 170, 220, 0.18));
+      }
+
+      .viewport-frame.frame-hybrid {
+        opacity: 0.76;
+      }
+
+      .viewport-frame.frame-clean {
+        opacity: 0.9;
+      }
+
+      .reflection-layer {
+        --reflect-x: 0px;
+        --reflect-y: 0px;
+        --reflect-hot-x: 50%;
+        --reflect-hot-y: 50%;
+        --reflect-top-x: 50%;
+        --reflect-top-y: 11%;
+        --reflect-bottom-x: 50%;
+        --reflect-bottom-y: 89%;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 100%;
+        height: 100%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 9;
+        display: none;
+        opacity: 0.72;
+        mix-blend-mode: screen;
+        background:
+          radial-gradient(ellipse at var(--reflect-top-x) var(--reflect-top-y),
+            rgba(255, 181, 96, 0.42) 0 2.4%,
+            rgba(255, 129, 56, 0.20) 4.8%,
+            transparent 9.5%),
+          radial-gradient(ellipse at var(--reflect-bottom-x) var(--reflect-bottom-y),
+            rgba(255, 151, 72, 0.32) 0 2.2%,
+            rgba(255, 107, 44, 0.14) 4.8%,
+            transparent 8.5%);
+        -webkit-mask-image: url("assets/frames/frame-telescope-clean-v2.png");
+        mask-image: url("assets/frames/frame-telescope-clean-v2.png");
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+      }
+
+      .reflection-layer::before,
+      .reflection-layer::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        transform: translate(var(--reflect-x), var(--reflect-y));
+        transition: transform 0.18s ease-out, opacity 0.18s ease-out;
+        background:
+          radial-gradient(ellipse at var(--reflect-top-x) var(--reflect-top-y),
+            rgba(255, 226, 165, 0.26) 0 1.2%,
+            transparent 5.6%),
+          radial-gradient(ellipse at var(--reflect-bottom-x) var(--reflect-bottom-y),
+            rgba(255, 194, 126, 0.20) 0 1%,
+            transparent 4.8%);
+        filter: blur(0.45px);
+      }
+
+      .reflection-layer::after {
+        inset: 0;
+        transform: translate(calc(var(--reflect-x) * -0.22), calc(var(--reflect-y) * -0.18));
+        opacity: 0.34;
+        background:
+          radial-gradient(ellipse at calc(var(--reflect-top-x) + 6%) calc(var(--reflect-top-y) + 2%),
+            rgba(255, 137, 62, 0.26) 0 1.8%,
+            transparent 5.8%);
+        filter: blur(1px);
+      }
+
+      body[data-frame="telescope"] .viewport-frame.frame-telescope,
+      body[data-frame="hybrid"] .viewport-frame.frame-hybrid,
+      body[data-frame="clean"] .viewport-frame.frame-clean,
+      body[data-frame="clean"] .reflection-layer {
+        display: block;
+      }
+
+      #universe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      /* ===== 弧形驾驶舱（150° 扇环，圆形内嵌） ===== */
+
+      .cockpit {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      /* 玻璃扇环底板：150° 楔形 × 同心环带，半透明玻璃感 */
+      .cockpit-bg {
+        position: absolute;
+        inset: 0;
+        opacity: var(--cockpit-opacity, 100%);
+        background: radial-gradient(
+          circle at 50% 50%,
+          rgba(12, 26, 38, 0) 0,
+          rgba(12, 26, 38, 0) calc(var(--stage) * 0.285),
+          rgba(13, 28, 41, 0.58) calc(var(--stage) * 0.305),
+          rgba(8, 18, 27, 0.74) calc(var(--stage) * 0.42),
+          rgba(12, 26, 38, 0.82) calc(var(--stage) * 0.5)
+        );
+        -webkit-mask-image:
+          radial-gradient(circle at 50% 50%, transparent 0 calc(var(--stage) * 0.29 - 1px),
+            #000 calc(var(--stage) * 0.29) calc(var(--stage) * 0.497), transparent calc(var(--stage) * 0.497 + 1px)),
+          conic-gradient(from var(--wedge-from, 131deg) at 50% 50%, #000 0 var(--wedge-span, 98deg), transparent var(--wedge-span, 98deg) 360deg);
+        -webkit-mask-composite: source-in;
+        mask-image:
+          radial-gradient(circle at 50% 50%, transparent 0 calc(var(--stage) * 0.29 - 1px),
+            #000 calc(var(--stage) * 0.29) calc(var(--stage) * 0.497), transparent calc(var(--stage) * 0.497 + 1px)),
+          conic-gradient(from var(--wedge-from, 131deg) at 50% 50%, #000 0 var(--wedge-span, 98deg), transparent var(--wedge-span, 98deg) 360deg);
+        mask-composite: intersect;
+      }
+
+      .cockpit svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      .cockpit svg text {
+        font-family: inherit;
+      }
+
+      #arcFeedback,
+      #arcMeters {
+        transition: opacity 0.3s ease;
+      }
+
+      .cockpit[data-phase="settled"] #arcMeters {
+        opacity: 0;
+      }
+
+      /* =========================================================
+         中心焦点区：恒星正下方、弧带之上的一块空带（约 52%–72% 高度）。
+         一次只显示一个仪器；所有仪器共享同一套语汇：
+         细青描边 + 半透明深玻璃，绝不多重粗边框。
+         分层编排：每个阶段只让该阶段的那一个焦点仪器可见。
+         ========================================================= */
+      .curve-screen,
+      .settle-board {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+      }
+
+      /* locked/collecting/period：曲线屏可见——淡入 + 上浮 + 放大归位（中心焦点入场缓动） */
+      .cockpit[data-phase="locked"] .curve-screen,
+      .cockpit[data-phase="collecting"] .curve-screen,
+      .cockpit[data-phase="period"] .curve-screen {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      /* settled：单条结算推理——淡入 + 上浮 + 放大归位 */
+      .cockpit[data-phase="settled"] .settle-board {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+
+      /* —— 光变曲线屏：细青描边 + 半透明深玻璃，无矩形粗边 —— */
+      .curve-screen {
+        position: absolute;
+        left: var(--curve-left);
+        top: var(--curve-top);
+        width: var(--curve-width);
+        height: var(--curve-height);
+        transform: translate(-50%, calc(-50% + var(--stage) * 0.045)) scale(0.94); /* 隐藏态下沉+略小，显示态上浮放大归位 */
+        display: grid;
+        grid-template-rows: auto 1fr;
+        overflow: hidden;
+        border-radius: calc(var(--stage) * 0.012);
+        border: 1px solid rgba(118, 217, 255, 0.32);
+        background: transparent; /* 玻璃底色由 canvas 按可调 alpha 填充，便于透明度调节 */
+        box-shadow: inset 0 0 calc(var(--stage) * 0.018) rgba(118, 217, 255, 0.1);
+        transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease;
+      }
+
+      /* collecting：曲线屏单独居中（目镜已移除），仅以黄描边强调采集态 */
+      .cockpit[data-phase="collecting"] .curve-screen {
+        border-color: rgba(255, 209, 102, 0.5);
+        box-shadow: inset 0 0 calc(var(--stage) * 0.018) rgba(255, 209, 102, 0.1);
+      }
+      /* 采集启动那一下：曲线面板边框闪一记琥珀光，把"按下 Space 开始记录"和数据屏绑起来 */
+      @keyframes captureBorderFlash {
+        0% {
+          border-color: rgba(255, 233, 170, 0.95);
+          box-shadow: inset 0 0 calc(var(--stage) * 0.05) rgba(255, 209, 102, 0.5),
+            0 0 calc(var(--stage) * 0.03) rgba(255, 209, 102, 0.55);
+        }
+        100% {
+          border-color: rgba(255, 209, 102, 0.5);
+          box-shadow: inset 0 0 calc(var(--stage) * 0.018) rgba(255, 209, 102, 0.1);
+        }
+      }
+      .curve-screen.capture-flash {
+        animation: captureBorderFlash 0.55s ease-out;
+      }
+      /* 卡尺"咔"上那一下：曲线面板边框闪一记绿光（对准成功=绿色确认，镜像锁定语言） */
+      @keyframes caliperBorderFlash {
+        0% {
+          border-color: rgba(150, 255, 200, 0.95);
+          box-shadow: inset 0 0 calc(var(--stage) * 0.05) rgba(99, 230, 168, 0.5),
+            0 0 calc(var(--stage) * 0.03) rgba(99, 230, 168, 0.55);
+        }
+        100% {
+          border-color: rgba(118, 217, 255, 0.32);
+          box-shadow: inset 0 0 calc(var(--stage) * 0.018) rgba(118, 217, 255, 0.1);
+        }
+      }
+      .curve-screen.caliper-flash {
+        animation: caliperBorderFlash 0.6s ease-out;
+      }
+
+      .curve-title {
+        padding: 0.35em 0.9em 0.15em;
+        color: var(--cyan);
+        font-size: var(--fs-body);
+        letter-spacing: 0.16em;
+        opacity: 0.78;
+      }
+
+      .curve-screen canvas {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        display: block;
+      }
+
+      /* —— 结算：一次只放当前一条推理，无框、居中铺在中心焦点区 —— */
+      .settle-board {
+        position: absolute;
+        left: 50%;
+        top: 61%;
+        transform: translate(-50%, calc(-50% + var(--stage) * 0.045)) scale(0.94); /* 隐藏态下沉+略小，显示态上浮放大归位 */
+        transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        width: 56%;
+        display: grid;
+        gap: calc(var(--stage) * 0.012);
+        justify-items: center;
+        text-align: center;
+        color: var(--text);
+      }
+
+      .settle-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 0.7em;
+        color: var(--cyan);
+        font-size: var(--fs-label);
+        letter-spacing: 0.14em;
+      }
+
+      .settle-head b {
+        color: var(--text);
+        font-size: 1.18em;
+        letter-spacing: 0.02em;
+      }
+
+      /* 逐条揭示：按 → 推进时，当前这条推理淡入上滑出现（每次 innerHTML 重建即播放一次） */
+      @keyframes settleStepIn {
+        from {
+          opacity: 0;
+          transform: translateY(calc(var(--stage) * 0.022));
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .settle-step {
+        font-size: var(--fs-lead);
+        line-height: 1.5;
+        color: var(--text);
+        max-width: 100%;
+        animation: settleStepIn 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .settle-step strong {
+        color: var(--green);
+        font-weight: 700;
+      }
+
+      .settle-progress {
+        display: flex;
+        gap: 0.6em;
+      }
+
+      .settle-progress i {
+        width: calc(var(--stage) * 0.026);
+        height: calc(var(--stage) * 0.004);
+        border-radius: 999px;
+        background: rgba(118, 217, 255, 0.22);
+      }
+
+      .settle-progress i.on {
+        background: var(--green);
+      }
+
+      @media (max-width: 1100px) {
+        :root {
+          --stage: min(86vw, calc(100vh - 120px), 780px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app" aria-label="寻找第二个地球单观测点 3D 凌星法原型">
+      <section class="stage-wrap">
+        <section class="window-shell">
+          <section class="round-stage">
+            <canvas id="universe"></canvas>
+
+            <div class="cockpit" id="cockpit" data-phase="aiming" aria-label="弧形观测驾驶舱">
+              <div class="cockpit-bg"></div>
+              <svg id="cockpitSvg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <g id="arcStatic"></g>
+                <g id="arcFeedback"></g>
+                <g id="arcMeters">
+                  <g id="meterSlot0"></g>
+                  <g id="meterSlot1"></g>
+                  <g id="meterSlot2"></g>
+                </g>
+              </svg>
+              <div class="curve-screen" id="curveScreen">
+                <span class="curve-title" id="curveTitle">光变曲线</span>
+                <canvas id="curveView"></canvas>
+              </div>
+              <div class="settle-board" id="settleBoard"></div>
+            </div>
+          </section>
+          <img class="viewport-frame frame-telescope" src="assets/frames/frame-telescope-eyepiece-v1.png" alt="" aria-hidden="true" />
+          <img class="viewport-frame frame-hybrid" src="assets/frames/frame-hybrid-window-v1.png" alt="" aria-hidden="true" />
+          <img class="viewport-frame frame-clean" src="assets/frames/frame-telescope-clean-v2.png" alt="" aria-hidden="true" />
+          <div class="reflection-layer" id="reflectionLayer" aria-hidden="true"></div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const TAU = Math.PI * 2;
+      const SAMPLE_DURATION = 6600;
+      const FAIL_RECOVERY_MS = 1300;
+      const CALIPER_MIN = 0.16;
+      const CALIPER_MAX = 0.78;
+      const LOCK_ANIM_MS = 650; // 锁定确认动效时长（对准→锁定的绿色脉冲）
+      const CAPTURE_ANIM_MS = 560; // 采集启动脉冲时长（按 Space 那一下的琥珀快门）
+      const CALIPER_ANIM_MS = 700; // 卡尺锁定确认脉冲时长（"咔"上周期那一下的绿色辉光）
+      const PERIOD_HOLD_MS = 2600; // 卡尺锁定后停留多久再自动进结算（留足时间看清量出的周期）
+      const CALIPER_STEP = 0.025;
+      const CALIPER_TOLERANCE = 0.025;
+      const STAR_RADIUS_EARTH = 10.8;
+      const READY_TOLERANCE = 0.08;
+      const ORBIT_ROTATION = -0.22;
+
+      // —— 冲击参数 3D 因果模型（来自 3d-causal-spike.html，已验收）——
+      // 行星/恒星盘面比例 k 不再是全局常量：每颗行星自带 disc 字段（见 planets），
+      // 画面遮挡、望远镜小窗、光变曲线深度全部由同一个 k 推导，保证所见即所得。
+      const PATH_SPAN = 3.0;        // 凌星横扫路径全长（恒星半径单位）
+      const ORBIT_TO_STARR = 2.0;   // planet.orbit → 轨道半径（恒星半径单位）
+      const AIM_TOL = 0.1;          // ← → 对准恒星的容差
+      const ORBIT_OMEGA = 0.45;     // 公转角速度（统一压缩，周期约 14 秒，凌星约 1.5-2 秒）
+
+      const canvas = document.getElementById("universe");
+      const phasePill = document.getElementById("phasePill");
+      const cockpit = document.getElementById("cockpit");
+      const curveTitle = document.getElementById("curveTitle");
+      const settleBoard = document.getElementById("settleBoard");
+      const reflectionLayer = document.getElementById("reflectionLayer");
+      const params = new URLSearchParams(window.location.search);
+      const frameMode = params.get("frame") || "clean";
+      document.body.dataset.frame = ["none", "telescope", "hybrid", "clean"].includes(frameMode) ? frameMode : "telescope";
+      const startAzimuthParam = Number(params.get("az"));
+      const startElevationParam = Number(params.get("el"));
+      const stageScaleParam = Number(params.get("scale"));
+      // 只有真正带了 ?scale 才覆盖；否则保持 CSS 默认（避免 Number(null)=0 被当成有效值压成 0.6）
+      if (params.has("scale") && Number.isFinite(stageScaleParam) && stageScaleParam > 0) {
+        const normalizedScale = clamp(stageScaleParam > 3 ? stageScaleParam / 100 : stageScaleParam, 0.6, 1.05);
+        document.documentElement.style.setProperty("--stage-scale", normalizedScale);
+      }
+
+      const TEXTURE_BASE = "assets/planets/";
+
+      function loadTexture(file) {
+        const img = new Image();
+        img.src = TEXTURE_BASE + file;
+        return img;
+      }
+
+      const starTexture = loadTexture("parent-star-emissive-v1.png");
+      const planetTextures = {
+        terra: loadTexture("eos-90e-earthlike-candidate-v2-unlit.png"),
+        hot: loadTexture("hot-lava-world-v2-unlit.png"),
+        giant: loadTexture("gas-giant-v2-unlit.png"),
+        outer: loadTexture("outer-ice-world-v2-unlit.png"),
+      };
+
+      const planets = [
+        {
+          id: "terra",
+          label: "Eos-90e",
+          orbit: 1.7,
+          radius: 0.08,
+          earthRadius: 1.08,
+          periodDays: 384,
+          temp: 285,
+          speed: 0.32,
+          phase: 4.0,
+          tilt: -0.14,
+          vsq: 0.05,   // 轨道近侧视 → 会凌星(类地候选)
+          disc: 0.30,  // 盘面比例 k（演示放大，按真实半径单调）：深度 = k² = 9%
+          color: "#8bd6ff",
+          texture: "terra",
+          verdict: "类地候选",
+        },
+        {
+          id: "hot",
+          label: "热岩星",
+          orbit: 1.22,
+          radius: 0.09,
+          earthRadius: 1.32,
+          periodDays: 14,
+          temp: 720,
+          speed: 0.48,
+          phase: 2.2,
+          tilt: 0.22,
+          vsq: 0.12,   // 会凌星
+          disc: 0.36,  // 深度 = k² ≈ 13%
+          color: "#ffbd7a",
+          texture: "hot",
+          verdict: "过热岩石星",
+        },
+        {
+          id: "giant",
+          label: "气态巨行星",
+          orbit: 0.92,
+          radius: 0.16,
+          earthRadius: 11.2,
+          periodDays: 3.2,
+          temp: 1200,
+          speed: 0.68,
+          phase: 0.8,
+          tilt: -0.32,
+          vsq: 0.20,   // 会凌星(深)
+          disc: 0.62,  // 气态巨行星：深度 = k² ≈ 38%
+          color: "#d5b3ff",
+          texture: "giant",
+          verdict: "非类地候选",
+        },
+        {
+          id: "outer",
+          label: "远轨行星",
+          orbit: 2.2,
+          radius: 0.11,
+          earthRadius: 2.4,
+          periodDays: 900,
+          temp: 160,
+          speed: 0.22,
+          phase: 5.5,
+          tilt: 0.3,
+          vsq: 0.45,   // 轨道太正视 → 不会凌星(教学反例)
+          disc: 0.46,  // 不凌星，盘面比例仅用于一致性
+          color: "#b5f0d1",
+          texture: "outer",
+          verdict: "过冷远轨行星",
+        },
+      ];
+
+      const state = {
+        phase: "aiming",
+        targetIndex: 0,
+        azimuth: 0.26,        // 望远镜水平指向（← →）
+        elevation: 0.22,      // 望远镜垂直指向（↑ ↓）
+        progress: 0,
+        collectStart: 0,
+        failedAt: 0,
+        spaceHeld: false,
+        failureMessage: "",
+        caliperGap: 0.16,
+        caliperLocked: false,
+        caliperLockedAt: 0,
+        lockOnAt: 0,          // 对准→锁定那一帧的时间戳，驱动锁定确认动效
+        captureAt: 0,         // 按 Space 成功起采那一帧的时间戳，驱动采集启动脉冲
+        settleStep: 0,
+        collectTheta0: 0,     // 采集起始公转角（凌星入口）
+        collectSpan: 0,       // 采集覆盖的公转角范围
+        recordBuf: [],        // 实时录制的亮度
+        lastRender: 0,
+        stars: Array.from({ length: 190 }, () => ({
+          x: Math.random(),
+          y: Math.random(),
+          a: 0.24 + Math.random() * 0.7,
+          r: 0.55 + Math.random() * 1.1,
+        })),
+      };
+
+      const phaseLabels = {
+        aiming: "校准望远镜",
+        locked: "目标已锁定",
+        collecting: "采集中",
+        failed: "采集失败",
+        period: "周期校准",
+        settled: "观测结果",
+      };
+
+      function clamp(v, min, max) {
+        return Math.max(min, Math.min(max, v));
+      }
+
+      function smooth(t) {
+        return t * t * (3 - 2 * t);
+      }
+
+      function vec(x, y, z) {
+        return [x, y, z];
+      }
+
+      function add(a, b) {
+        return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+      }
+
+      function sub(a, b) {
+        return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+      }
+
+      function mul(a, s) {
+        return [a[0] * s, a[1] * s, a[2] * s];
+      }
+
+      function dot(a, b) {
+        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+      }
+
+      function cross(a, b) {
+        return [
+          a[1] * b[2] - a[2] * b[1],
+          a[2] * b[0] - a[0] * b[2],
+          a[0] * b[1] - a[1] * b[0],
+        ];
+      }
+
+      function norm(a) {
+        const l = Math.hypot(a[0], a[1], a[2]) || 1;
+        return [a[0] / l, a[1] / l, a[2] / l];
+      }
+
+      function targetPlanet() {
+        return planets[state.targetIndex % planets.length];
+      }
+
+      function transitDepth(planet) {
+        return (planet.earthRadius / STAR_RADIUS_EARTH) ** 2;
+      }
+
+      // 演示放大的盘面比例 k（每颗行星自带，按真实半径单调排序——教学压缩）
+      function kRatio(planet = targetPlanet()) {
+        return planet.disc;
+      }
+      // 曲线深度 = k²：被挡住的光 = 行星盘面积 / 恒星盘面积，与画面遮挡严格同源
+      function visualTransitDepth(planet) {
+        return kRatio(planet) ** 2;
+      }
+
+      // 两圆(半径1与k，圆心距 d)重叠面积 / 行星面积 → 0..1 的遮挡比例
+      function transitOverlapFrac(d, k) {
+        if (d >= 1 + k) return 0;
+        if (d <= 1 - k) return 1;
+        const d2 = d * d, k2 = k * k;
+        const a1 = Math.acos(clamp((d2 + 1 - k2) / (2 * d), -1, 1));
+        const a2 = Math.acos(clamp((d2 + k2 - 1) / (2 * d * k), -1, 1));
+        const tri = Math.sqrt(clamp((1 + k - d) * (d + 1 - k) * (d - 1 + k) * (d + 1 + k), 0, 1e9)) / 2;
+        const area = a1 + k2 * a2 - tri;
+        return clamp(area / (Math.PI * k2), 0, 1);
+      }
+
+      // 每颗行星自己的轨道半径（恒星半径单位）
+      function orbitStarRadii(planet) {
+        return planet.orbit * ORBIT_TO_STARR;
+      }
+      // 每颗行星的轨道倾角(vsq)天生固定，决定它的冲击参数 b — 观测者改不了。
+      // b = 轨道椭圆压扁度 × 轨道半径。b 小=侧视会凌星；b 大=正视不凌星。
+      function impactB(planet) {
+        return planet.vsq * orbitStarRadii(planet);
+      }
+      function impactParam() {
+        return impactB(targetPlanet());
+      }
+      function targetTransits() {
+        return impactParam() < 1 + kRatio();
+      }
+      // ← → ↑ ↓ 都是转动望远镜，把恒星对进中央准星(双轴取景)。
+      function aimReady() {
+        return Math.abs(state.azimuth) <= AIM_TOL && Math.abs(state.elevation) <= AIM_TOL;
+      }
+      // 公转角度（统一角速度），用于真实凌星窗口
+      function orbitTheta(planet, now) {
+        return now / 1000 * ORBIT_OMEGA + planet.phase;
+      }
+      // 给定公转角度的亮度（行星在前侧穿过恒星才下凹）——一律用传入行星自己的参数
+      function brightnessAtTheta(theta, planet = targetPlanet()) {
+        const a = orbitStarRadii(planet);
+        const front = Math.sin(theta) >= 0;
+        const d = Math.hypot(Math.cos(theta) * a, Math.sin(theta) * a * planet.vsq);
+        const overlap = front ? transitOverlapFrac(d, kRatio(planet)) : 0;
+        return 1 - visualTransitDepth(planet) * overlap;
+      }
+      // 凌星窗口半角：行星中心进入/离开恒星盘(d=1+k)对应的公转角偏移
+      function transitHalfAngle(planet = targetPlanet()) {
+        const a = orbitStarRadii(planet);
+        const b = impactB(planet);
+        const lim = 1 + kRatio(planet);
+        if (b >= lim) return 0;
+        return Math.asin(clamp(Math.sqrt(lim * lim - b * b) / a, 0, 1));
+      }
+
+      function earthLikeScore(planet) {
+        const radius = clamp(1 - Math.abs(planet.earthRadius - 1) / 1.5, 0, 1);
+        const temp = planet.temp >= 240 && planet.temp <= 330 ? 1 : clamp(1 - Math.abs(planet.temp - 285) / 150, 0, 1);
+        const period = clamp(1 - Math.abs(Math.log(planet.periodDays) - Math.log(365)) / Math.log(4), 0, 1);
+        const signal = planet.periodDays > 600 ? 0.75 : 0.92;
+        return Math.round((radius * 0.25 + temp * 0.3 + period * 0.3 + signal * 0.15) * 100);
+      }
+
+      function cameraBasis() {
+        const eye = [0, -5.2, 2.6];
+        const baseForward = norm(mul(eye, -1));
+        const baseRight = norm(cross(baseForward, [0, 0, 1]));
+        const baseUp = norm(cross(baseRight, baseForward));
+        // 相机固定：方向键移动的是望远镜准星/采样视线，不是拖动星系。
+        return { eye, forward: baseForward, right: baseRight, up: baseUp };
+      }
+
+      function project(point, camera, w, h) {
+        const rel = sub(point, camera.eye);
+        const x = dot(rel, camera.right);
+        const y = dot(rel, camera.up);
+        const z = dot(rel, camera.forward);
+        const scale = Math.min(w, h) * 0.78 / Math.max(0.85, z);
+        return {
+          x: w / 2 + x * scale,
+          y: h * 0.43 - y * scale,
+          z,
+          scale,
+          visible: z > 0.2,
+        };
+      }
+
+      // 准星(望远镜对准点)固定在画面中心；恒星随 ← → 方位偏移，需对回中心。
+      function reticleScreen(w, h) {
+        return { x: w / 2, y: h * TUNE.starY };
+      }
+      function starScreen(w, h) {
+        return {
+          x: w / 2 + state.azimuth * Math.min(w, h) * TUNE.panMag,
+          y: h * TUNE.starY + state.elevation * Math.min(w, h) * TUNE.panMag,
+          r: Math.min(w, h) * 0.064,
+        };
+      }
+
+      function resizeCanvas(c) {
+        const rect = c.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        const width = Math.max(1, Math.floor(rect.width * dpr));
+        const height = Math.max(1, Math.floor(rect.height * dpr));
+        if (c.width !== width || c.height !== height) {
+          c.width = width;
+          c.height = height;
+        }
+        const g = c.getContext("2d");
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { g, w: rect.width, h: rect.height };
+      }
+
+      function offsetsReady() {
+        return aimReady();
+      }
+
+      function calibrationScore() {
+        // 恒星对准准星中心的程度(双轴)
+        const err = Math.max(Math.abs(state.azimuth), Math.abs(state.elevation));
+        return Math.round((1 - clamp(err / 0.4, 0, 1)) * 100);
+      }
+
+      function transitTheta(progress) {
+        return Math.PI / 2 + (clamp(progress, 0, 1) - 0.5) * 1.28;
+      }
+
+      function orbitalPoint(planet, theta) {
+        const major = Math.cos(theta) * planet.orbit * 0.78;
+        const minor = Math.sin(theta) * planet.orbit * 0.14 + Math.sin(planet.tilt) * planet.orbit * 0.02;
+        const cos = Math.cos(ORBIT_ROTATION);
+        const sin = Math.sin(ORBIT_ROTATION);
+        const x = major * cos - minor * sin;
+        const y = major * sin + minor * cos;
+        const z = Math.sin(theta) * planet.orbit;
+        return [x, y, z];
+      }
+
+      function orbitProjection(planet, theta, w, h) {
+        const [x, y, z] = orbitalPoint(planet, theta);
+        const star = starScreen(w, h);
+        const scale = Math.min(w, h) * 0.22;
+        return {
+          x: star.x + x * scale,
+          y: star.y - y * scale,
+          z,
+          depth: Math.sin(theta),
+          scale,
+          visible: true,
+        };
+      }
+
+      function transitOrbitPoint(planet, progress) {
+        return orbitalPoint(planet, transitTheta(progress));
+      }
+
+      function orbitPoint(planet, now) {
+        const t = now / 1000 * planet.speed + planet.phase;
+        return orbitalPoint(planet, t);
+      }
+
+      // 统一采样：行星沿冲击参数高度的横扫路径经过恒星。x 水平扫掠，y=冲击参数。
+      // 望远镜视角、光变曲线、主视图目标全部用它，保证三画面同源。
+      // 预测/历史曲线用：在当前冲击参数下，行星沿横扫路径经过恒星的亮度
+      function telescopeSample(progress, planet = targetPlanet()) {
+        const p = clamp(progress, 0, 1);
+        const x = (p - 0.5) * PATH_SPAN;
+        const y = impactB(planet);
+        const d = Math.hypot(x, y);
+        const overlap = transitOverlapFrac(d, kRatio(planet));
+        const brightness = 1 - visualTransitDepth(planet) * overlap;
+        return { progress: p, x, y, point: [x, y, 0], occlusion: overlap, brightness };
+      }
+
+      function historyDipGap(planet) {
+        const t = clamp((Math.log(planet.periodDays) - Math.log(3.2)) / (Math.log(900) - Math.log(3.2)), 0, 1);
+        return 0.16 + t * 0.56;
+      }
+
+      function maybeLock() {
+        if (["collecting", "period", "settled", "failed"].includes(state.phase)) return;
+        const next = offsetsReady() ? "locked" : "aiming";
+        // 抓住"对准→锁定"那一帧，记下时间戳触发确认脉冲
+        if (next === "locked" && state.phase !== "locked") {
+          state.lockOnAt = performance.now();
+          playLockSound();
+        }
+        state.phase = next;
+      }
+
+      // 当前公转角相对凌星中心(π/2)的有符号偏移：0=正中, 负=正在接近
+      function transitOffset(now) {
+        const raw = ((orbitTheta(targetPlanet(), now) - Math.PI / 2) % TAU + TAU) % TAU;
+        return raw > Math.PI ? raw - TAU : raw;
+      }
+      // 仅在「行星接近入口、还没进入恒星盘」时可起采；过了入口就算错过这一圈。
+      function inCaptureWindow(now) {
+        const H = transitHalfAngle();
+        if (H <= 0) return false;
+        const off = transitOffset(now);
+        return off >= -H * 1.8 && off <= -H * 0.25;
+      }
+      // 行星永远按真实公转角绘制，不倒带、不定格
+      function currentTheta(now) {
+        return orbitTheta(targetPlanet(), now);
+      }
+
+      function startCollection() {
+        if (state.phase !== "locked") return;
+        if (!inCaptureWindow(performance.now())) return; // 错过入口或没到：不采集
+        state.phase = "collecting";
+        state.collectStart = performance.now();
+        state.captureAt = performance.now(); // 采集启动脉冲起点
+        state.recordBuf = [];
+        state.progress = 0;
+        state.failureMessage = "";
+        flashPanelBorder("capture-flash"); // 曲线面板边框闪一记琥珀光，把动作和数据屏绑起来
+        playCaptureSound();
+      }
+
+      function failCollection(message = "空格提前松开，目标还没有离开采样出口。") {
+        state.phase = "failed";
+        state.failureMessage = message;
+        state.failedAt = performance.now();
+        state.progress = 0;
+        playFailSound();
+      }
+
+      function completeCollection() {
+        state.phase = "period";
+        state.progress = 1;
+        state.caliperGap = 0.16;
+        state.caliperLocked = false;
+        state.caliperLockedAt = 0;
+      }
+
+      function completePeriod() {
+        state.phase = "settled";
+        state.settleStep = 0;
+      }
+
+      function continueObservation() {
+        state.targetIndex = (state.targetIndex + 1) % planets.length;
+        state.azimuth = 0.22;
+        state.elevation = -0.18;
+        updateReflectionLayer();
+        state.phase = "aiming";
+        state.progress = 0;
+        state.spaceHeld = false;
+        state.failureMessage = "";
+        state.settleStep = 0;
+      }
+
+      function updateReflectionLayer() {
+        if (!reflectionLayer) return;
+        const az = clamp(state.azimuth, -0.5, 0.5);
+        const el = clamp(state.elevation, -0.5, 0.5);
+        const x = az * 36;
+        const y = el * 24;
+        reflectionLayer.style.setProperty("--reflect-x", x.toFixed(1) + "px");
+        reflectionLayer.style.setProperty("--reflect-y", y.toFixed(1) + "px");
+        reflectionLayer.style.setProperty("--reflect-hot-x", (50 + az * 46).toFixed(1) + "%");
+        reflectionLayer.style.setProperty("--reflect-hot-y", (50 + el * 32).toFixed(1) + "%");
+        reflectionLayer.style.setProperty("--reflect-top-x", (50 + az * 32).toFixed(1) + "%");
+        reflectionLayer.style.setProperty("--reflect-top-y", (11 + el * 7).toFixed(1) + "%");
+        reflectionLayer.style.setProperty("--reflect-bottom-x", (50 - az * 24).toFixed(1) + "%");
+        reflectionLayer.style.setProperty("--reflect-bottom-y", (89 - el * 6).toFixed(1) + "%");
+      }
+
+      function adjustCalibration(axis, delta) {
+        if (["collecting", "period", "settled"].includes(state.phase)) return;
+        if (axis === "azimuth") state.azimuth = clamp(state.azimuth + delta, -0.5, 0.5);
+        if (axis === "elevation") state.elevation = clamp(state.elevation + delta, -0.5, 0.5);
+        updateReflectionLayer();
+        maybeLock();
+        renderPanels();
+      }
+
+      function adjustCaliper(delta) {
+        if (state.phase !== "period" || state.caliperLocked) return;
+        state.caliperGap = clamp(state.caliperGap + delta, CALIPER_MIN, CALIPER_MAX);
+        const target = historyDipGap(targetPlanet());
+        if (Math.abs(state.caliperGap - target) <= CALIPER_TOLERANCE) {
+          state.caliperGap = target;
+          state.caliperLocked = true;
+          state.caliperLockedAt = performance.now();
+          flashPanelBorder("caliper-flash"); // 卡尺"咔"上：面板边框闪一记绿光
+          playCaliperSound();
+        }
+        renderPanels();
+      }
+
+      function drawUniverse(now) {
+        const { g, w, h } = resizeCanvas(canvas);
+        const camera = cameraBasis();
+        g.clearRect(0, 0, w, h);
+        g.fillStyle = "#03080e";
+        g.fillRect(0, 0, w, h);
+
+        // 整片星空随 ← → ↑ ↓ 一起平移(望远镜在转动)；准星与仪器环固定(望远镜本体)。
+        const panX = state.azimuth * Math.min(w, h) * TUNE.panMag;
+        const panY = state.elevation * Math.min(w, h) * TUNE.panMag;
+        for (const star of state.stars) {
+          g.globalAlpha = star.a;
+          g.fillStyle = "#d8f7ff";
+          g.beginPath();
+          let sx = ((star.x * w + panX) % w + w) % w;
+          let sy = ((star.y * h + panY) % h + h) % h;
+          g.arc(sx, sy, star.r, 0, TAU);
+          g.fill();
+        }
+        g.globalAlpha = 1;
+
+        drawReticle(g, w, h);
+        drawBackgroundPlanets(g, w, h, now);
+        drawTargetTransit(g, w, h, now); // 内部按 z 顺序自绘恒星，实现掩星
+        drawTransitWindow(g, w, h);
+        drawLockPulse(g, w, h); // 锁定确认环画在最上层，避免被恒星盘遮挡
+        drawCapturePulse(g, w, h); // 采集启动脉冲（琥珀快门）
+      }
+
+      function drawReticle(g, w, h) {
+        const ret = reticleScreen(w, h);
+        const ok = aimReady();
+        g.save();
+        g.strokeStyle = ok ? "rgba(99,230,168,.5)" : "rgba(118,217,255,.45)";
+        g.lineWidth = 1.2;
+        g.beginPath();
+        g.arc(ret.x, ret.y, 22, 0, TAU);
+        g.moveTo(ret.x - 34, ret.y); g.lineTo(ret.x - 12, ret.y);
+        g.moveTo(ret.x + 12, ret.y); g.lineTo(ret.x + 34, ret.y);
+        g.moveTo(ret.x, ret.y - 34); g.lineTo(ret.x, ret.y - 12);
+        g.moveTo(ret.x, ret.y + 12); g.lineTo(ret.x, ret.y + 34);
+        g.stroke();
+        g.restore();
+      }
+
+      // 锁定确认动效：对准成功瞬间，从恒星边缘向外快速 ping 一道冲击环并淡出(雷达锁定)。
+      // 画在恒星之后(drawUniverse 末尾)，否则会被恒星盘盖掉看不见。
+      // 起手粗而亮(近白绿+辉光)，迅速越过虚线窗口环向外扩散——与持续呼吸的绿色虚线窗口明确区分。
+      function lockProgress() {
+        if (state.lockOnAt === 0) return 1;
+        return clamp((performance.now() - state.lockOnAt) / LOCK_ANIM_MS, 0, 1);
+      }
+      function drawLockPulse(g, w, h) {
+        if (state.lockOnAt === 0 || !aimReady()) return;
+        const lockT = lockProgress();
+        if (lockT >= 1) return;
+        const star = starScreen(w, h);
+        const e = smooth(lockT);
+        g.save();
+        // 内圈柔光闪：开头 ~40% 一圈贴恒星的绿色环形辉光，给"咔哒"那一下重量
+        const flashA = (1 - smooth(clamp(lockT * 2.4, 0, 1))) * 0.45;
+        if (flashA > 0.01) {
+          const fr = star.r * (1.04 + 0.45 * e);
+          const bloom = g.createRadialGradient(star.x, star.y, star.r * 0.82, star.x, star.y, fr * 1.32);
+          bloom.addColorStop(0, "rgba(130,245,185,0)");
+          bloom.addColorStop(0.72, `rgba(150,255,200,${flashA.toFixed(3)})`);
+          bloom.addColorStop(1, "rgba(130,245,185,0)");
+          g.fillStyle = bloom;
+          g.beginPath(); g.arc(star.x, star.y, fr * 1.32, 0, TAU); g.fill();
+        }
+        // 冲击环：粗而亮起手、带辉光，向外扩散变细淡出
+        g.shadowColor = "rgba(120,250,180,0.9)";
+        g.shadowBlur = 16 * (1 - e);
+        g.strokeStyle = `rgba(150,255,195,${((1 - lockT) * 0.98).toFixed(3)})`;
+        g.lineWidth = 6 - 5.2 * e;
+        g.beginPath();
+        g.arc(star.x, star.y, star.r * (0.95 + 2.0 * e), 0, TAU);
+        g.stroke();
+        g.restore();
+      }
+
+      // 曲线面板边框闪一记（采集=琥珀 capture-flash / 卡尺锁定=绿 caliper-flash）。
+      // 先移除两个类→reflow→add 目标类：保证每次都能重放，且两种闪不互相打架。
+      function flashPanelBorder(cls) {
+        const el = document.getElementById("curveScreen");
+        if (!el) return;
+        el.classList.remove("capture-flash", "caliper-flash");
+        void el.offsetWidth;
+        el.classList.add(cls);
+      }
+
+      // ===== 音效（Web Audio 过程合成，无音频文件）=====
+      // 与动效同源的反馈：锁定/卡尺=清亮确认，采集=快门咔嚓，失败=轻柔下行。
+      // 浏览器自动播放策略：AudioContext 要用户手势后才出声，故首次 keydown 里 resume。
+      let audioCtx = null;
+      let audioMuted = false;
+      function ensureAudio() {
+        if (audioMuted) return null;
+        if (!audioCtx) {
+          try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+          catch (e) { return null; }
+        }
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+      }
+      // 单音：振荡器 + 增益包络，可选滑音 to
+      function tone(c, { freq, to, type = "sine", t0 = 0, dur = 0.18, peak = 0.16, attack = 0.008 }) {
+        const now = c.currentTime + t0;
+        const osc = c.createOscillator();
+        const g = c.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (to) osc.frequency.exponentialRampToValueAtTime(to, now + dur);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(peak, now + attack);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        osc.connect(g); g.connect(c.destination);
+        osc.start(now); osc.stop(now + dur + 0.02);
+      }
+      // 噪声爆裂（快门咔嚓）：短促高通白噪
+      function noiseClick(c, { t0 = 0, dur = 0.06, peak = 0.12, hp = 1300 }) {
+        const now = c.currentTime + t0;
+        const n = Math.max(1, Math.floor(c.sampleRate * dur));
+        const buf = c.createBuffer(1, n, c.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+        const src = c.createBufferSource(); src.buffer = buf;
+        const f = c.createBiquadFilter(); f.type = "highpass"; f.frequency.value = hp;
+        const g = c.createGain();
+        g.gain.setValueAtTime(peak, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        src.connect(f); f.connect(g); g.connect(c.destination);
+        src.start(now); src.stop(now + dur + 0.02);
+      }
+      // 锁定对准：两声上行确认（绿色确认语言的听觉版）
+      function playLockSound() { const c = ensureAudio(); if (!c) return; tone(c, { freq: 660, to: 990, type: "triangle", dur: 0.16, peak: 0.14 }); tone(c, { freq: 990, type: "sine", t0: 0.10, dur: 0.18, peak: 0.10 }); }
+      // 采集起采：快门咔嚓（噪声爆裂 + 一记低顿）
+      function playCaptureSound() { const c = ensureAudio(); if (!c) return; noiseClick(c, { dur: 0.05, peak: 0.13, hp: 1400 }); tone(c, { freq: 180, type: "sine", dur: 0.10, peak: 0.10 }); }
+      // 卡尺对上周期：更"达成"的三声确认（带一层八度泛音）
+      function playCaliperSound() { const c = ensureAudio(); if (!c) return; tone(c, { freq: 587, to: 784, type: "triangle", dur: 0.14, peak: 0.13 }); tone(c, { freq: 784, type: "sine", t0: 0.12, dur: 0.24, peak: 0.12 }); tone(c, { freq: 1568, type: "sine", t0: 0.12, dur: 0.24, peak: 0.045 }); }
+      // 采集失败：轻柔下行
+      function playFailSound() { const c = ensureAudio(); if (!c) return; tone(c, { freq: 320, to: 180, type: "sawtooth", dur: 0.22, peak: 0.10 }); }
+
+      // 采集启动脉冲：按 Space 成功起采那一下，琥珀光环从外向恒星"合拢"(快门咔嚓)，
+      // 合拢到位再补一记柔光闪。琥珀色=采集语义，向内收拢与锁定(绿色外扩)明确区分。
+      function drawCapturePulse(g, w, h) {
+        if (state.captureAt === 0 || state.phase !== "collecting") return;
+        const t = clamp((performance.now() - state.captureAt) / CAPTURE_ANIM_MS, 0, 1);
+        if (t >= 1) return;
+        const star = starScreen(w, h);
+        g.save();
+        // 1) 合拢环：从 2.4r 收到 ~0.95r，前 75% 完成
+        if (t < 0.75) {
+          const k = t / 0.75, ek = smooth(k);
+          g.strokeStyle = `rgba(255,209,102,${((1 - k) * 0.95).toFixed(3)})`;
+          g.lineWidth = 2 + 3.5 * (1 - ek);
+          g.shadowColor = "rgba(255,190,90,0.85)";
+          g.shadowBlur = 14 * (1 - ek);
+          g.beginPath();
+          g.arc(star.x, star.y, star.r * (2.4 - 1.45 * ek), 0, TAU);
+          g.stroke();
+        }
+        // 2) 到位柔光闪（后半段）
+        const fa = smooth(clamp((t - 0.5) / 0.5, 0, 1)) * (1 - t) * 1.4;
+        if (fa > 0.01) {
+          g.shadowBlur = 0;
+          const fr = star.r * 1.5;
+          const bloom = g.createRadialGradient(star.x, star.y, star.r * 0.8, star.x, star.y, fr);
+          bloom.addColorStop(0, "rgba(255,225,150,0)");
+          bloom.addColorStop(0.7, `rgba(255,214,120,${Math.min(0.5, fa).toFixed(3)})`);
+          bloom.addColorStop(1, "rgba(255,200,90,0)");
+          g.fillStyle = bloom;
+          g.beginPath(); g.arc(star.x, star.y, fr, 0, TAU); g.fill();
+        }
+        g.restore();
+      }
+
+      function drawStar(g, w, h) {
+        const star = starScreen(w, h);
+        // 行星遮挡时，恒星真实变暗（与光变曲线同源），增强参与感
+        const b = brightnessAtTheta(currentTheta(performance.now()));
+        const dim = clamp(1 - (1 - b) * 1.25, 0.42, 1);
+        const glow = g.createRadialGradient(star.x, star.y, 3, star.x, star.y, star.r * 2.65);
+        glow.addColorStop(0, `rgba(255,225,138,${(0.92 * dim).toFixed(3)})`);
+        glow.addColorStop(0.46, `rgba(255,144,43,${(0.42 * dim).toFixed(3)})`);
+        glow.addColorStop(1, "rgba(255,103,31,0)");
+        g.fillStyle = glow;
+        g.beginPath();
+        g.arc(star.x, star.y, star.r * 2.65, 0, TAU);
+        g.fill();
+        drawTexturedStar(g, star.x, star.y, star.r, dim);
+        // 凌星瞬间在恒星旁标出实时亮度，把"恒星真的暗了"和曲线绑起来
+        if (dim < 0.985) {
+          g.fillStyle = "rgba(255,209,102,.92)";
+          g.font = Math.round(Math.min(w, h) * 0.0145) + "px system-ui";
+          g.fillText(`亮度 ${(b * 100).toFixed(1)}%`, star.x + star.r * 2.7, star.y);
+        }
+      }
+
+      function textureReady(img) {
+        return img && img.complete && img.naturalWidth > 0;
+      }
+
+      function drawTexturedStar(g, x, y, r, dim = 1) {
+        g.save();
+        g.beginPath();
+        g.arc(x, y, r, 0, TAU);
+        g.clip();
+        if (textureReady(starTexture)) {
+          g.globalAlpha = dim;
+          const crop = Math.round(Math.min(starTexture.naturalWidth, starTexture.naturalHeight) * 0.085);
+          const sourceW = starTexture.naturalWidth - crop * 2;
+          const sourceH = starTexture.naturalHeight - crop * 2;
+          g.drawImage(starTexture, crop, crop, sourceW, sourceH, x - r, y - r, r * 2, r * 2);
+          g.globalAlpha = 1;
+        } else {
+          const disk = g.createRadialGradient(x, y, r * 0.05, x, y, r);
+          disk.addColorStop(0, `rgb(${Math.round(255 * dim)},${Math.round(236 * dim)},${Math.round(150 * dim)})`);
+          disk.addColorStop(0.72, `rgb(${Math.round(255 * dim)},${Math.round(178 * dim)},${Math.round(46 * dim)})`);
+          disk.addColorStop(1, `rgb(${Math.round(214 * dim)},${Math.round(120 * dim)},${Math.round(28 * dim)})`);
+          g.fillStyle = disk;
+          g.fillRect(x - r, y - r, r * 2, r * 2);
+        }
+        if (dim < 0.995) {
+          g.fillStyle = `rgba(0,0,0,${(1 - dim).toFixed(3)})`;
+          g.fillRect(x - r, y - r, r * 2, r * 2);
+        }
+        g.restore();
+      }
+
+      // 背景行星：与目标同一套相机(同一观测视角)——都以恒星为中心、按各自倾角(vsq)压扁的椭圆。
+      function drawBackgroundPlanets(g, w, h, now) {
+        const star = starScreen(w, h);
+        const unit = star.r;
+        const focus = ["locked", "collecting", "period", "settled"].includes(state.phase);
+        planets.forEach((planet) => {
+          if (planet === targetPlanet()) return;
+          const orbitRpx = orbitStarRadii(planet) * unit;
+          const vsq = planet.vsq;
+          // 暗淡的轨道椭圆
+          g.save();
+          g.strokeStyle = `rgba(118,217,255,${focus ? 0.05 : 0.09})`;
+          g.lineWidth = 1;
+          g.beginPath();
+          for (let i = 0; i <= 120; i++) {
+            const t = i / 120 * TAU;
+            const x = star.x + Math.cos(t) * orbitRpx;
+            const y = star.y + Math.sin(t) * orbitRpx * vsq;
+            i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+          }
+          g.stroke();
+          // 行星(近大远小、转到后面更暗)
+          const theta = orbitTheta(planet, now);
+          const sinT = Math.sin(theta);
+          const px = star.x + Math.cos(theta) * orbitRpx;
+          const py = star.y + sinT * orbitRpx * vsq;
+          const pr = Math.max(3, unit * 0.14 * (1 + 0.4 * sinT));
+          g.globalAlpha = (sinT < 0 ? 0.28 : 0.55) * (focus ? 0.5 : 1);
+          drawSpherePlanet(g, px, py, pr, planet, star.x, star.y);
+          g.restore();
+        });
+      }
+
+      // 球体行星：朝恒星一侧受光的明暗渐变
+      function drawSpherePlanet(g, px, py, r, planet, starX, starY) {
+        const color = typeof planet === "string" ? planet : planet.color;
+        const texture = typeof planet === "string" ? null : planetTextures[planet.texture];
+        const dx = starX - px, dy = starY - py;
+        const len = Math.hypot(dx, dy) || 1;
+        g.save();
+        g.beginPath();
+        g.arc(px, py, r, 0, TAU);
+        g.clip();
+        if (textureReady(texture)) {
+          g.drawImage(texture, px - r, py - r, r * 2, r * 2);
+        } else {
+          g.fillStyle = color;
+          g.fillRect(px - r, py - r, r * 2, r * 2);
+        }
+
+        // 动态受光由 Canvas 叠加，贴图本身保持无烘焙阴影。
+        const lx = px + dx / len * r * 0.38;
+        const ly = py + dy / len * r * 0.38;
+        const light = g.createRadialGradient(lx, ly, r * 0.08, px, py, r * 1.1);
+        light.addColorStop(0, "rgba(255,255,255,0.18)");
+        light.addColorStop(0.55, "rgba(255,255,255,0.02)");
+        light.addColorStop(1, "rgba(0,0,0,0.44)");
+        g.fillStyle = light;
+        g.fillRect(px - r, py - r, r * 2, r * 2);
+
+        const sx = px - dx / len * r * 0.42;
+        const sy = py - dy / len * r * 0.42;
+        const shade = g.createRadialGradient(sx, sy, r * 0.05, sx, sy, r * 1.35);
+        shade.addColorStop(0, "rgba(0,0,0,0.34)");
+        shade.addColorStop(0.58, "rgba(0,0,0,0.1)");
+        shade.addColorStop(1, "rgba(0,0,0,0)");
+        g.fillStyle = shade;
+        g.fillRect(px - r, py - r, r * 2, r * 2);
+        g.restore();
+
+        g.save();
+        g.strokeStyle = "rgba(237,248,255,.12)";
+        g.lineWidth = Math.max(0.8, r * 0.035);
+        g.beginPath();
+        g.arc(px, py, r, 0, TAU);
+        g.stroke();
+        g.restore();
+      }
+
+      function drawFallbackSpherePlanet(g, px, py, r, color, starX, starY) {
+        const dx = starX - px, dy = starY - py;
+        const len = Math.hypot(dx, dy) || 1;
+        const lx = px + dx / len * r * 0.5;
+        const ly = py + dy / len * r * 0.5;
+        const grad = g.createRadialGradient(lx, ly, r * 0.1, px, py, r);
+        grad.addColorStop(0, color);
+        grad.addColorStop(0.65, color);
+        grad.addColorStop(1, "rgba(6,12,20,0.92)");
+        g.fillStyle = grad;
+        g.beginPath();
+        g.arc(px, py, r, 0, TAU);
+        g.fill();
+      }
+
+      function drawOrbitHalf(g, star, orbitRpx, vsquash, wantFront) {
+        g.save();
+        g.lineWidth = 2;
+        g.strokeStyle = wantFront ? "rgba(255,238,176,.72)" : "rgba(255,238,176,.2)";
+        g.beginPath();
+        let drawing = false;
+        for (let i = 0; i <= 180; i++) {
+          const t = i / 180 * TAU;
+          const front = Math.sin(t) >= 0;
+          if (front !== wantFront) { drawing = false; continue; }
+          const x = star.x + Math.cos(t) * orbitRpx;
+          const y = star.y + Math.sin(t) * orbitRpx * vsquash;
+          drawing ? g.lineTo(x, y) : (g.moveTo(x, y), drawing = true);
+        }
+        g.stroke();
+        g.restore();
+      }
+
+      // 目标：行星持续公转；近大远小(透视) + 球体明暗 + 转到恒星后被掩星。
+      function drawTargetTransit(g, w, h, now) {
+        const star = starScreen(w, h);
+        const unit = star.r;
+        const planet = targetPlanet();
+        const vsquash = planet.vsq;
+        const orbitRpx = orbitStarRadii(planet) * unit;
+
+        const theta = currentTheta(now);
+        const sinT = Math.sin(theta);
+        const behind = sinT < 0;
+        const px = star.x + Math.cos(theta) * orbitRpx;
+        const py = star.y + sinT * orbitRpx * vsquash;
+        const pr = Math.max(5, unit * kRatio(planet) * (1 + 0.45 * sinT)); // 透视：前大后小，盘面比例与曲线深度同源
+
+        // z 顺序：后半轨道 → 后侧行星(被恒星掩) → 恒星 → 前半轨道 → 前侧行星
+        drawOrbitHalf(g, star, orbitRpx, vsquash, false);
+        if (behind) drawSpherePlanet(g, px, py, pr, planet, star.x, star.y);
+        drawStar(g, w, h);
+        drawOrbitHalf(g, star, orbitRpx, vsquash, true);
+
+        if (!behind) {
+          // 运动尾迹：沿轨道往后画几个渐隐小点
+          g.save();
+          for (let i = 1; i <= 7; i++) {
+            const tt = theta - i * 0.05;
+            const tx = star.x + Math.cos(tt) * orbitRpx;
+            const ty = star.y + Math.sin(tt) * orbitRpx * vsquash;
+            g.globalAlpha = 0.22 * (1 - i / 8);
+            g.fillStyle = planet.color;
+            g.beginPath();
+            g.arc(tx, ty, pr * (1 - i / 10), 0, TAU);
+            g.fill();
+          }
+          g.restore();
+          g.save();
+          g.strokeStyle = "rgba(255,209,102,.95)";
+          g.lineWidth = 2;
+          g.beginPath();
+          g.arc(px, py, pr + 8, 0, TAU);
+          g.stroke();
+          g.restore();
+          drawSpherePlanet(g, px, py, pr, planet, star.x, star.y);
+        }
+
+        // 标签
+        g.save();
+        const text = `当前目标 ${planet.label}`;
+        g.font = Math.round(Math.min(w, h) * 0.0145) + "px system-ui";
+        const tw = g.measureText(text).width;
+        const tx = px + pr + 12;
+        const ty = py - pr - 10;
+        g.fillStyle = "rgba(4,12,20,.78)";
+        g.fillRect(tx - 6, ty - 14, tw + 12, 20);
+        g.strokeStyle = "rgba(255,209,102,.5)";
+        g.strokeRect(tx - 6, ty - 14, tw + 12, 20);
+        g.fillStyle = "rgba(237,248,255,.92)";
+        g.fillText(text, tx, ty);
+        g.restore();
+      }
+
+      function applyViewOffsetParams() {
+        if (Number.isFinite(startAzimuthParam)) state.azimuth = clamp(startAzimuthParam, -0.5, 0.5);
+        if (Number.isFinite(startElevationParam)) state.elevation = clamp(startElevationParam, -0.5, 0.5);
+      }
+
+      function applyDemoMode() {
+        const demo = params.get("demo");
+        const planetId = params.get("planet");
+        const planetIndex = planets.findIndex((planet) => planet.id === planetId);
+        if (planetIndex >= 0) state.targetIndex = planetIndex;
+        if (!demo) return;
+        state.azimuth = 0;
+        state.elevation = 0;
+        if (demo === "aiming") {
+          state.phase = "aiming";
+          state.azimuth = 0.24;
+          state.elevation = -0.18;
+        } else if (demo === "locked") {
+          state.phase = "locked";
+          state.progress = 0.18;
+        } else if (demo === "collecting") {
+          state.phase = "collecting";
+          state.progress = clamp(Number(params.get("p")) || 0.54, 0, 0.98);
+          state.collectStart = performance.now() - state.progress * SAMPLE_DURATION;
+        } else if (demo === "period") {
+          state.phase = "period";
+          state.progress = 1;
+          state.caliperGap = Number(params.get("gap")) || 0.34;
+        } else if (demo === "settled") {
+          state.phase = "settled";
+          state.progress = 1;
+          state.settleStep = clamp(Number(params.get("step")) || 3, 0, 3);
+        }
+      }
+
+      function drawInstrumentRings(g, w, h) {
+        // 仪器刻度环是望远镜本体，固定在准星中心，不随星空平移
+        const ret = reticleScreen(w, h);
+        const cx = ret.x;
+        const cy = ret.y;
+        const r = Math.min(w, h) / 2;
+        g.save();
+        g.strokeStyle = "rgba(118,217,255,.12)";
+        g.lineWidth = 1;
+        for (const k of [0.33, 0.46, 0.6, 0.78]) {
+          g.beginPath();
+          g.arc(cx, cy, r * k, 0, TAU);
+          g.stroke();
+        }
+        g.restore();
+      }
+
+      function drawBeam(g, w, h, camera) {
+        const star = starScreen(w, h);
+        const source = { x: w / 2, y: h * 0.9 };
+        const color = state.phase === "locked" ? "99,230,168" : state.phase === "collecting" || state.phase === "period" ? "255,209,102" : "118,217,255";
+        const offsetX = state.azimuth * w * 0.18;
+        const offsetY = state.elevation * h * 0.16;
+        const target = { x: star.x + offsetX, y: star.y + offsetY };
+        g.save();
+        g.strokeStyle = `rgba(${color},.8)`;
+        g.lineWidth = 1.5;
+        if (state.phase !== "aiming") {
+          g.fillStyle = `rgba(${color},.08)`;
+          g.beginPath();
+          g.moveTo(source.x, source.y);
+          g.lineTo(target.x - 56, target.y);
+          g.lineTo(target.x + 56, target.y);
+          g.closePath();
+          g.fill();
+        }
+        g.beginPath();
+        g.moveTo(source.x, source.y);
+        g.lineTo(target.x, target.y);
+        g.stroke();
+        g.strokeStyle = `rgba(${color},.92)`;
+        g.beginPath();
+        g.arc(target.x, target.y, 16, 0, TAU);
+        g.moveTo(target.x - 24, target.y);
+        g.lineTo(target.x + 24, target.y);
+        g.moveTo(target.x, target.y - 24);
+        g.lineTo(target.x, target.y + 24);
+        g.stroke();
+        g.restore();
+      }
+
+      function drawTransitWindow(g, w, h) {
+        if (!["locked", "collecting"].includes(state.phase)) return;
+        if (!targetTransits()) return; // 不凌星的目标不画窗口环
+        const star = starScreen(w, h);
+        const color = state.phase === "collecting" ? "255,209,102" : "99,230,168";
+        const pulse = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(performance.now() / 320));
+        g.save();
+        if (state.phase === "collecting") {
+          g.fillStyle = "rgba(255,209,102,.08)";
+          g.beginPath();
+          g.arc(star.x, star.y, star.r * 1.18, 0, TAU);
+          g.fill();
+        }
+        // 锁定瞬间：虚线窗口环快速"弹"一下（放大+变亮+变粗），强化"抓住目标"
+        const pop = state.phase === "locked" ? (1 - smooth(lockProgress())) : 0;
+        g.strokeStyle = `rgba(${color},${clamp(0.5 + 0.4 * pulse + 0.5 * pop, 0, 1).toFixed(3)})`;
+        g.lineWidth = 1.6 + 1.6 * pop;
+        g.setLineDash([9, 7]);
+        g.beginPath();
+        g.arc(star.x, star.y, star.r * 1.2 * (1 + 0.05 * pop), -0.75, TAU - 0.75);
+        g.stroke();
+        g.setLineDash([]);
+        g.restore();
+      }
+
+      // ===== 弧形驾驶舱渲染（只换显示层，机制函数一律不动） =====
+      const SVGNS = "http://www.w3.org/2000/svg";
+      const ARC_C = 500; // viewBox 1000×1000，圆心 (500,500)，R=500
+      const D2R = Math.PI / 180;
+
+      // ===== TUNE：所有「位置/尺寸」几何数字的固定集合（正式版用默认值）=====
+      // 机制函数全部改读 TUNE.xxx，不再用裸常量。canvas 恒星 Y 每帧读取当前值。
+      const TUNE_DEFAULTS = {
+        starY: 0.41,        // 恒星/准星垂直位置系数（屏幕高占比，调参面板定稿）
+        feedbackR: 415,     // 反馈句弧半径
+        meterBaseR: 363,    // 仪表弧基准半径（第一条）
+        meterRowGap: 30,    // 仪表弧行间距（三条向内递减）
+        keyR: 469,          // 键位图例弧半径
+        panMag: 0.30,       // 望远镜平移幅度：整片星空随 ←→↑↓ 移动的系数（越大越像在转望远镜）
+      };
+      const TUNE = Object.assign({}, TUNE_DEFAULTS);
+      // 三层弧带径向半径：基准 - 行间距*i（原 [360, 330, 300]，由 base/gap 推导）。
+      function meterRadii() {
+        return [0, 1, 2].map((i) => TUNE.meterBaseR - i * TUNE.meterRowGap);
+      }
+      const arcGroupCache = {};
+
+      function arcPt(angDeg, r) {
+        const a = angDeg * D2R;
+        return [ARC_C + r * Math.cos(a), ARC_C + r * Math.sin(a)];
+      }
+
+      function svgEl(tag, attrs, parent) {
+        const el = document.createElementNS(SVGNS, tag);
+        for (const k in attrs) el.setAttribute(k, attrs[k]);
+        if (parent) parent.appendChild(el);
+        return el;
+      }
+
+      // 角度方向约定：0°=右、90°=正下方、角度增大为顺时针（屏幕视觉）。
+      // 下半圆阅读方向 = 从大角度走向小角度（屏幕上从左到右）。
+      function arcPathD(r, aFrom, aTo) {
+        const [x0, y0] = arcPt(aFrom, r);
+        const [x1, y1] = arcPt(aTo, r);
+        const large = Math.abs(aTo - aFrom) > 180 ? 1 : 0;
+        const sweep = aTo > aFrom ? 1 : 0;
+        return `M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${r} ${r} 0 ${large} ${sweep} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+      }
+
+      function charArcW(ch, font) {
+        if (ch === " ") return font * 0.38;
+        if (/[←-⇿]/.test(ch)) return font * 0.95; // 方向箭头
+        if (ch === "·") return font * 0.52;
+        if (/[⺀-鿿　-〿＀-￯…—]/.test(ch)) return font * 1.02; // CJK 与全角
+        return font * 0.58; // 拉丁字母与数字
+      }
+
+      // 沿同心弧逐字摆放：字符从左到右阅读（角度递减），字顶永远朝向圆心。
+      // 锚点三选一：center（弧中心角）/ startAt（左端角）/ endAt（右端角）。
+      function placeArcText(parent, str, r, opts = {}) {
+        const font = opts.font || 14;
+        const ls = opts.ls != null ? opts.ls : 2;
+        const chars = [...String(str)];
+        if (!chars.length) return;
+        const widths = chars.map((ch) => charArcW(ch, font));
+        const total = widths.reduce((a, b) => a + b, 0) + ls * (chars.length - 1);
+        const degPer = (units) => units / r / D2R;
+        let leftEdge;
+        if (opts.startAt != null) leftEdge = opts.startAt;
+        else if (opts.endAt != null) leftEdge = opts.endAt + degPer(total);
+        else leftEdge = (opts.center != null ? opts.center : 90) + degPer(total) / 2;
+        let s = 0;
+        chars.forEach((ch, i) => {
+          const ang = leftEdge - degPer(s + widths[i] / 2);
+          const [x, y] = arcPt(ang, r);
+          const t = svgEl("text", {
+            x: x.toFixed(1),
+            y: y.toFixed(1),
+            fill: opts.fill || "#edf8ff",
+            transform: `rotate(${(ang - 90).toFixed(2)} ${x.toFixed(1)} ${y.toFixed(1)})`,
+            "text-anchor": "middle",
+            "dominant-baseline": "central",
+          }, parent);
+          t.style.fontSize = font + "px";
+          t.style.fontWeight = opts.weight || "400";
+          t.style.letterSpacing = "0";
+          if (opts.opacity != null) t.setAttribute("opacity", opts.opacity);
+          t.textContent = ch;
+          s += widths[i] + ls;
+        });
+      }
+
+      function setArcGroup(id, key, build) {
+        if (arcGroupCache[id] === key) return;
+        arcGroupCache[id] = key;
+        const gEl = document.getElementById(id);
+        gEl.innerHTML = "";
+        build(gEl);
+      }
+
+      // 弯进度条：弧形底槽 + 弧形填充，标签贴弧段起点(左)，数值贴弧段终点(右)。
+      function buildArcMeter(gEl, m) {
+        const span = m.span || 42;
+        const r = m.r;
+        const aL = 90 + span / 2;
+        const aR = 90 - span / 2;
+        svgEl("path", {
+          d: arcPathD(r, aL, aR),
+          fill: "none",
+          stroke: "rgba(255,255,255,.09)",
+          "stroke-width": 8,
+          "stroke-linecap": "round",
+        }, gEl);
+        const pct = clamp(m.pct, 0, 100);
+        if (pct > 0.5) {
+          svgEl("path", {
+            d: arcPathD(r, aL, aL - (aL - aR) * pct / 100),
+            fill: "none",
+            stroke: m.color,
+            "stroke-width": 8,
+            "stroke-linecap": "round",
+            opacity: 0.95,
+          }, gEl);
+        }
+        placeArcText(gEl, m.label, r, { endAt: aL + 3.4, font: 14.5, ls: 1.5, fill: "#91aabb" });
+        placeArcText(gEl, m.value, r, { startAt: aR - 3.4, font: 14.5, ls: 1.5, fill: m.valueColor || "#edf8ff", weight: "600" });
+      }
+
+      // 外弧键位层 + 刻度 + 扇环金属边线（静态，只建一次）
+      function buildCockpitStatic() {
+        const gEl = document.getElementById("arcStatic");
+        gEl.innerHTML = "";
+        // 装饰弧/竖线/刻度全部跟随当前楔形张角，避免缩短后两侧残留旧长度的线条
+        const S = cssVals.wedgeSpan;
+        const aR = 90 - S / 2, aL = 90 + S / 2; // 右/左边缘角
+        svgEl("path", { d: arcPathD(492, aL, aR), fill: "none", stroke: "rgba(150,190,215,.22)", "stroke-width": 1.2 }, gEl);
+        svgEl("path", { d: arcPathD(292, aL, aR), fill: "none", stroke: "rgba(150,190,215,.16)", "stroke-width": 1 }, gEl);
+        [aR, aL].forEach((ang) => {
+          const [x0, y0] = arcPt(ang, 292);
+          const [x1, y1] = arcPt(ang, 492);
+          svgEl("line", { x1: x0, y1: y0, x2: x1, y2: y1, stroke: "rgba(150,190,215,.14)", "stroke-width": 1 }, gEl);
+        });
+        // 稀疏仪器刻度线：贴两边缘内侧一小段，避开中部键位文字区
+        for (const [from, to] of [[aR + 3, aR + 19], [aL - 19, aL - 3]]) {
+          for (let ang = from, i = 0; ang <= to; ang += 4, i++) {
+            const major = i % 3 === 0;
+            const [x0, y0] = arcPt(ang, 470);
+            const [x1, y1] = arcPt(ang, major ? 483 : 478);
+            svgEl("line", {
+              x1: x0.toFixed(1), y1: y0.toFixed(1), x2: x1.toFixed(1), y2: y1.toFixed(1),
+              stroke: major ? "rgba(118,217,255,.32)" : "rgba(118,217,255,.16)",
+              "stroke-width": 1,
+            }, gEl);
+          }
+        }
+        placeArcText(gEl, "← → 左右转 · ↑ ↓ 上下转 · Space 采集 · R 切换", TUNE.keyR, {
+          center: 90, font: 10, ls: 2, fill: "rgba(145,170,187,.85)",
+        });
+      }
+
+      function cockpitFeedback() {
+        const transits = targetTransits();
+        switch (state.phase) {
+          case "aiming":
+            return { text: "把恒星对进准星中心", color: "#edf8ff" };
+          case "locked":
+            if (!transits) return { text: "该目标不会凌星，按 R 换一颗", color: "#edf8ff" };
+            if (inCaptureWindow(performance.now())) return { text: "窗口已到！按住 Space 记录", color: "#edf8ff" };
+            if (state.spaceHeld) return { text: "保持按住，窗口一到自动记录", color: "#edf8ff" };
+            return { text: "已对准，等待目标进入凌星窗口", color: "#edf8ff" };
+          case "collecting":
+            return { text: "持续按住，记录完整下凹", color: "#edf8ff" };
+          case "period":
+            return state.caliperLocked
+              ? { text: `周期已量出：${targetPlanet().periodDays} 天`, color: "#edf8ff" }
+              : { text: "按 ← → 移动卡尺，对准本次下凹", color: "#edf8ff" };
+          case "settled":
+            return state.settleStep < 3
+              ? { text: "按 → 点亮下一条推理", color: "#edf8ff" }
+              : { text: "按 R 继续观测下一颗目标", color: "#edf8ff" };
+          case "failed":
+            return { text: "空格提前松开，本段曲线作废", color: "#ff6b6b" };
+          default:
+            return { text: "", color: "#edf8ff" };
+        }
+      }
+
+      function cockpitMeters() {
+        const transits = targetTransits();
+        const aimPct = (v) => Math.round((1 - clamp(Math.abs(v) / 0.35, 0, 1)) * 100);
+        if (state.phase === "aiming" || state.phase === "failed") {
+          return [
+            { label: "水平对准", pct: aimPct(state.azimuth), color: "#76d9ff", value: axisHint("azimuth", state.azimuth) },
+            { label: "垂直对准", pct: aimPct(state.elevation), color: "#ffd166", value: axisHint("elevation", state.elevation) },
+            null,
+          ];
+        }
+        if (state.phase === "locked") {
+          // 对准弧条已淡出；弧带只留「会/不凌星」状态弧（居中单条）
+          return [
+            {
+              label: "该目标", pct: 100, span: 34,
+              color: transits ? "#63e6a8" : "#ff6b6b",
+              value: transits ? "会凌星" : "不凌星",
+              valueColor: transits ? "#63e6a8" : "#ff6b6b",
+            },
+            null,
+            null,
+          ];
+        }
+        if (state.phase === "collecting") {
+          const pct = Math.round(state.progress * 100);
+          return [
+            { label: "采集进度", pct, color: "#ffd166", value: `${pct}%` },
+            null,
+            null,
+          ];
+        }
+        if (state.phase === "period") {
+          const locked = state.caliperLocked;
+          return [
+            {
+              label: "卡尺间隔",
+              pct: Math.round((state.caliperGap - CALIPER_MIN) / (CALIPER_MAX - CALIPER_MIN) * 100),
+              color: locked ? "#63e6a8" : "#ffd166",
+              value: locked ? "已准" : "← →",
+              valueColor: locked ? "#63e6a8" : "#edf8ff",
+            },
+            null,
+            null,
+          ];
+        }
+        return [null, null, null];
+      }
+
+      function settleBoardHtml() {
+        const planet = targetPlanet();
+        const radiusStatus = planet.earthRadius < 1.6 ? "半径接近地球" : "半径偏大";
+        const periodStatus = planet.periodDays >= 150 && planet.periodDays <= 500 ? "周期落在宜居带附近" : planet.periodDays < 150 ? "周期过短，离恒星太近" : "周期过长，离恒星太远";
+        const tempStatus = planet.temp >= 240 && planet.temp <= 330 ? "温度推算适中，可能允许液态水稳定" : planet.temp > 330 ? "温度推算过高，液态水难稳定" : "温度推算过低，可能结冰";
+        const steps = [
+          `下凹${planet.earthRadius < 1.6 ? "浅" : "深"}，<strong>${radiusStatus}</strong>，约 ${planet.earthRadius} R⊕`,
+          `历史两次下凹间隔 ${planet.periodDays} 天，<strong>${periodStatus}</strong>`,
+          `${planet.temp} K，<strong>${tempStatus}</strong>`,
+          `类地匹配度 <strong>${earthLikeScore(planet)}%</strong> · ${planet.verdict}，不能据此判断生命存在`,
+        ];
+        const titles = ["半径线索", "周期线索", "宜居判断", "类地匹配度"];
+        const step = clamp(state.settleStep, 0, 3);
+        const dots = steps.map((_, i) => `<i class="${i <= step ? "on" : ""}"></i>`).join("");
+        // 一次只显示当前一段：标题（行星名 · 第 N/4 条）+ 当前那条放大居中 + 进度点
+        return `
+          <div class="settle-head"><b>${planet.label}</b><span>${titles[step]} · 第 ${step + 1}/4 条</span></div>
+          <div class="settle-step">${steps[step]}</div>
+          <div class="settle-progress">${dots}</div>
+        `;
+      }
+
+      const htmlCache = {};
+      function setHtml(el, id, html) {
+        if (htmlCache[id] === html) return;
+        htmlCache[id] = html;
+        el.innerHTML = html;
+      }
+
+      function renderPanels() {
+        if (phasePill) phasePill.textContent = phaseLabels[state.phase] || "观测中";
+        const planet = targetPlanet();
+        const transits = targetTransits();
+        cockpit.dataset.phase = state.phase;
+
+        // 反馈句弧（每阶段一句主反馈，取代一切悬浮字幕）
+        // 目标名已由主画面浮标「当前目标 X」表达，弧带不再重复；R 切换提示已在键位图例。
+        const fb = cockpitFeedback();
+        setArcGroup("arcFeedback", `${fb.text}|${fb.color}`, (gEl) => {
+          placeArcText(gEl, fb.text, TUNE.feedbackR, { center: 90, font: 21, ls: 3, fill: fb.color, weight: "650" });
+        });
+
+        // 仪表弧（弯进度条，三个固定槽位）
+        const mRadii = meterRadii();
+        cockpitMeters().forEach((m, i) => {
+          const key = m ? JSON.stringify(m) : "empty";
+          setArcGroup(`meterSlot${i}`, key, (gEl) => {
+            if (m) buildArcMeter(gEl, Object.assign({ r: mRadii[i] }, m));
+          });
+        });
+
+        // 曲线屏标题 + 结算推理链
+        curveTitle.textContent = state.phase === "period" ? "周期记录" : "光变曲线";
+        if (state.phase === "settled") {
+          setHtml(settleBoard, "settle", settleBoardHtml());
+        }
+
+        drawMiniCanvases();
+      }
+
+      function axisHint(axis, value) {
+        if (Math.abs(value) <= READY_TOLERANCE) return "已准";
+        if (axis === "azimuth") return value > 0 ? "按←" : "按→";
+        return value > 0 ? "按↑" : "按↓";
+      }
+
+      function drawMiniCanvases() {
+        const curve = document.getElementById("curveView");
+        if (curve) drawCurve(curve, state.phase === "period");
+      }
+
+      function drawCurve(c, showHistory) {
+        const { g, w, h } = resizeCanvas(c);
+        g.clearRect(0, 0, w, h);
+        // 面板底色用可调 alpha（曲线面板透明度）；曲线/文字在其上仍全亮可读
+        const curveA = clamp((cssVals && cssVals["--curve-opacity"] != null ? cssVals["--curve-opacity"] : 70) / 100, 0, 1);
+        g.fillStyle = `rgba(2,7,13,${curveA.toFixed(2)})`;
+        g.fillRect(0, 0, w, h);
+        const left = 12;
+        const right = w - 8;
+        const baseY = h * 0.34;
+        const scale = h * 0.46;
+        // 面板内主文字随曲线画布高度缩放（≈body 级，明显比旧版 10–11px 大）
+        const fs = Math.max(12, Math.round(h * 0.13));
+        g.strokeStyle = "rgba(237,248,255,.42)";
+        g.beginPath();
+        g.moveTo(left, baseY);
+        g.lineTo(right, baseY);
+        g.stroke();
+        g.fillStyle = "rgba(237,248,255,.6)";
+        const refFs = Math.round(fs * 0.8);
+        g.font = refFs + "px system-ui";
+        g.textBaseline = "alphabetic";
+        // 基线标签：参考性注记，用小一号字放左上角，远离卡尺竖脚与「上次/本次」
+        g.fillText("基线 1.000", left, refFs + 1);
+
+        if (showHistory) {
+          drawHistoryCurve(g, w, h, left, right, baseY, scale, fs);
+          return;
+        }
+
+        const collecting = state.phase === "collecting";
+        if (collecting) {
+          // 实时录制的真实亮度
+          const buf = state.recordBuf;
+          g.strokeStyle = "#ffd166";
+          g.lineWidth = 2;
+          g.beginPath();
+          for (let i = 0; i < buf.length; i++) {
+            const x = left + (right - left) * (i / Math.max(1, buf.length - 1));
+            const y = baseY + (1 - buf[i]) * scale;
+            i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+          }
+          g.stroke();
+          g.fillStyle = "rgba(255,209,102,.82)";
+          const capFs = Math.round(fs * 0.82);
+          g.font = capFs + "px system-ui";
+          g.fillText("下凹幅度为教学放大", left, Math.min(baseY + scale * 0.9 + capFs, h - 3));
+        } else {
+          // 预期曲线：由该行星固定的轨道倾角和大小决定，观测者转望远镜改变不了它
+          g.strokeStyle = "rgba(118,217,255,.85)";
+          g.lineWidth = 2;
+          g.setLineDash([5, 4]);
+          g.beginPath();
+          for (let i = 0; i <= 100; i++) {
+            const value = telescopeSample(i / 100).brightness;
+            const x = left + (right - left) * (i / 100);
+            const y = baseY + (1 - value) * scale;
+            i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+          }
+          g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = "rgba(118,217,255,.8)";
+          // caption 用 micro 级（fs*0.82），仍比旧版清楚，置于画布底部留出降部空间
+          const capFs = Math.round(fs * 0.82);
+          g.font = capFs + "px system-ui";
+          g.fillText("预期曲线（由该行星轨道决定）", left, Math.min(baseY + scale * 0.9 + capFs, h - 3));
+        }
+      }
+
+      function drawHistoryCurve(g, w, h, left, right, baseY, scale, fs) {
+        fs = fs || Math.max(12, Math.round(h * 0.13));
+        const planet = targetPlanet();
+        const gap = historyDipGap(planet);
+        const x1 = 0.13;
+        const x2 = x1 + gap;
+        const xc = x1 + state.caliperGap;
+        drawDip(g, left + (right - left) * x1, baseY, scale, planet);
+        drawDip(g, left + (right - left) * x2, baseY, scale, planet);
+        g.fillStyle = "rgba(237,248,255,.72)";
+        g.font = fs + "px system-ui";
+        g.textBaseline = "alphabetic";
+        // 「上次/本次」放在各自坑的正上方，居中对齐坑、与基线/竖脚都留空隙
+        const tagY = baseY - 7;
+        g.textAlign = "center";
+        g.fillText("上次", left + (right - left) * x1, tagY);
+        g.fillText("本次", left + (right - left) * x2, tagY);
+        const noteFs = Math.round(fs * 0.72);
+        g.font = noteFs + "px system-ui";
+        g.fillStyle = "rgba(118,217,255,.72)";
+        g.textAlign = "right";
+        g.fillText("历史档案 · 教学压缩", right, noteFs + 1);
+        g.textAlign = "left";
+
+        const color = state.caliperLocked ? "99,230,168" : "255,209,102";
+        const jawL = left + (right - left) * x1;
+        const jawR = left + (right - left) * xc;
+        const topY = baseY;          // 卡尺竖脚从基线起，不再向上穿过「基线1.000」「上次/本次」
+        const barY = h * 0.8;        // 横梁上移，给下方卡尺标签留更多呼吸空间
+        // 卡尺锁定确认：刚"咔"上那 ~700ms，竖脚/横梁/标签罩一层绿色辉光并加粗，随后淡出
+        const lockPulse = state.caliperLocked
+          ? clamp(1 - (performance.now() - state.caliperLockedAt) / CALIPER_ANIM_MS, 0, 1)
+          : 0;
+        g.save();
+        if (lockPulse > 0) {
+          g.shadowColor = "rgba(130,250,185,0.95)";
+          g.shadowBlur = 16 * lockPulse;
+        }
+        g.strokeStyle = `rgba(${color},.95)`;
+        g.lineWidth = 2 + 2.4 * lockPulse;
+        [jawL, jawR].forEach((x) => {
+          g.beginPath();
+          g.moveTo(x, topY);
+          g.lineTo(x, barY);
+          g.stroke();
+        });
+        g.beginPath();
+        g.moveTo(jawL, barY);
+        g.lineTo(jawR, barY);
+        g.stroke();
+        g.fillStyle = `rgba(${color},1)`;
+        g.font = fs + "px system-ui";
+        const mid = (jawL + jawR) / 2;
+        const label = state.caliperLocked ? `周期 = ${planet.periodDays} 天` : "← → 对准本次坑";
+        // 卡尺标签：用 top 基线把字顶贴在横梁下方 2px，并 clamp 字顶使整字不超出画布底
+        g.textBaseline = "top";
+        const labelTop = Math.min(barY + 2, h - fs - 1);
+        g.fillText(label, mid - g.measureText(label).width / 2, labelTop);
+        g.textBaseline = "alphabetic";
+        g.restore();
+      }
+
+      function drawDip(g, centerX, baseY, scale, planet) {
+        g.strokeStyle = "#ffd166";
+        g.lineWidth = 2;
+        g.beginPath();
+        for (let i = 0; i <= 60; i++) {
+          const p = i / 60;
+          const x = centerX + (p - 0.5) * 34;
+          const y = baseY + (1 - telescopeSample(p, planet).brightness) * scale;
+          if (i === 0) g.moveTo(x, y);
+          else g.lineTo(x, y);
+        }
+        g.stroke();
+      }
+
+      window.addEventListener("keydown", (event) => {
+        if (!audioMuted) ensureAudio(); // 首次按键解锁 AudioContext（自动播放策略）
+        if (event.key.toLowerCase() === "m") { // M 静音开关
+          audioMuted = !audioMuted;
+          if (audioMuted && audioCtx) audioCtx.suspend();
+          return;
+        }
+        if (event.code === "Space") {
+          event.preventDefault();
+          state.spaceHeld = true;
+          if (!event.repeat) startCollection();
+          return;
+        }
+
+        if (state.phase === "period" && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+          event.preventDefault();
+          adjustCaliper(event.key === "ArrowRight" ? CALIPER_STEP : -CALIPER_STEP);
+          return;
+        }
+
+        if (state.phase === "settled" && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+          event.preventDefault();
+          const dir = event.key === "ArrowRight" ? 1 : -1;
+          state.settleStep = clamp(state.settleStep + dir, 0, 3);
+          renderPanels();
+          return;
+        }
+
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          adjustCalibration("azimuth", -0.04);
+        } else if (event.key === "ArrowRight") {
+          event.preventDefault();
+          adjustCalibration("azimuth", 0.04);
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          adjustCalibration("elevation", -0.04);
+        } else if (event.key === "ArrowDown") {
+          event.preventDefault();
+          adjustCalibration("elevation", 0.04);
+        } else if (event.key.toLowerCase() === "r") {
+          continueObservation();
+          renderPanels();
+        }
+      });
+
+      window.addEventListener("keyup", (event) => {
+        if (event.code !== "Space") return;
+        state.spaceHeld = false;
+        if (state.phase === "collecting" && state.progress < 1) {
+          event.preventDefault();
+          failCollection();
+          renderPanels();
+        }
+      });
+
+      function tick(now) {
+        maybeLock();
+        // 锁定后持握 Space，凌星窗口一到自动开始录制（不用精确卡点，但必须等时机）
+        if (state.phase === "locked" && state.spaceHeld && inCaptureWindow(now)) {
+          startCollection();
+        }
+        if (state.phase === "collecting") {
+          // 实时录制：进度来自行星真实公转位置（入口→出口），不倒带
+          const H = transitHalfAngle();
+          const off = transitOffset(now);
+          state.progress = clamp((off + H) / (2 * H), 0, 1);
+          state.recordBuf.push(brightnessAtTheta(orbitTheta(targetPlanet(), now)));
+          if (state.recordBuf.length > 600) state.recordBuf.shift();
+          if (off >= H) completeCollection(); // 行星离开恒星盘出口
+          renderPanels();
+        } else if (state.phase === "period" && state.caliperLocked && now - state.caliperLockedAt <= CALIPER_ANIM_MS) {
+          renderPanels(); // 卡尺锁定确认脉冲：这段时间逐帧重绘曲线画布，让绿色辉光平滑淡出
+        } else if (state.phase === "period" && state.caliperLocked && now - state.caliperLockedAt > PERIOD_HOLD_MS) {
+          completePeriod();
+          renderPanels();
+        } else if (state.phase === "failed" && now - state.failedAt > FAIL_RECOVERY_MS) {
+          state.phase = offsetsReady() ? "locked" : "aiming";
+          renderPanels();
+        } else if (now - state.lastRender > 180) {
+          renderPanels();
+          state.lastRender = now;
+        }
+        drawUniverse(now);
+        requestAnimationFrame(tick);
+      }
+
+      // ===== CSS 变量参数源（正式版用固定默认值） =====
+      const rootStyle = document.documentElement.style;
+
+      // CSS 变量类参数默认值（与 :root 一致）。中心曲线面板单位 %（套用时补 %）。
+      // 弧带张角 wedgeSpan 特殊：单独驱动 --wedge-span 与 --wedge-from（保证扇形居中正下方）。
+      const CSS_DEFAULTS = {
+        wedgeSpan: 98,            // 弧带张角（度），驱动 --wedge-span / --wedge-from
+        "--cockpit-opacity": 70,  // 弧带玻璃底板透明度（%）
+        "--curve-opacity": 70,    // 中心曲线面板底色透明度（%，由 canvas 读取）
+        "--curve-top": 62,
+        "--curve-left": 50,
+        "--curve-width": 30,
+        "--curve-height": 16,
+      };
+      const cssVals = Object.assign({}, CSS_DEFAULTS);
+
+      function applyWedge() {
+        const span = cssVals.wedgeSpan;
+        rootStyle.setProperty("--wedge-span", span + "deg");
+        // 扇形始终居中在正下方：起始角 = 180 - span/2
+        rootStyle.setProperty("--wedge-from", (180 - span / 2) + "deg");
+        // 楔形变了，装饰弧/竖线/刻度也要跟着重画，否则两侧残留旧长度
+        if (typeof buildCockpitStatic === "function") buildCockpitStatic();
+      }
+      function applyCssVar(key) {
+        if (key === "wedgeSpan") { applyWedge(); return; }
+        rootStyle.setProperty(key, cssVals[key] + "%");
+      }
+      function applyAllCssVars() {
+        Object.keys(cssVals).forEach(applyCssVar);
+      }
+
+      // 几何重绘：TUNE 变更后清掉弧缓存（半径变了但文字键没变，否则 setArcGroup 会跳过重建），
+      // 重画静态键位弧，再跑 renderPanels；canvas 恒星 Y 下一帧自然生效。
+      function retune() {
+        for (const k in arcGroupCache) delete arcGroupCache[k];
+        buildCockpitStatic();
+        renderPanels();
+      }
+
+      // —— 启动：套用固定 CSS 变量（默认值），构建场景，按 demo 参数定相，进入帧循环 ——
+      applyAllCssVars();
+      applyDemoMode();
+      applyViewOffsetParams();
+      updateReflectionLayer();
+      buildCockpitStatic();
+      renderPanels();
+      requestAnimationFrame(tick);
+
+      // —— 定版调参面板（仅 ?tune=1 出现；正式版打开不受影响）——
+      if (params.get("tune")) {
+        (function buildTunePanel() {
+          const root = document.documentElement;
+          const shell = document.querySelector(".window-shell");
+          const css = document.createElement("style");
+          css.textContent =
+            ".tunep{position:fixed;top:12px;right:12px;width:252px;z-index:100000;background:rgba(8,16,24,.93);border:1px solid rgba(118,217,255,.35);border-radius:10px;padding:12px;color:#dff;font:12px/1.4 system-ui}" +
+            ".tunep h4{margin:0 0 8px;font-size:12px;letter-spacing:.08em;color:#76d9ff}" +
+            ".tunep .row{margin:7px 0}.tunep .row label{display:flex;justify-content:space-between;margin-bottom:2px}.tunep .row label b{color:#fff;font-weight:600}" +
+            ".tunep input[type=range]{width:100%}" +
+            ".tunep .frames{display:flex;gap:5px;margin:8px 0 4px;flex-wrap:wrap}.tunep .frames button{flex:1;min-width:52px;padding:4px 0;background:#0c1822;border:1px solid rgba(118,217,255,.3);color:#bfe;border-radius:5px;cursor:pointer;font-size:11px}.tunep .frames button.on{background:#1d3a4d;border-color:#76d9ff;color:#fff}" +
+            ".tunep .gap{margin:8px 0;padding:6px;border-radius:5px;background:#06121b;font-family:monospace;font-size:11px}.tunep .gap.ok{color:#63e6a8}.tunep .gap.bad{color:#ffd166}" +
+            ".tunep .btns{display:flex;gap:6px;margin-top:8px}.tunep .btns button{flex:1;padding:6px 0;background:#10202c;border:1px solid rgba(118,217,255,.3);color:#cfe;border-radius:5px;cursor:pointer}";
+          document.head.appendChild(css);
+          const panel = document.createElement("div");
+          panel.className = "tunep";
+          panel.innerHTML = "<h4>定版调参 · ?tune=1</h4>";
+          document.body.appendChild(panel);
+
+          const fmt = (c, v) => (c.unit === "px" ? Math.round(v) + "px" : v.toFixed(3));
+          const CTRLS = [
+            { k: "stage", label: "整体大小", min: 0.6, max: 1.05, step: 0.01, unit: "", get: () => parseFloat(getComputedStyle(root).getPropertyValue("--stage-scale")) || 0.83, set: (v) => root.style.setProperty("--stage-scale", v) },
+            { k: "offy", label: "整体垂直位置", min: -280, max: 280, step: 2, unit: "px", get: () => parseFloat(getComputedStyle(root).getPropertyValue("--shell-offset-y")) || 0, set: (v) => root.style.setProperty("--shell-offset-y", v + "px") },
+            { k: "shell", label: "外壳大小", min: 1, max: 1.6, step: 0.01, unit: "", get: () => parseFloat(getComputedStyle(shell).getPropertyValue("--shell-scale")) || 1.38, set: (v) => shell.style.setProperty("--shell-scale", v) },
+            { k: "starY", label: "星球高度", min: 0.3, max: 0.58, step: 0.005, unit: "", get: () => TUNE.starY, set: (v) => { TUNE.starY = v; } },
+          ];
+          const inputs = {};
+          CTRLS.forEach((c) => {
+            const val = c.get();
+            const row = document.createElement("div"); row.className = "row";
+            row.innerHTML = '<label>' + c.label + '<b id="v_' + c.k + '">' + fmt(c, val) + "</b></label>";
+            const inp = document.createElement("input"); inp.type = "range"; inp.min = c.min; inp.max = c.max; inp.step = c.step; inp.value = val;
+            inp.addEventListener("input", () => { const v = parseFloat(inp.value); c.set(v); document.getElementById("v_" + c.k).textContent = fmt(c, v); });
+            row.appendChild(inp); panel.appendChild(row); inputs[c.k] = inp;
+          });
+          const fr = document.createElement("div"); fr.className = "frames";
+          ["telescope", "clean", "hybrid", "none"].forEach((f) => {
+            const b = document.createElement("button"); b.textContent = f;
+            if (document.body.dataset.frame === f) b.classList.add("on");
+            b.addEventListener("click", () => {
+              document.body.dataset.frame = f; shell.style.removeProperty("--shell-scale");
+              fr.querySelectorAll("button").forEach((x) => x.classList.remove("on")); b.classList.add("on");
+              if (typeof updateReflectionLayer === "function") updateReflectionLayer();
+              const sv = parseFloat(getComputedStyle(shell).getPropertyValue("--shell-scale")) || 1;
+              inputs.shell.value = sv; document.getElementById("v_shell").textContent = sv.toFixed(3);
+            });
+            fr.appendChild(b);
+          });
+          panel.appendChild(fr);
+          const gap = document.createElement("div"); gap.className = "gap"; panel.appendChild(gap);
+          (function tickGap() { const r = shell.getBoundingClientRect(); const t = Math.round(r.top), btm = Math.round(window.innerHeight - r.bottom); gap.textContent = "上缘 " + t + "px ｜ 下缘 " + btm + "px"; gap.className = "gap " + (Math.abs(t - btm) <= 2 ? "ok" : "bad"); requestAnimationFrame(tickGap); })();
+          const btns = document.createElement("div"); btns.className = "btns";
+          const copy = document.createElement("button"); copy.textContent = "复制参数";
+          copy.addEventListener("click", () => { const o = { stageScale: +CTRLS[0].get().toFixed(3), offsetY: Math.round(CTRLS[1].get()), shellScale: +CTRLS[2].get().toFixed(3), starY: +TUNE.starY.toFixed(3), frame: document.body.dataset.frame }; const s = JSON.stringify(o); if (navigator.clipboard) navigator.clipboard.writeText(s); copy.textContent = "已复制✓"; console.log("[tune]", s); setTimeout(() => (copy.textContent = "复制参数"), 1200); });
+          const reset = document.createElement("button"); reset.textContent = "重置";
+          reset.addEventListener("click", () => { root.style.removeProperty("--shell-offset-y"); root.style.setProperty("--stage-scale", "0.83"); shell.style.removeProperty("--shell-scale"); TUNE.starY = 0.42; CTRLS.forEach((c) => { const v = c.get(); inputs[c.k].value = v; document.getElementById("v_" + c.k).textContent = fmt(c, v); }); });
+          btns.appendChild(copy); btns.appendChild(reset); panel.appendChild(btns);
+        })();
+      }
+    </script>
+  </body>
+</html>

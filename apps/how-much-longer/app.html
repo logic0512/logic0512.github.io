@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>还能活多久 · 网页体验版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;1,300;1,500&family=Noto+Serif+SC:wght@200;300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --bg: #F8F7F4;
+    --bg2: #EEECEE;
+    --text: #1C1C1A;
+    --text2: #9A9490;
+    --accent: #C8782A;
+    --danger: #C0392B;
+    --border: rgba(28, 28, 26, 0.09);
+    --card: rgba(248, 247, 244, 0.92);
+    --serif: 'Cormorant Garamond', serif;
+    --sc: 'Noto Serif SC', serif;
+  }
+  body.night {
+    --bg: #0E0E0C;
+    --bg2: #1A1A18;
+    --text: #E6DDD2;
+    --text2: #6A6460;
+    --accent: #C8782A;
+    --border: rgba(230, 221, 210, 0.09);
+    --card: rgba(26, 26, 24, 0.92);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--sc);
+    background: #2a2a28;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: background 0.5s ease;
+  }
+
+  /* 手机外框 — 桌面居中，移动端全屏 */
+  #phone {
+    position: relative;
+    width: 390px;
+    height: 844px;
+    max-height: 100vh;
+    background: var(--bg);
+    overflow: hidden;
+    transition: background 0.5s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  @media (max-width: 430px) {
+    body { background: var(--bg); }
+    #phone { width: 100vw; height: 100vh; box-shadow: none; }
+  }
+
+  /* 同心圆背景 canvas */
+  #halo {
+    position: absolute;
+    top: -55px;
+    left: -21px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── Banner ─── */
+  .banner-wrap {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    right: 16px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .banner {
+    padding: 10px 16px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 300;
+    backdrop-filter: blur(8px);
+    animation: fadeDown 0.5s ease;
+  }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  .banner.fixed {
+    background: rgba(200, 120, 42, 0.12);
+    border: 1px solid rgba(200, 120, 42, 0.3);
+    color: var(--accent);
+  }
+  .banner.care {
+    background: var(--card);
+    border: 1px solid rgba(200, 120, 42, 0.3);
+    color: var(--text);
+  }
+  .banner .grow { flex: 1; }
+  .banner .tail { font-size: 10px; opacity: 0.75; }
+  .banner.care .tail { color: var(--accent); opacity: 1; font-size: 11px; }
+  .banner .warn { color: var(--accent); font-size: 14px; }
+
+  /* ─── 硬币翻转区 ─── */
+  #coin-area {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    perspective: 1600px;
+    cursor: pointer;
+  }
+  #coin {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  #coin.flipped { transform: rotateY(180deg); }
+  .coin-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-start;
+    padding: 0 36px 32px;
+  }
+  .coin-back { transform: rotateY(180deg); }
+
+  .figures { opacity: 0.85; margin-bottom: 24px; }
+  .divider-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+  }
+  .divider-row .line { flex: 1; height: 1px; background: var(--border); }
+  .divider-row .hint {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .big-number {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 152px;
+    line-height: 0.84;
+    letter-spacing: -7px;
+    color: var(--text);
+    margin-top: 16px;
+    font-feature-settings: 'lnum' 1;
+  }
+  .coin-back .big-number { color: var(--text2); }
+  .label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 12px;
+  }
+  .front-label {
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+  .back-label {
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--text2);
+    letter-spacing: 3.5px;
+    margin-top: 12px;
+  }
+  .label-controls { display: flex; align-items: center; gap: 12px; }
+  .help-btn {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--text2); cursor: pointer;
+  }
+  .phase-toggle {
+    font-family: var(--serif); font-style: italic; font-size: 11px;
+    color: var(--text2); letter-spacing: 1.5px; cursor: pointer;
+  }
+
+  /* ─── 底部导航 ─── */
+  #bottom-nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 40;
+    height: 76px;
+    display: flex;
+    background: var(--card);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    position: relative;
+    padding-top: 6px;
+  }
+  .nav-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 22px; bottom: 22px;
+    width: 1px;
+    background: var(--border);
+  }
+  .nav-item .ico {
+    font-family: var(--sc);
+    font-size: 19px;
+    font-weight: 300;
+    color: var(--text2);
+    transition: color 0.25s;
+  }
+  .nav-item .ico svg { display: block; width: 21px; height: 21px; stroke: var(--text2); fill: none; stroke-width: 1.4; transition: stroke 0.25s; }
+  .nav-item .tag {
+    font-family: var(--serif);
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text2);
+    transition: color 0.25s;
+  }
+  .nav-item.active .ico { color: var(--accent); }
+  .nav-item.active .ico svg { stroke: var(--accent); }
+  .nav-item.active .tag { color: var(--accent); }
+
+  /* ─── 面板 (bottom sheet) ─── */
+  .panel {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: var(--bg);
+    transform: translateY(100%);
+    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    display: flex;
+    flex-direction: column;
+    visibility: hidden;
+  }
+  .panel.open { transform: translateY(0); visibility: visible; }
+  .panel-header {
+    padding: 28px 24px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .panel-title {
+    font-family: var(--sc);
+    font-size: 19px;
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+  .panel-subtitle {
+    font-family: var(--sc);
+    font-size: 11px;
+    font-weight: 300;
+    color: var(--text2);
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+  .panel-actions { display: flex; align-items: center; gap: 4px; }
+  .panel-close, .panel-act {
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text2);
+  }
+  .panel-close svg { width: 18px; height: 18px; }
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 24px 40px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 钱包 */
+  .balance-display { text-align: center; padding: 24px 0 28px; }
+  .balance-label { font-size: 11px; color: var(--text2); letter-spacing: 2px; font-weight: 300; }
+  .balance-value {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 64px; color: var(--text); margin-top: 6px;
+    font-feature-settings: 'lnum' 1;
+  }
+  .section-title {
+    font-family: var(--sc); font-size: 11px; font-weight: 300;
+    color: var(--text2); letter-spacing: 4px; text-align: center;
+    margin: 24px 0 16px;
+  }
+
+  /* 柱状图 */
+  .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 130px; gap: 6px; padding: 0 4px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bar-val { font-family: var(--serif); font-size: 9px; color: var(--text2); }
+  .bar {
+    width: 100%; max-width: 22px;
+    background: var(--accent);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    opacity: 0.85;
+    transition: height 0.4s ease;
+  }
+  .bar.zero { background: var(--border); opacity: 1; }
+  .bar-day { font-family: var(--serif); font-size: 8px; color: var(--text2); letter-spacing: 0.5px; }
+
+  /* 通用按钮 */
+  .btn-primary {
+    width: 100%; padding: 14px; border: none; border-radius: 10px;
+    background: var(--accent); color: #fff;
+    font-family: var(--sc); font-size: 14px; font-weight: 400;
+    cursor: pointer; letter-spacing: 1px;
+  }
+  .btn-ghost {
+    width: 100%; padding: 13px; border: 1px solid var(--border); border-radius: 10px;
+    background: transparent; color: var(--text);
+    font-family: var(--sc); font-size: 13px; font-weight: 300;
+    cursor: pointer; margin-top: 10px;
+  }
+  .input {
+    width: 100%; padding: 13px 14px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--bg2); color: var(--text);
+    font-family: var(--sc); font-size: 14px; font-weight: 300;
+    outline: none; margin-bottom: 10px;
+  }
+  .input::placeholder { color: var(--text2); }
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* 列表项 */
+  .list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 4px; border-bottom: 1px solid var(--border);
+  }
+  .li-left { display: flex; flex-direction: column; gap: 3px; }
+  .li-name { font-size: 14px; font-weight: 300; color: var(--text); }
+  .li-meta { font-size: 11px; color: var(--text2); font-weight: 300; }
+  .li-amount { font-family: var(--serif); font-size: 17px; font-style: italic; color: var(--text); }
+  .li-amount.income { color: var(--accent); }
+  .li-del { color: var(--danger); font-size: 11px; cursor: pointer; margin-left: 14px; }
+  .day-group-date {
+    font-family: var(--serif); font-size: 11px; color: var(--text2);
+    letter-spacing: 1px; margin: 18px 0 4px; font-style: italic;
+  }
+  .empty-hint { text-align: center; color: var(--text2); font-size: 12px; font-weight: 300; padding: 30px 0; }
+
+  /* 分类选择 */
+  .cat-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .cat-chip {
+    padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);
+    font-size: 13px; font-weight: 300; color: var(--text2); cursor: pointer;
+    background: transparent; transition: all 0.2s;
+  }
+  .cat-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cat-chip .nc { font-size: 9px; opacity: 0.7; margin-left: 3px; }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; font-size: 13px; font-weight: 300; color: var(--text);
+  }
+  .switch { width: 44px; height: 26px; border-radius: 13px; background: var(--border); position: relative; cursor: pointer; transition: background 0.25s; flex-shrink: 0; }
+  .switch.on { background: var(--accent); }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left 0.25s; }
+  .switch.on .knob { left: 21px; }
+
+  .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+  .seg div { flex: 1; text-align: center; padding: 11px; font-size: 13px; font-weight: 300; color: var(--text2); cursor: pointer; }
+  .seg div.active { background: var(--accent); color: #fff; }
+
+  /* 生存印章海报 */
+  .seal-poster {
+    background: var(--bg);
+    padding: 50px 30px 30px;
+    display: flex; flex-direction: column; align-items: center;
+    position: relative;
+    min-height: 560px;
+  }
+  .seal-head1 { font-family: var(--serif); font-size: 16px; font-weight: 600; letter-spacing: 5px; color: var(--text); }
+  .seal-head2 { font-family: var(--sc); font-size: 11px; font-weight: 300; letter-spacing: 3px; color: var(--text2); margin-top: 4px; }
+  .seal-bignum {
+    font-family: var(--serif); font-style: italic; font-weight: 300;
+    font-size: 180px; line-height: 0.82; letter-spacing: -10px;
+    color: var(--accent); opacity: 0.25; margin: 36px 0;
+    font-feature-settings: 'lnum' 1;
+  }
+  .seal-quote {
+    font-family: var(--serif); font-style: italic; font-size: 18px; font-weight: 300;
+    line-height: 1.8; color: var(--text2); text-align: center; padding: 0 10px;
+  }
+  .seal-author { font-family: var(--serif); font-style: italic; font-size: 13px; font-weight: 300; color: var(--text2); opacity: 0.6; margin-top: 12px; }
+  .seal-date { font-family: var(--serif); font-size: 14px; font-weight: 300; color: var(--text2); margin-top: 50px; }
+  .seal-footer { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; margin-top: 40px; }
+  .seal-stamp {
+    width: 58px; height: 58px; border-radius: 50%; border: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .seal-stamp .s1 { font-family: var(--sc); font-size: 17px; font-weight: 300; color: var(--text2); }
+  .seal-stamp .s2 { font-family: var(--sc); font-size: 7px; font-weight: 300; letter-spacing: 2.5px; color: var(--text2); }
+  .seal-status { text-align: right; }
+  .seal-status .t1 { font-family: var(--serif); font-size: 9px; letter-spacing: 2.5px; color: var(--text2); }
+  .seal-status .t2 { font-family: var(--serif); font-size: 8px; letter-spacing: 1.5px; color: var(--text2); opacity: 0.7; margin-top: 2px; }
+  .seal-status .t3 { font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--text); margin-top: 4px; }
+
+  /* ─── Modal ─── */
+  #modal-layer {
+    position: absolute; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.32);
+    display: none; align-items: center; justify-content: center;
+    padding: 0 36px;
+  }
+  #modal-layer.show { display: flex; }
+  .modal-card {
+    background: var(--card); backdrop-filter: blur(10px);
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 26px 24px; width: 100%; max-width: 320px;
+    animation: popIn 0.25s ease;
+  }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+  .modal-title { font-family: var(--sc); font-size: 15px; font-weight: 400; color: var(--text); text-align: center; line-height: 1.9; }
+  .modal-text { font-family: var(--sc); font-size: 13px; font-weight: 300; color: var(--text2); text-align: center; margin-top: 8px; line-height: 1.7; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .modal-actions button {
+    flex: 1; padding: 12px; border-radius: 10px; border: none;
+    font-family: var(--sc); font-size: 13px; cursor: pointer;
+  }
+  .modal-btn-cancel { background: var(--bg2); color: var(--text2); }
+  .modal-btn-ok { background: var(--accent); color: #fff; }
+
+  /* ─── Toast ─── */
+  #toast {
+    position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+    z-index: 200;
+    background: var(--text); color: var(--bg);
+    padding: 11px 20px; border-radius: 22px;
+    font-family: var(--sc); font-size: 12px; font-weight: 300;
+    opacity: 0; transition: all 0.3s ease; pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 0.95; transform: translateX(-50%) translateY(0); }
+
+  /* 演示水印徽标 */
+  #demo-badge {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    z-index: 25; font-family: var(--serif); font-style: italic;
+    font-size: 10px; letter-spacing: 2px; color: var(--text2); opacity: 0.5;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="phone">
+  <canvas id="halo" width="439" height="588"></canvas>
+  <div id="demo-badge">DEMO · 网页体验版</div>
+
+  <!-- Banner -->
+  <div class="banner-wrap" id="banner-wrap"></div>
+
+  <!-- 硬币翻转区 -->
+  <div id="coin-area">
+    <div id="coin">
+      <div class="coin-face coin-front">
+        <svg class="figures" width="110" height="135" viewBox="0 0 110 135"></svg>
+        <div class="divider-row"><div class="line"></div><div class="hint">轻触翻面</div><div class="line"></div></div>
+        <div class="big-number" id="front-num">100</div>
+        <div class="label-row">
+          <div class="front-label">还能活的天数</div>
+          <div class="label-controls">
+            <div class="help-btn" id="help-btn">?</div>
+            <div class="phase-toggle" id="phase-toggle">— 白天 —</div>
+          </div>
+        </div>
+      </div>
+      <div class="coin-face coin-back">
+        <svg class="figures figures-back" width="110" height="135" viewBox="0 0 110 135"></svg>
+        <div class="divider-row"><div class="line"></div><div class="hint">轻触翻面</div><div class="line"></div></div>
+        <div class="big-number" id="back-num">1</div>
+        <div class="back-label">已存活天数</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 面板们 -->
+  <div class="panel" id="panel-wallet"></div>
+  <div class="panel" id="panel-fixed"></div>
+  <div class="panel" id="panel-flow"></div>
+  <div class="panel" id="panel-seal"></div>
+  <div class="panel" id="panel-settings"></div>
+
+  <!-- 底部导航 -->
+  <div id="bottom-nav">
+    <div class="nav-item" data-panel="panel-wallet"><div class="ico">钱</div><div class="tag">My Wallet</div></div>
+    <div class="nav-item" data-panel="panel-fixed"><div class="ico">定</div><div class="tag">Fixed</div></div>
+    <div class="nav-item" data-panel="panel-flow"><div class="ico">转</div><div class="tag">Flow</div></div>
+    <div class="nav-item" data-panel="panel-seal"><div class="ico">印</div><div class="tag">Seal</div></div>
+    <div class="nav-item" data-panel="panel-settings"><div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="tag">Settings</div></div>
+  </div>
+
+  <!-- Modal & Toast -->
+  <div id="modal-layer"><div class="modal-card" id="modal-card"></div></div>
+  <div id="toast"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ════════════════ 格言数据 ════════════════ */
+const QUOTES = [
+  ["应当想象西西弗斯是幸福的。","加缪"],["今天是你剩余人生的第一天。","查尔斯·狄龙"],
+  ["重要的不是活多久，而是怎么活。","塞涅卡"],["时间是最公平的资源，用在哪里，看你自己。",""],
+  ["日子是过出来的，不是熬过来的。",""],["自由不是想做什么就做什么，而是有能力选择不做什么。",""],
+  ["焦虑是对未来的恐惧，专注是对当下的觉知。",""],["活着不需要理由，活着本身就是理由。",""],
+  ["每一天醒来，都是一次重新开始的机会。",""],["人生没有标准答案，活着本身就是一种回答。",""],
+  ["感知此刻，比担忧未来更有力量。",""],["不要等到准备好了才出发，路就在脚下。",""],
+  ["时间不可管理，能管理的只有自己。",""],["活在当下不是放弃未来，而是认真对待现在。",""],
+  ["生活的意义不在远方，就在此刻的选择里。",""],["不是活得更久，而是活得更真切。",""],
+  ["每一个不曾起舞的日子，都是对生命的辜负。","尼采"],["人生就像一本书，傻瓜们走马观花，聪明人细细品读。","塞缪尔·斯迈尔斯"],
+  ["生命好在无意义，才容得下各自赋予意义。","木心"],["人的一生应该像蜡烛一样，从头燃到尾，始终光明。","萧楚女"],
+  ["我荒废了时间，时间便把我荒废了。","莎士比亚"],["时间是最好的老师，但遗憾的是，它最终会杀死所有学生。","路易·费迪南·塞利纳"],
+  ["人生天地之间，若白驹过隙，忽然而已。","庄子"],["生命不等于是呼吸，生命是行动。","卢梭"],
+  ["人生太短，不该浪费时间去恨任何人。","特蕾莎修女"],["人的一切都应该是干净的，无论是面孔、衣裳，还是心灵、思想。","契诃夫"],
+  ["人生如同道路，最近的路往往是最难走的。","培根"],["没有人生活在过去，也没有人生活在未来，现在是生命确实占有的唯一形态。","叔本华"],
+  ["人生的真正意义在于追求真理和美，而不是物质。","爱因斯坦"],["生活不是等待风暴过去，而是学会在雨中跳舞。","维维安·格林"],
+  ["你活着的每一天，都是你余生中最年轻的一天。",""],["时间看得见。你的每一天，都在塑造未来的你。",""],
+  ["不要停止探索，因为奇迹就在下一路口等着你。",""],["生活的剧本从不按预设走，但每个选择都有意义。",""],
+  ["偶尔迷失方向，也比站在原地更接近幸福。",""],["人生没有白走的路，每一步都算数。",""],
+  ["真正的自由，是接受生命本来的样子。",""],["不是所有的鱼都会生活在同一片海里。","村上春树"],
+  ["当你穿过了暴风雨，你就不再是原来那个人了。","村上春树"],["生而为人，我很抱歉。但也因此，格外珍惜。","太宰治"],
+  ["我不要那么大的世界，我只要你站在我身边。",""],["日子是平淡的，但我们可以让它发光。",""],
+  ["愿你出走半生，归来仍是少年。",""],["世界上只有一种真正的英雄主义，那就是认清生活的真相后依然热爱生活。","罗曼·罗兰"],
+  ["人生最重要的不是所站的位置，而是所朝的方向。","奥利弗·温德尔·霍姆斯"],["一个人知道自己为什么而活，就可以忍受任何一种生活。","尼采"],
+  ["对待生命你不妨大胆冒险一点，因为好歹你要失去它。","尼采"],["每一个不曾努力的日子，都是对生命的浪费。",""],
+  ["不要等待机会，而要创造机会。","乔治·萧伯纳"],["要么你主宰生活，要么生活主宰你，没有中间地带。","吉姆·罗恩"],
+  ["你的时间有限，不要浪费在别人的生活里。","史蒂夫·乔布斯"],["Stay hungry, stay foolish.","史蒂夫·乔布斯"],
+  ["只有那拼命跑的人才能够勉强说是不死。",""],["活着就是为了改变世界，难道还有别的原因吗？","史蒂夫·乔布斯"],
+  ["人生不是一场计分赛，而是一段旅程。",""],["不要害怕你的生活被结束，害怕的是你的生活从未开始。","格蕾丝·汉森"],
+  ["真正的平静，不是远离车马喧嚣，而是在内心修篱种菊。","林徽因"],["温柔的一半是知识，没有知识的温柔不堪一击。",""],
+  ["生活不是要找到自己，而是要创造自己。","萧伯纳"],["我贴在地面步行，不在云端跳舞。","维特根斯坦"],
+  ["人的生命，似洪水奔流，不遇着岛屿与暗礁，难以激起美丽的浪花。","奥斯特洛夫斯基"],["谁要是游戏人生，他就一事无成；谁不能主宰自己，谁永远是一个奴隶。","歌德"],
+  ["生命，那是自然会给人类去雕琢的宝石。","诺贝尔"],["生命是一条艰险的峡谷，只有勇敢的人才能通过。","米歇潘"],
+  ["世界上只有两件事是不可避免的：一是死亡，二是税收。","本杰明·富兰克林"],["生命太过短暂，今天放弃了明天不一定能得到。",""],
+  ["能控制早晨的人，方能控制人生。","南怀瑾"],["日出东海落西山，愁也一天，喜也一天。",""],
+  ["人不是慢慢变老的，是一瞬间变老的。","村上春树"],["我们终此一生，就是要摆脱他人的期待，找到真正的自己。","无声告白"],
+  ["每个人都是一座孤岛，可以决定自己的流放。",""],["孤独是一颗深刻的心灵在寻找理解，寂寞是一个空虚的灵魂在等待解救。",""],
+  ["世界以痛吻我，要我报之以歌。","泰戈尔"],["当你凝视深渊时，深渊也在凝视你。","尼采"],
+  ["所有的伟大，都源于一个勇敢的开始。",""],["不要等待，时机永远不会恰到好处。","拿破仑·希尔"],
+  ["种一棵树最好的时间是十年前，其次是现在。","丹比萨·莫约"],["成功不是终点，失败也不是终结，唯有勇气才是永恒。","温斯顿·丘吉尔"],
+  ["你比你想象的更勇敢，比你看起来更强大，比你以为的更聪明。",""],["生活的艺术在于知道什么时候放手，什么时候抓紧。",""],
+  ["幸福不是目的，而是旅程。",""],["你若盛开，清风自来。",""],
+  ["不忘初心，方得始终。",""],["知足常乐，能忍自安。",""],
+  ["心有猛虎，细嗅蔷薇。","萨松"],["从前的日色变得慢，车、马、邮件都慢，一生只够爱一个人。","木心"],
+  ["人生若只如初见，何事秋风悲画扇。","纳兰性德"],["世界吻我以痛，要我报之以歌。","泰戈尔"],
+  ["我行过许多地方的桥，看过许多次数的云，喝过许多种类的酒，却只爱过一个正当最好年龄的人。","沈从文"],["一个人至少拥有一个梦想，有一个理由去坚强。","三毛"],
+  ["如果有来生，要做一棵树，站成永恒，没有悲伤的姿势。","三毛"],["我们听过无数的道理，却仍旧过不好这一生。","韩寒"],
+  ["有些事不是看到了希望才去坚持，而是因为坚持才会看到希望。",""],["最怕你一生碌碌无为，还安慰自己平凡可贵。",""],
+  ["你所谓的迷茫，不过是清醒地看着自己沉沦。",""],["生活不止眼前的苟且，还有诗和远方。","高晓松"],
+  ["愿你在被打击时，记起你的珍贵，抵抗恶意。",""],["世界上只有一种真正的英雄主义：认清生活的真相后，依然热爱生活。","罗曼·罗兰"],
+  ["黑夜无论怎样悠长，白昼总会到来。","莎士比亚"]
+];
+
+function getQuoteForDate(d) {
+  const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  return QUOTES[seed % QUOTES.length];
+}
+
+/* ════════════════ 小人 SVG path ════════════════ */
+const FIG_P1 = "M26.48 64.23C25.39 64.82 24.30 65.46 24.07 65.66C23.54 66.11 22.74 72.43 22.73 76.25C22.72 77.76 22.30 79.0 21.80 79.0C21.29 79.0 21.13 79.40 21.43 79.89C21.74 80.39 21.38 81.02 20.63 81.31C19.26 81.84 17.0 89.12 17.0 93.03C17.0 94.49 17.95 95.53 20.0 96.31C23.22 97.52 23.29 97.80 23.24 108.83C23.21 113.27 22.69 114.80 20.10 118.02C16.33 122.72 16.29 123.30 19.63 125.93C22.53 128.21 26.33 128.93 24.20 126.80C23.54 126.14 23.0 124.87 23.0 123.97C23.0 122.11 29.50 114.21 30.35 115.04C30.66 115.33 31.27 118.47 31.70 122.01L32.50 128.45L36.0 128.73C41.33 129.17 43.07 128.15 39.88 126.46C37.31 125.10 36.0 121.70 36.0 116.39C36.0 114.64 36.70 113.88 38.75 113.43C44.62 112.12 45.15 111.83 44.54 110.26C44.22 109.40 42.82 103.03 41.45 96.10C38.86 83.0 36.44 74.39 34.74 72.25C34.20 71.56 32.71 71.0 31.44 71.0C29.37 71.0 29.18 70.64 29.67 67.63C30.30 63.76 29.31 62.70 26.48 64.23Z";
+const FIG_P2 = "M84.0 75.60C82.62 76.37 81.61 77.43 81.74 77.97C81.89 78.58 80.97 78.56 79.26 77.91C77.36 77.19 76.43 77.20 76.19 77.94C75.99 78.52 74.83 79.0 73.61 79.0C70.91 79.0 64.43 84.73 63.06 88.35C61.94 91.30 62.60 93.91 64.94 95.70C66.21 96.67 66.81 96.48 68.18 94.71C69.11 93.51 70.01 92.75 70.20 93.01C70.39 93.28 71.54 95.64 72.76 98.25C75.06 103.18 75.57 103.56 77.90 102.09C79.0 101.39 79.08 100.37 78.29 97.25C77.38 93.66 77.55 92.95 80.14 89.47C81.71 87.37 83.0 84.99 83.0 84.20C83.0 82.99 83.26 82.97 84.61 84.09C85.83 85.10 86.07 86.47 85.62 89.74C84.97 94.49 80.38 105.0 78.96 105.0C78.46 105.0 75.57 103.90 72.53 102.56L67.0 100.11L67.0 106.52C67.0 110.60 66.12 115.64 64.59 120.33C60.84 131.82 60.86 132.25 65.26 133.30C67.33 133.80 69.74 133.93 70.61 133.60C71.98 133.07 71.90 132.74 70.06 131.24L67.93 129.50L70.32 124.50C71.64 121.75 73.29 117.74 73.99 115.60L75.26 111.69L77.15 114.10C78.71 116.08 79.0 117.89 78.77 124.50L78.50 132.50L83.39 132.81C89.28 133.18 91.65 131.58 87.52 130.01L84.72 128.94L85.36 121.22C85.88 114.91 85.65 112.57 84.06 108.39C82.80 105.09 82.46 102.94 83.09 102.31C83.62 101.78 84.99 98.0 86.14 93.92C87.29 89.84 88.68 85.94 89.23 85.25C89.96 84.35 89.81 84.0 88.73 84.0C86.81 84.0 85.60 81.0 86.97 79.63C87.61 78.99 88.0 78.97 88.0 79.58C88.0 80.93 93.30 80.60 93.76 79.22C93.96 78.61 93.63 77.19 93.03 76.05C91.75 73.66 87.82 73.46 84.0 75.60Z";
+
+function paintFigures(svgEl, color) {
+  svgEl.innerHTML =
+    '<path d="' + FIG_P1 + '" fill="' + color + '"/>' +
+    '<path d="' + FIG_P2 + '" fill="' + color + '"/>';
+}
+
+/* ════════════════ 同心圆背景 ════════════════ */
+const LIGHT_COLORS = ['#EBECED','#B8BBBE','#D0D2D4','#BEC1C4','#D4D6D8','#C4C7CA','#D8DADC','#CACCCE','#DCDDDF','#D0D2D4','#E2E3E5','#D8D9DB','#E8E9EA','#E0E1E2','#EEEEEF','#F4F4F5','#FAFAFB'];
+const DARK_COLORS = ['#0A0A0A','#1E1E1E','#101010','#222222','#131313','#262626','#161616','#2B2B2B','#1A1A1A','#303030','#1E1E1E','#363636','#242424','#3E3E3E','#2C2C2C','#484848','#555555'];
+const STOPS = [0.0,0.30,0.37,0.42,0.48,0.53,0.58,0.63,0.68,0.72,0.77,0.81,0.85,0.89,0.93,0.97,1.0];
+
+function drawHalo(isDark) {
+  const canvas = document.getElementById('halo');
+  const ctx = canvas.getContext('2d');
+  const W = 439, H = 588;
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H * 0.38;
+  const maxR = Math.max(W, H) * 0.85;
+  const colors = isDark ? DARK_COLORS : LIGHT_COLORS;
+
+  // 离屏图层用于底部 alpha 遮罩 (等效 saveLayer + dstIn)
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const octx = off.getContext('2d');
+
+  // 环渐变
+  const ring = octx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+  for (let i = 0; i < STOPS.length; i++) ring.addColorStop(STOPS[i], colors[i]);
+  octx.fillStyle = ring;
+  octx.fillRect(0, 0, W, H);
+
+  // 中心高光
+  if (!isDark) {
+    const g = octx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 0.30);
+    g.addColorStop(0.0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(0.3, 'rgba(255,255,255,0.5)');
+    g.addColorStop(0.65, 'rgba(255,255,255,0.12)');
+    g.addColorStop(1.0, 'rgba(255,255,255,0)');
+    octx.fillStyle = g;
+    octx.beginPath(); octx.arc(cx, cy, maxR * 0.30, 0, Math.PI * 2); octx.fill();
+  } else {
+    const g = octx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 0.35);
+    g.addColorStop(0.0, 'rgba(255,255,255,0.40)');
+    g.addColorStop(0.3, 'rgba(255,255,255,0.20)');
+    g.addColorStop(0.65, 'rgba(255,255,255,0.06)');
+    g.addColorStop(1.0, 'rgba(255,255,255,0)');
+    octx.fillStyle = g;
+    octx.beginPath(); octx.arc(cx, cy, maxR * 0.35, 0, Math.PI * 2); octx.fill();
+  }
+
+  // 底部 alpha 遮罩
+  octx.globalCompositeOperation = 'destination-in';
+  const mask = octx.createLinearGradient(0, H * 0.48, 0, H * 0.78);
+  mask.addColorStop(0, 'rgba(0,0,0,1)');
+  mask.addColorStop(1, 'rgba(0,0,0,0)');
+  octx.fillStyle = mask;
+  octx.fillRect(0, 0, W, H);
+
+  ctx.drawImage(off, 0, 0);
+}
+
+/* ════════════════ 状态 ════════════════ */
+const today = new Date();
+const HALO_OPACITY = 0.9;
+
+const state = {
+  isNight: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches,
+  balance: 5000,
+  expenses: [],      // { id, amount, category, note, countedInAvg, date(Date) }
+  incomes: [],       // { id, amount, note, date(Date) }
+  categories: [
+    { name: '饮食', counted: true },
+    { name: '交通', counted: true },
+    { name: '娱乐', counted: false },
+    { name: '购物', counted: false },
+  ],
+  fixedExpenses: [
+    { id: 'fx1', name: '网络费', amount: 100, cycle: '月', dueDay: today.getDate() },
+  ],
+  confirmedFixedThisMonth: [],
+  firstUseDate: today,
+  daysSinceLastRecord: 3,   // H-07 预置
+  flipped: false,
+  activePanel: null,
+};
+
+let _idSeq = 100;
+function nextId() { return 'id' + (++_idSeq); }
+
+/* ════════════════ 计算 (E₇ 算法) ════════════════ */
+function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+function getAvgDailyExpense() {
+  const cutoff = startOfDay(today);
+  cutoff.setDate(cutoff.getDate() - 6); // 近7天含今天
+  let sum = 0;
+  for (const e of state.expenses) {
+    if (!e.countedInAvg) continue;
+    if (startOfDay(e.date) >= cutoff) sum += e.amount;
+  }
+  return Math.max(50, sum / 7);
+}
+function getRemainingDays() { return Math.floor(state.balance / getAvgDailyExpense()); }
+function getSurvivedDays() {
+  const diff = startOfDay(today) - startOfDay(state.firstUseDate);
+  return Math.max(1, Math.floor(diff / 86400000) + 1);
+}
+function getLargeThreshold() { return 5 * getAvgDailyExpense(); }
+
+function getPendingFixedExpenses() {
+  return state.fixedExpenses.filter(f =>
+    f.dueDay === today.getDate() && !state.confirmedFixedThisMonth.includes(f.id)
+  );
+}
+
+/* ════════════════ 渲染：硬币 + Banner ════════════════ */
+function fmtMoney(n) {
+  return '¥' + Math.round(n).toLocaleString('en-US');
+}
+
+function renderCoin() {
+  document.getElementById('front-num').textContent = getRemainingDays();
+  document.getElementById('back-num').textContent = getSurvivedDays();
+}
+
+function renderBanners() {
+  const wrap = document.getElementById('banner-wrap');
+  wrap.innerHTML = '';
+
+  const pending = getPendingFixedExpenses();
+  if (pending.length > 0) {
+    const total = pending.reduce((s, f) => s + f.amount, 0);
+    const b = document.createElement('div');
+    b.className = 'banner fixed';
+    b.innerHTML = '<span class="warn">⚠</span><span class="grow">' +
+      pending.length + '笔固定支出待确认（共计 ' + fmtMoney(total) + '）</span>' +
+      '<span class="tail">立即确认</span>';
+    b.onclick = showFixedConfirmDialog;
+    wrap.appendChild(b);
+  }
+
+  if (state.daysSinceLastRecord >= 3) {
+    const b = document.createElement('div');
+    b.className = 'banner care';
+    b.innerHTML = '<span class="grow">已经' + state.daysSinceLastRecord +
+      '天没记账了，一切还好吗？</span><span class="tail">去记一笔 →</span>';
+    b.onclick = () => openPanel('panel-flow');
+    wrap.appendChild(b);
+  }
+}
+
+/* ════════════════ 主题 ════════════════ */
+function applyTheme() {
+  document.body.classList.toggle('night', state.isNight);
+  document.getElementById('phase-toggle').textContent = state.isNight ? '— 夜晚 —' : '— 白天 —';
+  drawHalo(state.isNight);
+  paintFigures(document.querySelector('.coin-front .figures'), getCss('--text'));
+  paintFigures(document.querySelector('.coin-back .figures'), getCss('--text2'));
+  document.getElementById('halo').style.opacity = HALO_OPACITY;
+}
+function getCss(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+
+/* ════════════════ Toast & Modal ════════════════ */
+let _toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function showModal(html) {
+  document.getElementById('modal-card').innerHTML = html;
+  document.getElementById('modal-layer').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-layer').classList.remove('show'); }
+document.getElementById('modal-layer').addEventListener('click', (e) => {
+  if (e.target.id === 'modal-layer') closeModal();
+});
+
+/* ════════════════ 硬币翻转 + 公式弹窗 + 主题切换 ════════════════ */
+document.getElementById('coin-area').addEventListener('click', (e) => {
+  if (e.target.closest('.help-btn') || e.target.closest('.phase-toggle')) return;
+  state.flipped = !state.flipped;
+  document.getElementById('coin').classList.toggle('flipped', state.flipped);
+});
+document.getElementById('help-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  showModal(
+    '<div class="modal-title">余额 ÷ 近7天日均<br>= 还能活几天</div>' +
+    '<div class="modal-text">就一行公式。</div>' +
+    '<div class="modal-actions"><button class="modal-btn-ok" onclick="closeModal()">明白了</button></div>'
+  );
+});
+document.getElementById('phase-toggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  state.isNight = !state.isNight;
+  applyTheme();
+});
+
+/* ════════════════ 面板导航 ════════════════ */
+function openPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+  document.getElementById(id).classList.add('open');
+  state.activePanel = id;
+  document.querySelectorAll('.nav-item').forEach(n =>
+    n.classList.toggle('active', n.dataset.panel === id));
+  renderPanel(id);
+}
+function closePanel() {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  state.activePanel = null;
+}
+document.querySelectorAll('.nav-item').forEach(n => {
+  n.addEventListener('click', () => {
+    if (state.activePanel === n.dataset.panel) closePanel();
+    else openPanel(n.dataset.panel);
+  });
+});
+
+const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="transform:rotate(45deg)"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
+function panelHeader(title, subtitle, actionHtml) {
+  return '<div class="panel-header"><div><div class="panel-title">' + title +
+    '</div><div class="panel-subtitle">' + subtitle + '</div></div>' +
+    '<div class="panel-actions">' + (actionHtml || '') +
+    '<div class="panel-close" onclick="closePanel()">' + CLOSE_ICON + '</div></div></div>';
+}
+
+function renderPanel(id) {
+  if (id === 'panel-wallet') renderWallet();
+  else if (id === 'panel-fixed') renderFixed();
+  else if (id === 'panel-flow') renderFlow();
+  else if (id === 'panel-seal') renderSeal();
+  else if (id === 'panel-settings') renderSettings();
+}
+
+/* ════════════════ 近7天数据（柱状图通用） ════════════════ */
+function last7DaysData(onlyExpense) {
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = startOfDay(today);
+    d.setDate(d.getDate() - i);
+    let val = 0;
+    for (const e of state.expenses) {
+      if (startOfDay(e.date).getTime() === d.getTime()) val += e.amount;
+    }
+    if (!onlyExpense) {
+      for (const inc of state.incomes) {
+        if (startOfDay(inc.date).getTime() === d.getTime()) val += inc.amount;
+      }
+    }
+    days.push({ date: d, val });
+  }
+  return days;
+}
+function barChartHtml(onlyExpense) {
+  const data = last7DaysData(onlyExpense);
+  const maxV = Math.max(1, ...data.map(d => d.val));
+  let html = '<div class="bar-chart">';
+  for (const d of data) {
+    const h = d.val > 0 ? Math.max(4, (d.val / maxV) * 110) : 2;
+    html += '<div class="bar-col">' +
+      '<div class="bar-val">' + (d.val > 0 ? Math.round(d.val) : '') + '</div>' +
+      '<div class="bar' + (d.val > 0 ? '' : ' zero') + '" style="height:' + h + 'px"></div>' +
+      '<div class="bar-day">' + (d.date.getMonth() + 1) + '/' + d.date.getDate() + '</div>' +
+      '</div>';
+  }
+  return html + '</div>';
+}
+
+/* ════════════════ 钱包面板 (C-01~04) ════════════════ */
+function renderWallet() {
+  const el = document.getElementById('panel-wallet');
+  el.innerHTML = panelHeader('我的钱包', '「钱从哪来，都记这里。」') +
+    '<div class="panel-body">' +
+      '<div class="balance-display"><div class="balance-label">当前余额</div>' +
+      '<div class="balance-value">' + fmtMoney(state.balance) + '</div></div>' +
+      '<button class="btn-primary" onclick="showIncomeDialog()">记一笔收入</button>' +
+      '<div class="section-title">近 7 天 收 支 概 览</div>' +
+      barChartHtml(false) +
+      '<div class="section-title">收 入 记 录</div>' +
+      incomeListHtml() +
+    '</div>';
+}
+function incomeListHtml() {
+  if (state.incomes.length === 0) return '<div class="empty-hint">暂无记录</div>';
+  const sorted = [...state.incomes].sort((a, b) => b.date - a.date);
+  return sorted.map(inc =>
+    '<div class="list-item"><div class="li-left">' +
+    '<div class="li-name">' + (inc.note || '收入') + '</div>' +
+    '<div class="li-meta">' + fmtDate(inc.date) + '</div></div>' +
+    '<div style="display:flex;align-items:center">' +
+    '<div class="li-amount income">+' + fmtMoney(inc.amount) + '</div>' +
+    '<span class="li-del" onclick="delIncome(\'' + inc.id + '\')">删除</span></div></div>'
+  ).join('');
+}
+function showIncomeDialog() {
+  showModal(
+    '<div class="modal-title">记入收入</div>' +
+    '<div style="margin-top:18px">' +
+    '<input class="input" id="inc-amount" type="number" inputmode="decimal" placeholder="金额" />' +
+    '<input class="input" id="inc-note" placeholder="备注..." /></div>' +
+    '<div class="modal-actions"><button class="modal-btn-cancel" onclick="closeModal()">取消</button>' +
+    '<button class="modal-btn-ok" onclick="addIncome()">记下</button></div>'
+  );
+  setTimeout(() => document.getElementById('inc-amount').focus(), 100);
+}
+function addIncome() {
+  const amt = parseFloat(document.getElementById('inc-amount').value);
+  const note = document.getElementById('inc-note').value.trim();
+  if (!amt || amt <= 0) { toast('请输入有效金额'); return; }
+  state.incomes.push({ id: nextId(), amount: amt, note: note, date: new Date() });
+  state.balance += amt;
+  closeModal();
+  refreshAll();
+  toast('已记一笔收入');
+}
+function delIncome(id) {
+  const inc = state.incomes.find(i => i.id === id);
+  if (inc) { state.balance -= inc.amount; state.incomes = state.incomes.filter(i => i.id !== id); }
+  refreshAll(); toast('已删除');
+}
+
+/* ════════════════ 固定支出面板 (F-01~03) ════════════════ */
+function renderFixed() {
+  const el = document.getElementById('panel-fixed');
+  el.innerHTML = panelHeader('固定支出', '「账单静静躺在那里。」') +
+    '<div class="panel-body">' +
+      '<button class="btn-primary" onclick="showFixedDialog()">添加固定支出</button>' +
+      '<div class="section-title">固 定 支 出 清 单</div>' +
+      fixedListHtml() +
+    '</div>';
+}
+function fixedListHtml() {
+  if (state.fixedExpenses.length === 0) return '<div class="empty-hint">暂无记录</div>';
+  return state.fixedExpenses.map(f =>
+    '<div class="list-item"><div class="li-left">' +
+    '<div class="li-name">' + f.name + '</div>' +
+    '<div class="li-meta">每' + f.cycle + ' · 扣款日 ' + f.dueDay + ' 号</div></div>' +
+    '<div style="display:flex;align-items:center">' +
+    '<div class="li-amount">' + fmtMoney(f.amount) + '</div>' +
+    '<span class="li-del" onclick="delFixed(\'' + f.id + '\')">删除</span></div></div>'
+  ).join('');
+}
+let _fxCycle = '月';
+function showFixedDialog() {
+  _fxCycle = '月';
+  showModal(
+    '<div class="modal-title">添加固定支出</div>' +
+    '<div style="margin-top:18px">' +
+    '<input class="input" id="fx-name" placeholder="名称，如：房租" />' +
+    '<input class="input" id="fx-amount" type="number" inputmode="decimal" placeholder="金额" />' +
+    '<div class="seg" id="fx-seg">' +
+      '<div class="active" data-c="月" onclick="pickCycle(this)">每月</div>' +
+      '<div data-c="周" onclick="pickCycle(this)">每周</div>' +
+      '<div data-c="年" onclick="pickCycle(this)">每年</div></div>' +
+    '<input class="input" id="fx-day" type="number" inputmode="numeric" placeholder="扣款日（几号）" />' +
+    '<div style="font-size:11px;color:var(--text2);font-weight:300;margin:-4px 0 4px 4px">将从下一个扣款日开始计入</div>' +
+    '</div>' +
+    '<div class="modal-actions"><button class="modal-btn-cancel" onclick="closeModal()">取消</button>' +
+    '<button class="modal-btn-ok" onclick="addFixed()">确认</button></div>'
+  );
+}
+function pickCycle(elm) {
+  _fxCycle = elm.dataset.c;
+  document.querySelectorAll('#fx-seg div').forEach(d => d.classList.toggle('active', d === elm));
+}
+function addFixed() {
+  const name = document.getElementById('fx-name').value.trim();
+  const amt = parseFloat(document.getElementById('fx-amount').value);
+  const day = parseInt(document.getElementById('fx-day').value, 10);
+  if (!name) { toast('请输入名称'); return; }
+  if (!amt || amt <= 0) { toast('请输入有效金额'); return; }
+  const dueDay = (day && day >= 1 && day <= 31) ? day : 1;
+  state.fixedExpenses.push({ id: nextId(), name, amount: amt, cycle: _fxCycle, dueDay });
+  closeModal(); refreshAll();
+  toast('已添加，将从下一个扣款日开始计入');
+}
+function delFixed(id) {
+  state.fixedExpenses = state.fixedExpenses.filter(f => f.id !== id);
+  refreshAll(); toast('已删除');
+}
+
+/* H-06 固定支出到期确认弹窗 */
+function showFixedConfirmDialog() {
+  const pending = getPendingFixedExpenses();
+  if (pending.length === 0) return;
+  const total = pending.reduce((s, f) => s + f.amount, 0);
+  let rows = pending.map(f =>
+    '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;font-weight:300">' +
+    '<span>' + f.name + '</span><span>' + fmtMoney(f.amount) + ' / ' + f.cycle + '</span></div>'
+  ).join('');
+  showModal(
+    '<div class="modal-title">固定支出到期确认</div>' +
+    '<div class="modal-text">以下 ' + pending.length + ' 笔固定支出已到期，确认扣减？</div>' +
+    '<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px">' + rows +
+    '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);margin-top:6px;padding-top:8px;font-size:13px">' +
+    '<span>合计</span><span style="font-family:var(--serif);font-size:16px;color:var(--accent)">' + fmtMoney(total) + '</span></div></div>' +
+    '<div class="modal-actions"><button class="modal-btn-cancel" onclick="closeModal()">暂不确认</button>' +
+    '<button class="modal-btn-ok" onclick="confirmFixedDeduct()">确认扣减</button></div>'
+  );
+}
+function confirmFixedDeduct() {
+  const pending = getPendingFixedExpenses();
+  const total = pending.reduce((s, f) => s + f.amount, 0);
+  for (const f of pending) {
+    state.expenses.push({
+      id: nextId(), amount: f.amount, category: '固定支出',
+      note: f.name, countedInAvg: false, date: new Date(),
+    });
+    state.balance -= f.amount;
+    state.confirmedFixedThisMonth.push(f.id);
+  }
+  closeModal(); refreshAll();
+  toast('已确认扣减 ' + fmtMoney(total));
+}
+
+/* ════════════════ 每日流转面板 (Z-01~06) ════════════════ */
+let _flowCat = null;       // 当前选中分类 name
+let _flowBackfill = 0;     // 补记天数偏移 0=今天
+function renderFlow() {
+  const el = document.getElementById('panel-flow');
+  if (_flowCat === null) _flowCat = state.categories[0].name;
+  el.innerHTML = panelHeader('每日流转', '「花了什么记下来，哪些影响节奏你说了算。」') +
+    '<div class="panel-body">' +
+      '<input class="input" id="flow-amount" type="number" inputmode="decimal" placeholder="金额" />' +
+      '<div class="cat-row" id="flow-cats">' +
+        state.categories.map(c =>
+          '<div class="cat-chip' + (c.name === _flowCat ? ' active' : '') + '" data-cat="' + c.name + '" onclick="pickCat(this)">' +
+          c.name + (c.counted ? '' : '<span class="nc">不计入</span>') + '</div>'
+        ).join('') +
+      '</div>' +
+      '<input class="input" id="flow-note" placeholder="备注..." />' +
+      '<div style="display:flex;gap:8px;margin-bottom:6px">' +
+        '<button class="cat-chip' + (_flowBackfill === 0 ? ' active' : '') + '" onclick="setBackfill(0)">今天</button>' +
+        '<button class="cat-chip' + (_flowBackfill === 1 ? ' active' : '') + '" onclick="setBackfill(1)">昨天</button>' +
+        '<button class="cat-chip' + (_flowBackfill === 2 ? ' active' : '') + '" onclick="setBackfill(2)">2天前</button>' +
+        '<button class="cat-chip' + (_flowBackfill === 3 ? ' active' : '') + '" onclick="setBackfill(3)">3天前</button>' +
+      '</div>' +
+      '<button class="btn-primary" onclick="addExpense()">记下</button>' +
+      '<div style="display:flex;gap:8px;margin-top:10px">' +
+        '<button class="btn-ghost" style="margin-top:0" onclick="fakeOcr(\'拍照\')">拍照记账</button>' +
+        '<button class="btn-ghost" style="margin-top:0" onclick="fakeOcr(\'截图\')">截图识别</button>' +
+      '</div>' +
+      '<div class="section-title">近 7 天 支 出</div>' +
+      barChartHtml(true) +
+      '<div class="section-title">历 史 记 录</div>' +
+      expenseHistoryHtml() +
+    '</div>';
+}
+function pickCat(elm) {
+  _flowCat = elm.dataset.cat;
+  document.querySelectorAll('#flow-cats .cat-chip').forEach(c =>
+    c.classList.toggle('active', c === elm));
+}
+function setBackfill(n) { _flowBackfill = n; renderFlow(); }
+function fakeOcr(kind) {
+  toast(kind + '识别为 App 专属功能，网页版请手动输入');
+}
+function addExpense() {
+  const amt = parseFloat(document.getElementById('flow-amount').value);
+  const note = document.getElementById('flow-note').value.trim();
+  if (!amt || amt <= 0) { toast('请输入有效金额'); return; }
+  const cat = state.categories.find(c => c.name === _flowCat) || state.categories[0];
+  const d = startOfDay(today);
+  d.setDate(d.getDate() - _flowBackfill);
+  d.setHours(12, 0, 0, 0);
+
+  // C-03 大额支出判定
+  const threshold = getLargeThreshold();
+  if (amt > threshold && cat.counted) {
+    pendingExpenseDraft = { amount: amt, category: cat.name, note, date: d };
+    showLargeExpenseDialog(amt);
+    return;
+  }
+  commitExpense({ amount: amt, category: cat.name, note, countedInAvg: cat.counted, date: d });
+}
+let pendingExpenseDraft = null;
+function showLargeExpenseDialog(amt) {
+  showModal(
+    '<div class="modal-title">大额支出提示</div>' +
+    '<div class="modal-text">这笔 ' + fmtMoney(amt) + ' 的支出数额较大，是否不计入日均消费计算？</div>' +
+    '<div class="modal-actions" style="flex-direction:column;gap:8px">' +
+    '<button class="modal-btn-ok" style="width:100%" onclick="resolveLarge(false)">不计入日均（保护天数不瞬间崩塌）</button>' +
+    '<button class="modal-btn-cancel" style="width:100%" onclick="resolveLarge(true)">正常计入日均</button></div>'
+  );
+}
+function resolveLarge(counted) {
+  if (!pendingExpenseDraft) return;
+  commitExpense({ ...pendingExpenseDraft, countedInAvg: counted });
+  pendingExpenseDraft = null;
+}
+function commitExpense(e) {
+  state.expenses.push({ id: nextId(), ...e });
+  state.balance -= e.amount;
+  state.daysSinceLastRecord = 0; // 记账后关怀 Banner 消失
+  closeModal(); refreshAll();
+  toast(e.countedInAvg ? '已记一笔' : '已记一笔（不计入日均）');
+}
+function delExpense(id) {
+  const e = state.expenses.find(x => x.id === id);
+  if (e) { state.balance += e.amount; state.expenses = state.expenses.filter(x => x.id !== id); }
+  refreshAll(); toast('已删除');
+}
+function fmtDate(d) {
+  const m = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getMonth()];
+  return m + ' ' + String(d.getDate()).padStart(2, '0');
+}
+function expenseHistoryHtml() {
+  if (state.expenses.length === 0) return '<div class="empty-hint">暂无记录</div>';
+  // 按日期分组
+  const groups = {};
+  for (const e of state.expenses) {
+    const key = startOfDay(e.date).getTime();
+    (groups[key] = groups[key] || []).push(e);
+  }
+  const keys = Object.keys(groups).map(Number).sort((a, b) => b - a);
+  let html = '';
+  for (const k of keys) {
+    const d = new Date(k);
+    html += '<div class="day-group-date">' + fmtDate(d) + '</div>';
+    for (const e of groups[k]) {
+      html += '<div class="list-item"><div class="li-left">' +
+        '<div class="li-name">' + (e.note || e.category) + '</div>' +
+        '<div class="li-meta">' + e.category + (e.countedInAvg ? '' : ' · 不计入日均') + '</div></div>' +
+        '<div style="display:flex;align-items:center">' +
+        '<div class="li-amount">' + fmtMoney(e.amount) + '</div>' +
+        '<span class="li-del" onclick="delExpense(\'' + e.id + '\')">删除</span></div></div>';
+    }
+  }
+  return html;
+}
+
+/* ════════════════ 生存印章面板 (Y-01~04) ════════════════ */
+function renderSeal() {
+  const el = document.getElementById('panel-seal');
+  const q = getQuoteForDate(today);
+  const dateStr = fmtDate(today) + ' — ' + today.getFullYear();
+  const firstStr = fmtDate(state.firstUseDate);
+  const downloadIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+  el.innerHTML = panelHeader('生存印章', '「每一天都值得被记住。」',
+    '<div class="panel-act" id="save-poster" title="保存海报">' + downloadIcon + '</div>') +
+    '<div class="panel-body">' +
+      '<div class="seal-poster" id="seal-poster">' +
+        '<div class="seal-head1">SURVIVAL RECORD</div>' +
+        '<div class="seal-head2">— 生存印章 —</div>' +
+        '<div class="seal-bignum">' + getSurvivedDays() + '</div>' +
+        '<div class="seal-quote">" ' + q[0] + ' "</div>' +
+        (q[1] ? '<div class="seal-author">— ' + q[1] + '</div>' : '') +
+        '<div class="seal-date">' + dateStr.toUpperCase() + '</div>' +
+        '<div class="seal-footer">' +
+          '<div class="seal-stamp"><div class="s1">印</div><div class="s2">封印</div></div>' +
+          '<div class="seal-status"><div class="t1">SURVIVED DAYS</div>' +
+          '<div class="t2">' + firstStr + ' — ' + dateStr.toUpperCase() + '</div>' +
+          '<div class="t3">' + getSurvivedDays() + '</div></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  document.getElementById('save-poster').onclick = savePoster;
+}
+function savePoster() {
+  const node = document.getElementById('seal-poster');
+  toast('保存中...');
+  html2canvas(node, { backgroundColor: getCss('--bg'), scale: 2, useCORS: true }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = 'survival_seal_' + Date.now() + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('海报已保存');
+  }).catch(() => toast('保存失败'));
+}
+
+/* ════════════════ 设置面板 ════════════════ */
+function renderSettings() {
+  const el = document.getElementById('panel-settings');
+  el.innerHTML = panelHeader('设置', '「存档如锚，定时回顾。」') +
+    '<div class="panel-body">' +
+      '<div class="section-title">外 观</div>' +
+      '<div class="toggle-row"><span>夜晚模式</span>' +
+      '<div class="switch' + (state.isNight ? ' on' : '') + '" id="sw-night"><div class="knob"></div></div></div>' +
+      '<div class="section-title">分 类 管 理</div>' +
+      catManageHtml() +
+      '<div style="height:30px"></div>' +
+      '<div class="section-title">关 于</div>' +
+      '<div style="font-size:12px;font-weight:300;color:var(--text2);line-height:1.9;text-align:center;padding:8px 0">' +
+        '这是「还能活多久」的网页体验版。<br>不保存数据，刷新即重置。<br>完整功能请下载 App。</div>' +
+    '</div>';
+  document.getElementById('sw-night').onclick = () => {
+    state.isNight = !state.isNight; applyTheme(); renderSettings();
+  };
+}
+function catManageHtml() {
+  return state.categories.map((c, i) =>
+    '<div class="toggle-row"><span>' + c.name + '<span style="color:var(--text2);font-size:11px;margin-left:8px">' +
+    (c.counted ? '计入日均' : '不计入日均') + '</span></span>' +
+    '<div class="switch' + (c.counted ? ' on' : '') + '" onclick="toggleCat(' + i + ')"><div class="knob"></div></div></div>'
+  ).join('');
+}
+function toggleCat(i) {
+  state.categories[i].counted = !state.categories[i].counted;
+  refreshAll(); renderSettings();
+}
+
+/* ════════════════ 刷新全部 ════════════════ */
+function refreshAll() {
+  renderCoin();
+  renderBanners();
+  if (state.activePanel) renderPanel(state.activePanel);
+}
+
+/* ════════════════ 初始化 ════════════════ */
+applyTheme();
+renderCoin();
+renderBanners();
+</script>
+</body>
+</html>

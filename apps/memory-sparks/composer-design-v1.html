@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>添加界面设计 · v1（花/云/繁星 共用）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ──────────────────────────────────────────────
+     通用添加界面 · v1
+     - 一份 HTML / CSS，三颗星共用
+     - 配色通过 body class（planet-flower / planet-cloud / planet-starry）切换
+     - 内容形态通过 [data-mode] 切（text / image-text / video-text）
+     ────────────────────────────────────────────── */
+  :root {
+    --font-han: "Noto Sans SC", "Source Han Sans SC", -apple-system, "PingFang SC", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-han);
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background 600ms ease;
+  }
+
+  /* ─── 三颗星的配色身份 ─── */
+  body.planet-flower {
+    --page-bg:
+      radial-gradient(circle at 74% 18%, rgba(255,240,190,0.45), transparent 38%),
+      radial-gradient(circle at 38% 72%, rgba(200,220,150,0.4), transparent 48%),
+      linear-gradient(138deg, #fff3f5 0%, #fadce0 24%, #e8c8b0 52%, #c0d098 100%);
+    --card-bg: rgba(255,248,252,0.96);
+    --card-text: rgba(88,10,38,0.92);
+    --card-mute: rgba(88,10,38,0.55);
+    --card-accent: #c03870;
+    --card-border: rgba(192,56,112,0.26);
+    --card-shadow: 0 30px 80px -20px rgba(170,40,100,0.5);
+  }
+  body.planet-cloud {
+    --page-bg:
+      radial-gradient(ellipse 55% 45% at 30% 55%, rgba(255,215,175,0.55), transparent 65%),
+      radial-gradient(ellipse 50% 50% at 72% 35%, rgba(215,190,240,0.45), transparent 60%),
+      linear-gradient(148deg, #d8c8ee 0%, #fff4ee 50%, #f0d0b5 100%);
+    --card-bg: rgba(255,252,250,0.96);
+    --card-text: rgba(40,30,80,0.92);
+    --card-mute: rgba(40,30,80,0.55);
+    --card-accent: #7888c0;
+    --card-border: rgba(120,136,192,0.28);
+    --card-shadow: 0 30px 80px -20px rgba(80,60,140,0.45);
+  }
+  body.planet-starry {
+    --page-bg:
+      radial-gradient(circle at 30% 30%, rgba(240,216,112,0.3), transparent 12%),
+      radial-gradient(circle at 70% 50%, rgba(240,216,112,0.25), transparent 8%),
+      linear-gradient(180deg, #050c1c 0%, #0a1530 100%);
+    --card-bg: rgba(252,248,232,0.96);
+    --card-text: rgba(75,55,15,0.92);
+    --card-mute: rgba(75,55,15,0.55);
+    --card-accent: #f0d870;
+    --card-border: rgba(240,216,112,0.42);
+    --card-shadow: 0 30px 80px -20px rgba(0,0,0,0.75);
+  }
+  body { background: var(--page-bg, #f0f0f0); }
+
+  /* ─── 顶部 demo 控制条（仅 demo 用，真 App 没有）─── */
+  .demo-controls {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    gap: 22px;
+    align-items: center;
+    padding: 10px 18px;
+    background: rgba(255,255,255,0.62);
+    border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 999px;
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    box-shadow: 0 8px 28px -10px rgba(0,0,0,0.18);
+  }
+  body.planet-starry .demo-controls {
+    background: rgba(15,22,40,0.55);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .demo-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .demo-group + .demo-group {
+    padding-left: 22px;
+    border-left: 1px solid rgba(0,0,0,0.08);
+  }
+  body.planet-starry .demo-group + .demo-group {
+    border-left-color: rgba(255,255,255,0.12);
+  }
+  .demo-label {
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--card-mute);
+  }
+  .demo-controls button {
+    border: 0;
+    cursor: pointer;
+    padding: 0;
+    font-family: var(--font-han);
+    transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .planet-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .planet-dot:hover { transform: scale(1.18); }
+  .planet-dot.on {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.85), 0 2px 6px rgba(0,0,0,0.2);
+  }
+  body.planet-starry .planet-dot.on {
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.4), 0 0 12px rgba(240,216,112,0.5);
+  }
+  .mode-pill {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--card-mute);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+  }
+  .mode-pill:hover { color: var(--card-text); }
+  .mode-pill.on {
+    background: color-mix(in srgb, var(--card-accent) 18%, transparent);
+    color: var(--card-accent);
+    font-weight: 500;
+  }
+  body.planet-starry .mode-pill.on {
+    color: var(--card-accent);
+    background: color-mix(in srgb, var(--card-accent) 22%, transparent);
+  }
+
+  /* ─── 居中浮层 backdrop（半透明黑 + 模糊背后）─── */
+  .composer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(24px) saturate(110%);
+    -webkit-backdrop-filter: blur(24px) saturate(110%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 24px 40px;
+  }
+
+  /* ─── 添加界面卡片 ─── */
+  .composer-panel {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    max-height: calc(100vh - 140px);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 22px;
+    box-shadow: var(--card-shadow);
+    backdrop-filter: blur(30px) saturate(160%);
+    -webkit-backdrop-filter: blur(30px) saturate(160%);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    color: var(--card-text);
+    animation: panel-in 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes panel-in {
+    from { opacity: 0; transform: scale(0.94) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* 右上关闭 */
+  .panel-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 5;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    border: 0;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    transition: background 160ms ease, transform 160ms ease;
+  }
+  .panel-close:hover { background: rgba(0,0,0,0.78); transform: scale(1.06); }
+  .panel-close svg { width: 13px; height: 13px; }
+
+  /* 顶部：日期 + 类型 tabs */
+  .panel-header {
+    flex-shrink: 0;
+    padding: 26px 28px 0;
+  }
+  .panel-date-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .panel-date {
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--card-mute);
+    font-variant-numeric: tabular-nums;
+  }
+  .panel-stage {
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    color: var(--card-mute);
+    text-transform: uppercase;
+  }
+  .panel-type-tabs {
+    display: flex;
+    gap: 6px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .panel-type-tabs button {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    color: var(--card-mute);
+    transition: all 180ms ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .panel-type-tabs button:hover {
+    color: var(--card-text);
+    border-color: var(--card-accent);
+  }
+  .panel-type-tabs button.on {
+    background: color-mix(in srgb, var(--card-accent) 14%, transparent);
+    border-color: var(--card-accent);
+    color: var(--card-accent);
+    font-weight: 500;
+  }
+  .panel-type-tabs button svg { width: 13px; height: 13px; }
+
+  /* 中间：内容区可滚 */
+  .panel-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .panel-content::-webkit-scrollbar { width: 6px; }
+  .panel-content::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--card-accent) 30%, transparent);
+    border-radius: 3px;
+  }
+
+  /* 通用 textarea */
+  .ucomp-textarea {
+    width: 100%;
+    min-height: 130px;
+    background: rgba(0,0,0,0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.82;
+    color: var(--card-text);
+    letter-spacing: 0.04em;
+    resize: vertical;
+    outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
+  }
+  body.planet-starry .ucomp-textarea {
+    background: rgba(255,255,255,0.04);
+  }
+  .ucomp-textarea:focus {
+    border-color: var(--card-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent) 18%, transparent);
+  }
+  .ucomp-textarea::placeholder { color: var(--card-mute); opacity: 0.55; }
+
+  /* 媒体上传区（图/视频共用 base） */
+  .media-drop {
+    width: 100%;
+    min-height: 180px;
+    border: 1.5px dashed var(--card-border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(0,0,0,0.02);
+    position: relative;
+    overflow: hidden;
+    transition: all 180ms ease;
+  }
+  body.planet-starry .media-drop { background: rgba(255,255,255,0.03); }
+  .media-drop:hover {
+    border-color: var(--card-accent);
+    background: color-mix(in srgb, var(--card-accent) 6%, transparent);
+  }
+  .media-drop input[type="file"] { display: none; }
+  .media-drop .hint {
+    text-align: center;
+    color: var(--card-mute);
+    font-size: 13.5px;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .media-drop .hint .icon {
+    width: 28px; height: 28px;
+    opacity: 0.62;
+  }
+  .media-drop .hint .icon svg { width: 100%; height: 100%; }
+  .media-drop .hint small {
+    display: block;
+    font-size: 10.5px;
+    opacity: 0.65;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  /* 多图缩略 */
+  .image-list {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .image-list .thumb {
+    position: relative;
+    width: 92px;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--card-border);
+    overflow: hidden;
+  }
+  .image-list .thumb .remove {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.78);
+    color: white;
+    border: 0;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .image-list .add-more {
+    width: 92px;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    border: 1.5px dashed var(--card-border);
+    background: transparent;
+    color: var(--card-mute);
+    font-size: 22px;
+    font-weight: 300;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 180ms ease;
+  }
+  .image-list .add-more:hover {
+    border-color: var(--card-accent);
+    color: var(--card-accent);
+  }
+  .image-list .add-more input { display: none; }
+
+  /* 视频预览 */
+  .video-preview {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #0a0e16;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .video-preview .placeholder {
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+  }
+  .video-preview .remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .video-preview .remove svg { width: 12px; height: 12px; }
+
+  /* 底部操作 */
+  .panel-actions {
+    flex-shrink: 0;
+    padding: 16px 28px 22px;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .actions-spacer { flex: 1; }
+  .panel-actions .btn {
+    font-family: inherit;
+    padding: 10px 22px;
+    border-radius: 999px;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--card-text);
+    transition: all 180ms ease;
+  }
+  .panel-actions .btn:hover {
+    border-color: var(--card-accent);
+    color: var(--card-accent);
+  }
+  .panel-actions .btn-primary {
+    background: var(--card-accent);
+    border-color: var(--card-accent);
+    color: white;
+  }
+  .panel-actions .btn-primary:hover {
+    filter: brightness(1.08);
+    color: white;
+  }
+  body.planet-starry .panel-actions .btn-primary {
+    color: #1a1206;
+  }
+  .panel-actions .btn-danger {
+    border-color: rgba(220, 80, 80, 0.4);
+    color: rgba(220, 80, 80, 0.85);
+  }
+  .panel-actions .btn-danger:hover {
+    background: rgba(220, 80, 80, 0.12);
+    border-color: rgba(220, 80, 80, 0.85);
+    color: rgba(220, 80, 80, 1);
+  }
+
+  /* 不同 mode 显隐 */
+  .ucomp-textarea[data-show-when="all"] { display: block; }
+  body[data-mode="text"] .image-text-input,
+  body[data-mode="text"] .video-text-input,
+  body[data-mode="image-text"] .video-text-input,
+  body[data-mode="video-text"] .image-text-input { display: none !important; }
+
+  /* 简短信息条（仅 demo）*/
+  .demo-footer {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--card-mute);
+    opacity: 0.7;
+  }
+</style>
+</head>
+<body class="planet-flower" data-mode="text">
+
+  <!-- demo 控制条 -->
+  <div class="demo-controls">
+    <div class="demo-group">
+      <span class="demo-label">星球</span>
+      <button class="planet-dot" data-planet="flower" style="background:#c03870" title="花星"></button>
+      <button class="planet-dot" data-planet="cloud"  style="background:#7888c0" title="云星"></button>
+      <button class="planet-dot" data-planet="starry" style="background:#f0d870" title="繁星"></button>
+    </div>
+    <div class="demo-group">
+      <span class="demo-label">输入</span>
+      <button class="mode-pill on" data-mode="text">文字</button>
+      <button class="mode-pill" data-mode="image-text">图 + 文</button>
+      <button class="mode-pill" data-mode="video-text">视频 + 文</button>
+    </div>
+  </div>
+
+  <!-- 添加界面浮层 -->
+  <div class="composer-backdrop">
+    <div class="composer-panel">
+      <button class="panel-close" title="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+
+      <!-- 顶部：日期 + 类型 -->
+      <div class="panel-header">
+        <div class="panel-date-row">
+          <span class="panel-date" id="dateText">05.31</span>
+          <span class="panel-stage" id="stageText">新建记录</span>
+        </div>
+        <div class="panel-type-tabs" id="typeTabs">
+          <button class="on" data-mode="text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h12M4 18h8"/></svg>
+            文字
+          </button>
+          <button data-mode="image-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+            图 + 文
+          </button>
+          <button data-mode="video-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            视频 + 文
+          </button>
+        </div>
+      </div>
+
+      <!-- 内容区 -->
+      <div class="panel-content">
+        <!-- 图（仅 image-text 时显）-->
+        <div class="image-text-input">
+          <div class="image-list" id="imageList">
+            <label class="add-more">
+              <input type="file" accept="image/*" multiple id="imgInput"/>
+              +
+            </label>
+          </div>
+        </div>
+
+        <!-- 视频（仅 video-text 时显）-->
+        <div class="video-text-input">
+          <label class="media-drop" id="videoDrop">
+            <input type="file" accept="video/*" id="videoInput"/>
+            <div class="hint">
+              <span class="icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 7l-7 5 7 5V7z"/>
+                  <rect x="1" y="5" width="15" height="14" rx="2"/>
+                </svg>
+              </span>
+              选择视频
+              <small>支持 MP4 / MOV</small>
+            </div>
+          </label>
+        </div>
+
+        <!-- 文字（永远显，按 mode 改 placeholder）-->
+        <textarea
+          class="ucomp-textarea"
+          id="textarea"
+          placeholder="写下你想留住的"
+        ></textarea>
+      </div>
+
+      <!-- 底部操作 -->
+      <div class="panel-actions">
+        <button class="btn btn-danger" id="deleteBtn" style="display:none">删除</button>
+        <div class="actions-spacer"></div>
+        <button class="btn" id="cancelBtn">取消</button>
+        <button class="btn btn-primary" id="saveBtn">记下来</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-footer">DEMO · 三颗星共用一份模板，配色随星变 · 真实使用时点 + / ✎ 才弹出</div>
+
+<script>
+  // 切换配色
+  document.querySelectorAll('.planet-dot').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.planet-dot').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+      document.body.className = 'planet-' + btn.dataset.planet;
+      // 保留 mode
+      document.body.dataset.mode = document.querySelector('.mode-pill.on').dataset.mode;
+    });
+  });
+  document.querySelector('.planet-dot[data-planet="flower"]').classList.add('on');
+
+  // 切换 mode（demo 上方按钮 + 卡片内 tabs 同步）
+  function setMode(mode) {
+    document.body.dataset.mode = mode;
+    document.querySelectorAll('.mode-pill').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+    document.querySelectorAll('#typeTabs button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+    // 改 placeholder
+    const ta = document.getElementById('textarea');
+    if (mode === 'text') ta.placeholder = '写下你想留住的';
+    else if (mode === 'image-text') ta.placeholder = '一句话说明（可选）';
+    else ta.placeholder = '一句话说明（可选）';
+  }
+  document.querySelectorAll('.mode-pill').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  document.querySelectorAll('#typeTabs button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+  // 图片选择（仅 demo，不真存）
+  document.getElementById('imgInput').addEventListener('change', (e) => {
+    const files = [...e.target.files].filter(f => f.type.startsWith('image/'));
+    const list = document.getElementById('imageList');
+    files.forEach(file => {
+      const url = URL.createObjectURL(file);
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
+      thumb.style.backgroundImage = `url("${url}")`;
+      thumb.innerHTML = '<button class="remove">×</button>';
+      thumb.querySelector('.remove').addEventListener('click', () => thumb.remove());
+      list.insertBefore(thumb, list.querySelector('.add-more'));
+    });
+    e.target.value = '';
+  });
+
+  // 视频选择
+  document.getElementById('videoInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const drop = document.getElementById('videoDrop');
+    drop.innerHTML = `
+      <div class="video-preview">
+        <video src="${url}" muted style="width:100%; height:100%; object-fit:cover"></video>
+        <button class="remove" title="移除">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    `;
+    drop.querySelector('.remove').addEventListener('click', (ev) => {
+      ev.preventDefault();
+      // 还原回 label
+      document.getElementById('videoInput').value = '';
+      location.reload();
+    });
+  });
+
+  // 取消 / 保存 / 关闭（demo 用）
+  document.getElementById('cancelBtn').addEventListener('click', () => { alert('（demo）取消'); });
+  document.getElementById('saveBtn').addEventListener('click', () => { alert('（demo）保存'); });
+  document.querySelector('.panel-close').addEventListener('click', () => { alert('（demo）关闭'); });
+</script>
+</body>
+</html>

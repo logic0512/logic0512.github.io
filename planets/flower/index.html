@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>花星 · Memory Sparks</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+    body {
+      font-family: 'PingFang SC', -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at 74% 16%, rgba(255, 238, 190, 0.42) 0 14%, transparent 38%),
+        radial-gradient(circle at 38% 72%, rgba(198, 218, 142, 0.38) 0 20%, transparent 48%),
+        linear-gradient(138deg, #fff3f4 0%, #f7d8dd 24%, #dfb8a2 52%, #98ad72 100%);
+    }
+    body::before,
+    body::after {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; content: "";
+    }
+    body::before {
+      background:
+        radial-gradient(circle at 72% 30%, rgba(255,255,255,0.42) 0 1px, transparent 2px),
+        radial-gradient(circle at 83% 64%, rgba(255,248,218,0.30) 0 1px, transparent 2px),
+        radial-gradient(circle at 48% 38%, rgba(255,255,255,0.28) 0 1px, transparent 2px);
+      background-size: 84px 84px, 126px 126px, 152px 152px;
+      opacity: 0.62;
+      mix-blend-mode: screen;
+    }
+    body::after {
+      background: radial-gradient(ellipse at center, transparent 0 46%, rgba(74, 50, 34, 0.22) 100%);
+    }
+    body.fallback-garden::before {
+      background:
+        radial-gradient(circle at 62% 58%, rgba(180, 54, 82, 0.46) 0 3%, transparent 8%),
+        radial-gradient(circle at 76% 50%, rgba(92, 112, 58, 0.40) 0 4%, transparent 10%),
+        radial-gradient(circle at 54% 34%, rgba(255, 245, 206, 0.50) 0 3%, transparent 9%),
+        radial-gradient(circle at 84% 26%, rgba(105, 116, 186, 0.26) 0 4%, transparent 10%),
+        linear-gradient(155deg, rgba(255,255,255,0.16), transparent 48%);
+      filter: blur(6px);
+      opacity: 0.86;
+    }
+    body.fallback-garden canvas { display: none; }
+    .fallback-scene {
+      position: fixed; inset: 0; z-index: 1; display: none; pointer-events: none;
+      background:
+        radial-gradient(ellipse 18% 13% at 55% 58%, rgba(178, 40, 52, 0.72) 0 20%, rgba(100, 125, 62, 0.70) 21% 42%, transparent 43%),
+        radial-gradient(ellipse 16% 12% at 72% 42%, rgba(96, 92, 172, 0.66) 0 22%, rgba(95, 130, 67, 0.74) 23% 44%, transparent 45%),
+        radial-gradient(ellipse 15% 12% at 78% 70%, rgba(218, 100, 142, 0.58) 0 20%, rgba(105, 136, 70, 0.72) 21% 46%, transparent 47%),
+        radial-gradient(ellipse 14% 10% at 48% 35%, rgba(250, 238, 202, 0.72) 0 19%, rgba(115, 145, 75, 0.72) 20% 46%, transparent 47%),
+        radial-gradient(ellipse 13% 10% at 63% 76%, rgba(255, 247, 225, 0.62) 0 18%, rgba(112, 142, 72, 0.70) 19% 46%, transparent 47%),
+        linear-gradient(34deg, transparent 0 41%, rgba(234, 206, 170, 0.68) 42% 45%, transparent 46%),
+        linear-gradient(116deg, transparent 0 52%, rgba(234, 206, 170, 0.55) 53% 56%, transparent 57%);
+      opacity: 0.9;
+    }
+    .fallback-scene::before {
+      position: absolute; inset: 0; content: "";
+      background:
+        radial-gradient(circle at 55% 58%, rgba(255,255,255,0.50) 0 1px, transparent 2px),
+        radial-gradient(circle at 73% 44%, rgba(255,255,255,0.46) 0 1px, transparent 2px),
+        radial-gradient(circle at 47% 36%, rgba(255,244,181,0.50) 0 2px, transparent 4px),
+        radial-gradient(circle at 80% 70%, rgba(255,255,255,0.40) 0 1px, transparent 3px);
+      background-size: 42px 42px, 36px 36px, 58px 58px, 46px 46px;
+      filter: blur(0.2px);
+      mix-blend-mode: screen;
+    }
+    body.fallback-garden .fallback-scene { display: block; }
+    button { font: inherit; border: 0; cursor: pointer; background: transparent; }
+
+    /* canvas 全屏，渲染区域通过 JS viewport/scissor 限制在右侧 */
+    canvas {
+      display: block; position: fixed; inset: 0; z-index: 0;
+      width: 100vw; height: 100vh;
+    }
+
+    /* ── intro-card (设计系统对齐：花星) ── */
+    .intro-card {
+      position: fixed;
+      top: clamp(28px, 4vh, 52px);
+      left: clamp(24px, 3.5vw, 48px);
+      z-index: 10;
+      width: min(360px, 31vw);
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid rgba(192, 56, 112, 0.22);
+      background: rgba(255, 248, 252, 0.68);
+      box-shadow: 0 22px 64px rgba(140, 20, 60, 0.15);
+      backdrop-filter: blur(14px) saturate(1.1);
+      -webkit-backdrop-filter: blur(14px) saturate(1.1);
+      color: rgba(88, 10, 38, 0.85);
+      transition: padding 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* planet-orb：真实花星图，screen 混合去黑底 */
+    .planet-orb {
+      position: relative;
+      width: 88%;
+      aspect-ratio: 1;
+      margin: 0 auto 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .planet-orb img {
+      width: 100%; height: 100%;
+      object-fit: contain;
+    }
+
+    /* card 折叠 */
+    .card-fold {
+      overflow: hidden;
+      max-height: 600px;
+      opacity: 1;
+      transition:
+        max-height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.30s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .intro-card.collapsed .card-fold { max-height: 0; opacity: 0; }
+    .intro-card.collapsed { cursor: pointer; padding: 14px 22px 16px; }
+
+    .p-eyebrow {
+      font-size: 10px; letter-spacing: 0.26em;
+      margin-bottom: 8px; opacity: 0.45;
+      transition: margin-bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .intro-card.collapsed .p-eyebrow { margin-bottom: 4px; }
+
+    .p-name {
+      font-size: 28px; font-weight: 500; letter-spacing: 0.06em;
+      margin-bottom: 12px;
+      transition:
+        font-size 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        margin-bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .intro-card.collapsed .p-name { font-size: 19px; margin-bottom: 0; }
+
+    .p-story {
+      font-size: 13px; line-height: 2.0; letter-spacing: 0.04em;
+      font-weight: 300; margin-bottom: 18px; opacity: 0.72;
+    }
+    .hint-row {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 11px; letter-spacing: 0.14em; opacity: 0.52;
+      cursor: pointer; user-select: none;
+    }
+    .hint-row:hover { opacity: 0.72; }
+    .icon-btn {
+      width: 30px; height: 30px; border-radius: 50%;
+      border: 1px solid currentColor;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0; color: inherit;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    /* ── 模态窗格（统一规格：按卡片状态居中） ── */
+    :root {
+      --card-left: clamp(24px, 3.5vw, 48px);
+      --card-w: min(360px, 31vw);
+      --card-gap: 32px;
+      --right-shift: 0px; /* composer 默认就居中 */
+    }
+
+    /* 旧版内联录入面板样式已删除 —— 录入界面统一由 ms-composer 渲染（ms-composer.css）。
+       :root 的 --right-shift 仍被下方 #popup 使用，保留。 */
+
+    /* ── 记录弹层（同样按卡片状态居中） ── */
+    #popup {
+      position: fixed;
+      top: 50%;
+      left: calc(50% + var(--right-shift));
+      transform: translate(-50%, -50%) scale(0.92);
+      z-index: 100;
+      width: min(420px, 92vw);
+      padding: 24px 24px 20px;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(192, 56, 112, 0.22);
+      background: rgba(255, 248, 252, 0.94);
+      box-shadow: 0 22px 64px rgba(140, 20, 60, 0.18);
+      backdrop-filter: blur(14px) saturate(1.1);
+      -webkit-backdrop-filter: blur(14px) saturate(1.1);
+      color: rgba(88, 10, 38, 0.85);
+      opacity: 0; pointer-events: none;
+      transition:
+        opacity 0.22s ease,
+        transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+        left 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #popup.visible {
+      opacity: 1; pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    body.card-collapsed #popup { left: 50%; }
+    .popup-body    { font-size: 14px; line-height: 1.80; opacity: 0.72; white-space: pre-wrap; margin-bottom: 16px; }
+    /* docx 第二轮：内容是核心放中间，花名小字放右下角 */
+    .popup-v2 .popup-body { font-size: 17px; line-height: 1.85; opacity: 0.88; min-height: 110px; margin: 22px 0 28px; }
+    .popup-foot    { display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 0.08em; opacity: 0.55; }
+    .popup-flower-name { font-size: 13px; letter-spacing: 0.12em; opacity: 0.7; }
+    .popup-date { font-variant-numeric: tabular-nums; }
+    /* 花种线稿水印：右下角，淡 20%，白底靠 multiply 融进弹窗 */
+    .popup-flower-deco { position: absolute; right: -12px; bottom: -14px; width: 150px; height: 150px; pointer-events: none; opacity: 0.20; z-index: 1; }
+    .popup-flower-deco img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; display: block; }
+    .popup-v2 .popup-body, .popup-v2 .popup-foot { position: relative; z-index: 2; }
+    .popup-close-btn {
+      position: absolute; top: 10px; right: 10px;
+      width: 28px; height: 28px; border-radius: 50%; font-size: 14px;
+      color: rgba(88, 10, 38, 0.45); background: rgba(192, 56, 112, 0.08);
+      display: grid; place-items: center; transition: background 0.14s;
+      border: 0; cursor: pointer; padding: 0; z-index: 10;
+    }
+    .popup-close-btn:hover { background: rgba(192, 56, 112, 0.16); }
+
+    /* 遮罩 */
+    #backdrop {
+      position: fixed; inset: 0; z-index: 90;
+      background: rgba(60, 12, 30, 0.22);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.24s, visibility 0.24s;
+      cursor: pointer;
+    }
+    #backdrop.on { opacity: 1; visibility: visible; }
+
+    /* 加载 */
+    #loading {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px;
+      background:
+        radial-gradient(circle at 70% 18%, rgba(255, 238, 190, 0.46) 0 16%, transparent 40%),
+        linear-gradient(138deg, #fff3f4 0%, #f7d8dd 24%, #dfb8a2 52%, #98ad72 100%);
+      transition: opacity 0.45s;
+    }
+    .ld-icon { font-size: 28px; animation: breathe 2s ease-in-out infinite; }
+    @keyframes breathe { 0%,100%{opacity:.28; transform:scale(1)} 50%{opacity:.88; transform:scale(1.06)} }
+    #ld-msg  { font-size: 12px; letter-spacing: 0.18em; color: rgba(88, 10, 38, 0.40); }
+    #ld-bar-w { width: 110px; height: 2px; background: rgba(192, 56, 112, 0.14); border-radius: 1px; }
+    #ld-bar   { height: 100%; width: 0; background: rgba(192, 56, 112, 0.50); border-radius: 1px; transition: width 0.28s; }
+
+    #err { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:rgba(140,0,0,0.90); color:#fff; padding:18px 22px; border-radius:14px;
+      z-index:9999; font-size:12px; max-width:82%; word-break:break-all; line-height:1.6; }
+  /* 花星 .ms-add-fab 本地强化：一圈向外扩散的粉色发光呼吸（参照 被子/树/行星/云/繁星，统一光晕）*/
+  .ms-add-fab { animation: flowerFabPulse 2.8s ease-in-out infinite; }
+  .ms-add-fab:hover { animation-play-state: paused; }
+  @keyframes flowerFabPulse {
+    0%, 100% {
+      box-shadow:
+        0 12px 36px rgba(140, 20, 60, 0.22),
+        0 0 0 0 rgba(192, 56, 112, 0.50),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+    50% {
+      box-shadow:
+        0 12px 36px rgba(140, 20, 60, 0.22),
+        0 0 0 16px rgba(192, 56, 112, 0),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    }
+  }
+  body.flower-composer-open .ms-add-fab,
+  body.flower-composer-open .ms-add-fab::before { animation-play-state: paused !important; }
+  </style>
+<script>
+// Visibility pause: 父页面切 tab 时停掉本 iframe 的 RAF/setInterval，避免后台烧 CPU
+(function(){
+  let _raf = window.requestAnimationFrame.bind(window);
+  let _caf = window.cancelAnimationFrame.bind(window);
+  let _setInt = window.setInterval.bind(window);
+  let _clrInt = window.clearInterval.bind(window);
+  let active = true;
+  let pendingRafs = [];      // {cb, id}
+  let liveIntervals = new Map();
+  let nextId = 1;
+  window.requestAnimationFrame = function(cb){
+    if (active) return _raf(cb);
+    const id = nextId++;
+    pendingRafs.push({cb, id});
+    return id;
+  };
+  window.cancelAnimationFrame = function(id){
+    pendingRafs = pendingRafs.filter(x => x.id !== id);
+    return _caf(id);
+  };
+  window.setInterval = function(cb, ms){
+    const id = _setInt(function(){ if (active) cb(); }, ms);
+    liveIntervals.set(id, true);
+    return id;
+  };
+  window.clearInterval = function(id){
+    liveIntervals.delete(id);
+    return _clrInt(id);
+  };
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.type !== "memory-sparks:visibility") return;
+    const wasActive = active;
+    active = !!e.data.visible;
+    if (!wasActive && active && pendingRafs.length){
+      const q = pendingRafs; pendingRafs = [];
+      q.forEach(({cb}) => _raf(cb));
+    }
+  });
+})();
+</script>
+<!-- MS shared -->
+<link rel="stylesheet" href="../_shared/ms-shared.css?v=20260602f">
+<link rel="stylesheet" href="../_shared/ms-composer.css?v=20260531d">
+<script src="../_shared/ms-config.js?v=20260606x"></script>
+<script src="../_shared/ms-sound.js?v=20260604i"></script>
+<script>window.MS_SOUND && MS_SOUND.init('flower');</script>
+<script src="../_shared/ms-icons.js?v=20260602f"></script>
+<script src="../_shared/ms-feedback.js?v=20260530m"></script>
+<script src="../_shared/ms-mount.js?v=20260602f"></script>
+<script src="../_shared/ms-list-bridge.js?v=20260530m"></script>
+<script src="../_shared/ms-media-vault.js?v=20260605s"></script>
+<script src="../_shared/ms-media-store.js?v=20260606c"></script>
+<script src="../_shared/ms-composer.js?v=20260605l" defer></script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="fallback-scene"></div>
+
+<!-- 加载 -->
+<div id="loading">
+  <div class="ld-icon">🌹</div>
+  <div id="ld-msg">花园生长中…</div>
+  <div id="ld-bar-w"><div id="ld-bar"></div></div>
+</div>
+
+<!-- intro-card（完整设计系统固定组件） -->
+<aside class="intro-card">
+  <div class="card-fold">
+    <div class="planet-orb"><img src="../../assets/planets/flower.png" alt=""></div>
+  </div>
+  <p class="p-eyebrow">KEYWORD PLANET · ORBIT 04</p>
+  <h1 class="p-name">花星</h1>
+  <div class="card-fold">
+    <p class="p-story">花星的花很神奇，被采下后只要重新种回土地，就会继续绽放，不会枯萎。花星人喜欢用互赠鲜花来表达爱意，再把这些花种在土地上保留下来。久而久之，每个人都有了自己专属的花园，他们会用自己的花园，向别人展示自己有多幸福。</p>
+    <div class="hint-row">
+      <button class="icon-button" type="button" aria-hidden="true" tabindex="-1">↺</button>
+      <span>试试把爱变成花园</span>
+    </div>
+    <p id="stats" style="margin-top:12px; font-size:11px; letter-spacing:0.08em; opacity:0.45;"></p>
+  </div>
+</aside>
+
+<!-- 添加按钮由 MS.bootstrap 统一挂载（.ms-add-fab），此处不再放内联按钮 -->
+
+<!-- 底部星球导航圆点已删除（docx 反馈：无意义） -->
+
+<!-- 遮罩 -->
+<div id="backdrop"></div>
+
+<!-- Composer -->
+<!-- 添加界面：交给 ms-composer 统一渲染 -->
+
+<!-- 记录弹层（docx 第二轮：内容是核心放中间，花名小字放右下角，日期左下角） -->
+<div id="popup" class="popup-v2">
+  <button class="popup-close-btn" id="popup-close">✕</button>
+  <div class="popup-flower-deco" aria-hidden="true"><img id="popup-deco-img" alt=""></div>
+  <p class="popup-body" id="popup-body"></p>
+  <div class="popup-foot">
+    <span id="popup-date" class="popup-date"></span>
+    <span id="popup-title" class="popup-flower-name"></span>
+  </div>
+</div>
+
+<div id="err"></div>
+
+<script src="/assets/vendor/gsap/gsap.min.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "/vendor/three-addons/three.module.js",
+    "three/addons/": "/vendor/three-addons/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls }   from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader }      from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder }  from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+function showErr(e) {
+  document.getElementById('loading').style.display = 'none';
+  document.body.classList.add('fallback-garden');
+  const el = document.getElementById('err');
+  el.style.display = 'block';
+  el.textContent = '❌ ' + (e?.message || String(e));
+  console.error(e);
+}
+window.addEventListener('unhandledrejection', e => showErr(e.reason));
+
+try {
+
+// ── 花种目录 ──────────────────────────────────────────────────
+const FLOWERS = [
+  { key: 'rose',         file: 'models/rose.glb',         name: '红玫瑰', emotion: '爱情' },
+  { key: 'dianthus',    file: 'models/dianthus.glb',     name: '康乃馨', emotion: '亲情' },
+  { key: 'petunia',     file: 'models/petunia.glb',      name: '矮牵牛', emotion: '友情' },
+  { key: 'jasminum',    file: 'models/jasminum.glb',     name: '茉莉花', emotion: '关心' },
+  { key: 'pelargonium', file: 'models/pelargonium.glb',  name: '天竺葵', emotion: '陪伴' },
+];
+const FLOWER_MAP = Object.fromEntries(FLOWERS.map(f => [f.key, f]));
+
+// ── 土地多边形（zone-editor 导出，坐标系与 sc=14/max(size.x,size.z) 缩放后的花园一致）──
+const RAW_ZONES = [
+  { erode: 0.12, pts: [{x:4.835,z:-2.447},{x:4.355,z:-2.287},{x:3.816,z:-2.108},{x:3.017,z:-2.128},{x:2.317,z:-2.487},{x:1.938,z:-2.727},{x:1.758,z:-2.387},{x:0.899,z:-1.988},{x:0.32,z:-2.487},{x:0.28,z:-3.326},{x:0.519,z:-3.986},{x:0.479,z:-4.385},{x:-0.22,z:-4.026},{x:-0.939,z:-3.746},{x:-1.678,z:-3.746},{x:-1.958,z:-3.566},{x:-2.238,z:-3.286},{x:-2.657,z:-2.707},{x:-3.017,z:-2.687},{x:-3.296,z:-2.687},{x:-3.596,z:-2.307},{x:-3.996,z:-1.908},{x:-4.355,z:-1.868},{x:-4.875,z:-1.948},{x:-4.974,z:-1.668},{x:-4.675,z:-1.129},{x:-4.575,z:-0.649},{x:-4.595,z:0.13},{x:-4.875,z:0.829},{x:-5.574,z:1.289},{x:-5.694,z:1.408},{x:-5.614,z:1.788},{x:-5.374,z:2.447},{x:-4.954,z:3.127},{x:-4.755,z:3.506},{x:-4.235,z:3.067},{x:-3.876,z:2.907},{x:-3.576,z:2.687},{x:-3.376,z:2.287},{x:-3.097,z:2.168},{x:-2.557,z:2.168},{x:-2.317,z:2.647},{x:-2.277,z:2.867},{x:-1.998,z:2.647},{x:-1.598,z:2.148},{x:-1.239,z:1.728},{x:-0.999,z:1.528},{x:-0.519,z:1.608},{x:-0.2,z:1.808},{x:0.18,z:2.088},{x:0.559,z:2.427},{x:0.839,z:2.867},{x:1.199,z:3.306},{x:1.518,z:3.666},{x:1.878,z:3.806},{x:2.218,z:3.826},{x:2.477,z:4.125},{x:2.677,z:4.545},{x:2.857,z:5.044},{x:2.937,z:5.204},{x:3.077,z:4.825},{x:3.176,z:4.565},{x:3.196,z:4.085},{x:3.536,z:4.325},{x:3.596,z:4.105},{x:3.436,z:3.706},{x:3.336,z:3.166},{x:3.336,z:2.767},{x:3.516,z:2.567},{x:3.736,z:2.287},{x:4.055,z:2.048},{x:4.295,z:2.208},{x:4.495,z:2.507},{x:4.715,z:2.807},{x:4.954,z:3.027},{x:5.254,z:2.827},{x:5.094,z:2.307},{x:5.134,z:1.948},{x:5.214,z:1.468},{x:5.454,z:1.149},{x:5.574,z:0.869},{x:5.814,z:0.469},{x:5.913,z:-0.11},{x:5.414,z:0.37},{x:4.755,z:0.709},{x:4.295,z:0.01},{x:4.475,z:-0.869},{x:4.575,z:-1.408},{x:4.815,z:-1.668},{x:5.254,z:-1.728},{x:5.534,z:-1.728},{x:5.853,z:-1.468},{x:5.873,z:-1.768}] },
+  { erode: 0.08, pts: [{x:-4.775,z:-2.467},{x:-4.515,z:-2.287},{x:-4.275,z:-2.427},{x:-4.016,z:-2.667},{x:-3.776,z:-2.807},{x:-3.636,z:-3.007},{x:-3.316,z:-3.107},{x:-2.917,z:-3.067},{x:-2.917,z:-3.346},{x:-3.176,z:-3.526},{x:-3.516,z:-3.566},{x:-3.876,z:-3.646},{x:-3.956,z:-4.125},{x:-4.215,z:-4.365},{x:-4.455,z:-4.365},{x:-4.835,z:-4.125},{x:-4.954,z:-3.866},{x:-4.695,z:-3.526},{x:-4.415,z:-3.166},{x:-4.535,z:-2.887}] },
+  { erode: 0.10, pts: [{x:-3.137,z:5.144},{x:-2.697,z:5.364},{x:-2.517,z:5.484},{x:-2.257,z:5.264},{x:-2.357,z:4.845},{x:-2.357,z:4.365},{x:-2.178,z:4.065},{x:-1.858,z:3.866},{x:-1.498,z:3.906},{x:-1.199,z:4.205},{x:-0.959,z:4.465},{x:-0.839,z:4.745},{x:-0.759,z:5.104},{x:-0.559,z:5.404},{x:-0.34,z:5.644},{x:-0.1,z:5.824},{x:0.2,z:6.023},{x:0.599,z:6.423},{x:0.619,z:6.723},{x:1.019,z:6.563},{x:1.678,z:6.463},{x:1.738,z:6.303},{x:1.958,z:5.983},{x:2.158,z:5.804},{x:2.317,z:5.704},{x:2.397,z:5.444},{x:2.397,z:4.984},{x:2.317,z:4.705},{x:2.257,z:4.465},{x:1.918,z:4.565},{x:1.458,z:4.345},{x:1.099,z:4.006},{x:0.739,z:3.646},{x:0.38,z:3.147},{x:-0.08,z:2.547},{x:-0.539,z:2.148},{x:-0.799,z:2.068},{x:-1.179,z:2.387},{x:-1.478,z:2.687},{x:-1.678,z:2.967},{x:-1.918,z:3.266},{x:-2.357,z:3.606},{x:-2.497,z:3.566},{x:-2.557,z:3.926},{x:-2.657,z:4.285},{x:-2.817,z:4.485}] },
+  { erode: 0.08, pts: [{x:-0.1,z:-4.945},{x:0.06,z:-5.284},{x:0.38,z:-5.604},{x:0.699,z:-5.983},{x:1.079,z:-5.824},{x:1.458,z:-5.903},{x:1.678,z:-6.203},{x:1.838,z:-6.203},{x:2.018,z:-5.744},{x:2.357,z:-5.564},{x:2.497,z:-5.364},{x:2.497,z:-5.164},{x:2.118,z:-5.064},{x:1.858,z:-4.745},{x:2.098,z:-4.445},{x:2.477,z:-4.465},{x:2.617,z:-4.165},{x:2.597,z:-3.766},{x:2.797,z:-3.566},{x:3.176,z:-3.606},{x:3.736,z:-3.526},{x:4.036,z:-3.466},{x:4.635,z:-3.546},{x:5.074,z:-3.546},{x:5.334,z:-3.186},{x:5.534,z:-2.867},{x:5.294,z:-2.907},{x:4.835,z:-3.166},{x:4.535,z:-3.107},{x:4.275,z:-2.887},{x:3.896,z:-2.507},{x:3.376,z:-2.427},{x:2.817,z:-2.587},{x:2.557,z:-2.947},{x:2.238,z:-3.446},{x:2.018,z:-4.006},{x:1.758,z:-4.265},{x:1.438,z:-4.685},{x:1.119,z:-4.905},{x:0.599,z:-4.945}] },
+  { erode: 0.08, pts: [{x:-2.877,z:-5.544},{x:-2.557,z:-5.724},{x:-2.337,z:-5.124},{x:-1.918,z:-4.825},{x:-1.418,z:-4.645},{x:-1.059,z:-4.605},{x:-0.759,z:-4.565},{x:-0.479,z:-4.605},{x:-0.739,z:-4.365},{x:-1.019,z:-4.165},{x:-1.798,z:-4.245},{x:-2.078,z:-4.085},{x:-2.277,z:-4.205},{x:-2.377,z:-4.505},{x:-2.657,z:-4.905}] },
+];
+function erodeZone(pts, ratio) {
+  const cx = pts.reduce((s,p)=>s+p.x,0)/pts.length;
+  const cz = pts.reduce((s,p)=>s+p.z,0)/pts.length;
+  return pts.map(p => ({ x: p.x+(cx-p.x)*ratio, z: p.z+(cz-p.z)*ratio }));
+}
+// STORE-008 定稿：用户用画笔重画的 4 个种植区（2026-06-05，世界坐标，花园 0.80）
+const SOIL_ZONES = [
+  [{x:2.36,z:3.46},{x:2.15,z:3.31},{x:2.01,z:3.18},{x:1.76,z:3.04},{x:1.59,z:3.04},{x:1.4,z:2.88},{x:1.23,z:2.64},{x:1.06,z:2.46},{x:0.89,z:2.16},{x:0.66,z:1.94},{x:0.41,z:1.72},{x:0.21,z:1.55},{x:-0.03,z:1.33},{x:-0.25,z:1.28},{x:-0.69,z:1.25},{x:-1.02,z:1.3},{x:-1.22,z:1.54},{x:-1.48,z:1.85},{x:-1.66,z:2.16},{x:-1.86,z:1.94},{x:-1.97,z:1.46},{x:-2.11,z:1.08},{x:-2.37,z:1.18},{x:-2.66,z:1.52},{x:-2.92,z:1.81},{x:-3.33,z:1.96},{x:-3.53,z:2.41},{x:-3.61,z:2.86},{x:-3.9,z:2.43},{x:-4.05,z:2.15},{x:-4.31,z:1.87},{x:-4.48,z:1.38},{x:-4.43,z:1.02},{x:-4.1,z:0.65},{x:-3.85,z:0.23},{x:-3.58,z:-0.17},{x:-3.59,z:-0.87},{x:-3.76,z:-1.29},{x:-3.21,z:-1.37},{x:-2.66,z:-1.74},{x:-2.21,z:-1.92},{x:-1.88,z:-2.44},{x:-1.42,z:-2.74},{x:-0.86,z:-2.7},{x:-0.28,z:-2.93},{x:0.05,z:-2.79},{x:0.11,z:-2.2},{x:0.28,z:-1.72},{x:0.54,z:-1.32},{x:0.87,z:-1.28},{x:1.19,z:-1.6},{x:1.8,z:-1.73},{x:2.21,z:-1.49},{x:2.64,z:-1.48},{x:3.02,z:-1.48},{x:3.35,z:-1.49},{x:3.46,z:-1.13},{x:3.33,z:-0.66},{x:3.2,z:-0.16},{x:3.27,z:0.05},{x:3.44,z:0.38},{x:3.68,z:0.51},{x:3.9,z:0.55},{x:4.24,z:0.77},{x:4.17,z:1.03},{x:3.89,z:1.39},{x:3.47,z:1.4},{x:3.03,z:1.57},{x:2.71,z:2.03},{x:2.5,z:2.47},{x:2.79,z:2.66},{x:2.77,z:2.92},{x:2.47,z:3.36},{x:2.74,z:3.04},{x:2.71,z:3.07}],
+  [{x:1.78,z:3.97},{x:1.89,z:4.26},{x:1.83,z:4.57},{x:1.48,z:4.84},{x:1.01,z:5.17},{x:0.71,z:4.92},{x:0.45,z:4.66},{x:0.13,z:4.45},{x:-0.1,z:4.17},{x:-0.41,z:4.04},{x:-0.62,z:3.57},{x:-0.87,z:3.08},{x:-1.24,z:2.81},{x:-1.68,z:3.01},{x:-1.46,z:2.58},{x:-1.05,z:2.05},{x:-0.7,z:1.93},{x:-0.26,z:2.08},{x:0.12,z:2.62},{x:0.19,z:3.04},{x:0.66,z:3.08},{x:0.94,z:3.49},{x:1.3,z:3.67},{x:1.82,z:3.9}],
+  [{x:3.76,z:-2.85},{x:3.55,z:-2.46},{x:3.04,z:-2.21},{x:2.44,z:-2.02},{x:2.12,z:-2.37},{x:1.79,z:-3.15},{x:1.38,z:-3.7},{x:0.78,z:-3.96},{x:0.2,z:-3.99},{x:0.26,z:-4.74},{x:0.75,z:-4.74},{x:1.24,z:-4.52},{x:1.64,z:-4.39},{x:2.15,z:-4.17},{x:2.43,z:-3.71},{x:2.69,z:-3.21},{x:2.72,z:-3.07},{x:2.42,z:-3.23},{x:2.57,z:-2.69},{x:3.73,z:-2.99}],
+  [{x:-3.12,z:-3.31},{x:-3.47,z:-3.04},{x:-3.67,z:-2.64},{x:-3.74,z:-2.01},{x:-3.44,z:-2.05},{x:-3.09,z:-2.39},{x:-2.72,z:-2.61}],
+];
+function pointInPoly(px, pz, poly) {
+  let inside = false;
+  for (let i=0,j=poly.length-1; i<poly.length; j=i++) {
+    const xi=poly[i].x,zi=poly[i].z,xj=poly[j].x,zj=poly[j].z;
+    if (((zi>pz)!==(zj>pz)) && px<((xj-xi)*(pz-zi)/(zj-zi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+function polyArea(poly) {
+  let a=0;
+  for (let i=0,j=poly.length-1;i<poly.length;j=i++) a+=poly[j].x*poly[i].z-poly[i].x*poly[j].z;
+  return Math.abs(a)/2;
+}
+const ZONE_AREAS = SOIL_ZONES.map(polyArea);
+const ZONE_TOTAL = ZONE_AREAS.reduce((s,a)=>s+a,0);
+function randomZone() {
+  let r=Math.random()*ZONE_TOTAL;
+  for (let i=0;i<SOIL_ZONES.length;i++) { r-=ZONE_AREAS[i]; if (r<=0) return SOIL_ZONES[i]; }
+  return SOIL_ZONES[SOIL_ZONES.length-1];
+}
+const FENCE = 7.0;
+const PROBE_DIRS = [[1,0],[-1,0],[0,1],[0,-1],[0.707,0.707],[-0.707,0.707],[0.707,-0.707],[-0.707,-0.707]];
+function randomPoint(minDist, existing, modelRadius=0) {
+  for (let t=0; t<600; t++) {
+    const zone = randomZone(); // 按面积加权：大区多花、小区少花
+    const xs=zone.map(p=>p.x), zs=zone.map(p=>p.z);
+    const px = Math.min(...xs)+Math.random()*(Math.max(...xs)-Math.min(...xs));
+    const pz = Math.min(...zs)+Math.random()*(Math.max(...zs)-Math.min(...zs));
+    if (!pointInPoly(px,pz,zone)) continue;
+    if (Math.abs(px)>FENCE || Math.abs(pz)>FENCE) continue;
+    if (modelRadius>0) {
+      const edgeOk = PROBE_DIRS.every(([dx,dz]) =>
+        SOIL_ZONES.some(z => pointInPoly(px+dx*modelRadius, pz+dz*modelRadius, z))
+      );
+      if (!edgeOk) continue;
+    }
+    if (minDist>0 && existing.some(e=>Math.hypot(e.x-px,e.z-pz)<minDist)) continue;
+    return { x:px, z:pz };
+  }
+  return null;
+}
+
+// ── Renderer（alpha: true → 背景透过 CSS 渐变显示）────────────
+const canvas   = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+// 移动 / 小屏：DPR 1.0 节省 GPU；桌面：1.5 兼顾清晰度
+renderer.setPixelRatio(window.innerWidth < 900 ? 1 : Math.min(window.devicePixelRatio, 1.5));
+renderer.toneMapping         = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.86;
+renderer.outputColorSpace    = THREE.SRGBColorSpace;
+renderer.setClearAlpha(0);
+renderer.autoClear = false;
+
+// ── Scene ─────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+// 不设 scene.background → CSS 渐变透过画布显示
+
+// ── Environment（preview-v2 确认好的组合）────────────────────
+const pmrem  = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment()).texture;
+pmrem.dispose();
+scene.environment = envTex;
+
+// ── 灯光（preview-v2 原版）────────────────────────────────────
+scene.add(new THREE.HemisphereLight(0xfff3ef, 0x7f9567, 1.05));
+const keyLight = new THREE.DirectionalLight(0xfff3df, 1.18);
+keyLight.position.set(8, 12, 8);
+scene.add(keyLight);
+const fillLight = new THREE.DirectionalLight(0xdbe8ff, 0.62);
+fillLight.position.set(-8, 5, -6);
+scene.add(fillLight);
+
+// ── 相机 ─────────────────────────────────────────────────────
+const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 300);
+camera.position.set(-5.322, 10.593, 12.442);
+
+// ── 自由旋转 OrbitControls ────────────────────────────────────
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(0, 0.250, 0);
+controls.enableDamping  = true;
+controls.dampingFactor  = 0.08;
+controls.minPolarAngle  = Math.PI * 0.05;
+controls.maxPolarAngle  = Math.PI * 0.48;
+controls.minDistance    = 7;
+controls.maxDistance    = 34;
+controls.enablePan      = false;
+controls.autoRotate     = false;
+controls.update();
+// B4.5：锁俯仰角 + 锁距离（用 update 后的真实值，不能写死 14）
+// 只锁定 polarAngle（垂直角度），azimuth（水平旋转）仍可用 —— 符合"只能水平转"原话
+const __lockedPolar = controls.getPolarAngle();
+const __lockedDist  = controls.getDistance();
+controls.minPolarAngle = __lockedPolar;
+controls.maxPolarAngle = __lockedPolar;
+controls.minDistance   = __lockedDist;
+controls.maxDistance   = __lockedDist;
+
+// 复制视角坐标（开发调试工具，已下线）
+
+// ── 花园地景（GLB 模型）───────────────────────────────────
+let gardenSurfaceY = 0;
+const groundPlane  = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+// ── 尺度参数（STORE-008 定稿）─────────────────────────────
+const flowerScaleMult = 0.45;  // 花朵整体大小
+const gardenScaleMult = 0.80;  // 地块整体大小
+
+// ── 模型加载（缩小到 0.85，花园里看起来合比例）─────────────
+const templates = {};
+const TARGET_H  = 1.08;
+const loader    = new GLTFLoader();
+loader.setMeshoptDecoder(MeshoptDecoder);
+
+async function loadModels() {
+  const total = FLOWERS.length + 1;
+  let loaded = 0;
+
+  // 先加载花园模型（确定地面高度后才能摆花）
+  await new Promise((res, rej) => {
+    loader.load('garden-terrain.glb', gltf => {
+      const g = gltf.scene;
+      // 缩放到 14 单位宽，与 SOIL_ZONES 坐标系一致
+      g.updateMatrixWorld(true);
+      const box0 = new THREE.Box3().setFromObject(g);
+      const size0 = box0.getSize(new THREE.Vector3());
+      const ctr0  = box0.getCenter(new THREE.Vector3());
+      const sc = 14 / Math.max(size0.x, size0.z);
+      g.scale.setScalar(sc * gardenScaleMult);
+      g.position.set(-ctr0.x * sc, -box0.min.y * sc, -ctr0.z * sc);
+      // 消除 Tripo 地形材质的高光反射；花模型材质不受影响。
+      g.traverse(child => {
+        if (!child.isMesh) return;
+        child.renderOrder = 0;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m => {
+          m.envMap = null;
+          m.envMapIntensity = 0;
+          if (m.roughness  !== undefined) m.roughness  = 1;
+          if (m.roughnessMap !== undefined) m.roughnessMap = null;
+          if (m.metalness  !== undefined) m.metalness  = 0;
+          if (m.metalnessMap !== undefined) m.metalnessMap = null;
+          if ('clearcoat'  in m) m.clearcoat  = 0;
+          if ('clearcoatMap' in m) m.clearcoatMap = null;
+          if ('clearcoatRoughness' in m) m.clearcoatRoughness = 1;
+          if ('clearcoatRoughnessMap' in m) m.clearcoatRoughnessMap = null;
+          if ('transmission' in m) m.transmission = 0;
+          if ('transmissionMap' in m) m.transmissionMap = null;
+          if ('specularIntensity' in m) m.specularIntensity = 0;
+          if ('specularIntensityMap' in m) m.specularIntensityMap = null;
+          if ('sheen'      in m) m.sheen      = 0;
+          if ('sheenRoughness' in m) m.sheenRoughness = 1;
+          if ('reflectivity' in m) m.reflectivity = 0;
+          m.needsUpdate = true;
+        });
+      });
+      scene.add(g);
+      g.updateWorldMatrix(true, true);
+      // 向下射线探测地面真实高度
+      const surfRay = new THREE.Raycaster();
+      surfRay.set(new THREE.Vector3(0, 500, 0), new THREE.Vector3(0, -1, 0));
+      const surfHits = surfRay.intersectObject(g, true);
+      gardenSurfaceY = surfHits.length ? surfHits[0].point.y : 0;
+      groundPlane.constant = -gardenSurfaceY;
+      loaded++;
+      document.getElementById('ld-bar').style.width = `${loaded / total * 100}%`;
+      document.getElementById('ld-msg').textContent = `加载中 ${loaded}/${total}…`;
+      // 花园加载完，立即渲染一帧并隐藏遮罩，让用户先看到场景
+      needsRender = true;
+      const ov = document.getElementById('loading');
+      if (ov) {
+        ov.style.opacity = '0';
+        setTimeout(() => ov.style.display = 'none', 450);
+      }
+      res();
+    }, undefined, e => { console.warn('garden-terrain.glb failed, using flat ground', e); res(); });
+  });
+
+  // P4 懒加载：第一个花种立即加载（让用户最快能用），其他 7 个后台异步加载
+  function loadFlowerModel(fl) {
+    return new Promise((res, rej) => {
+      loader.load(fl.file, gltf => {
+        const root = gltf.scene;
+        root.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(root);
+        const cx  = (box.min.x + box.max.x) / 2;
+        const cz  = (box.min.z + box.max.z) / 2;
+        root.position.set(-cx, -box.min.y, -cz);
+        const wrapper = new THREE.Group();
+        wrapper.add(root);
+        wrapper.updateMatrixWorld(true);
+        const box2 = new THREE.Box3().setFromObject(wrapper);
+        const h     = box2.max.y - box2.min.y;
+        const scale = TARGET_H / h;
+        const xzRadius = Math.max(box2.max.x - box2.min.x, box2.max.z - box2.min.z) / 2 * scale;
+        templates[fl.key] = { root: wrapper, scale, xzRadius };
+        loaded++;
+        document.getElementById('ld-bar').style.width = `${loaded / total * 100}%`;
+        document.getElementById('ld-msg').textContent = loaded < total
+          ? `加载中 ${loaded}/${total}…` : '全部就绪';
+        res();
+      }, undefined, rej);
+    });
+  }
+
+  // 第一个花立即加载
+  await loadFlowerModel(FLOWERS[0]);
+  // 原 #plant-btn 已删除（ms-composer 接管）；ms-composer 的保存按钮由 textarea 内容驱动 disabled
+  document.getElementById('ld-msg').textContent = '可以开始种了';
+
+  // 其他花种：requestIdleCallback 或 setTimeout 后台串行加载（不阻塞主交互）
+  const queue = FLOWERS.slice(1);
+  const loadNext = () => {
+    if (!queue.length) return;
+    const fl = queue.shift();
+    loadFlowerModel(fl).then(() => {
+      // template 加载完成 → 补建所有"曾因 template 未就绪而 skip"的同花种 record
+      try {
+        const arr = JSON.parse(localStorage.getItem(KEY) || '[]');
+        arr.forEach(r => {
+          if (r.flower === fl.key && !clusters.some(c => c.id === r.id)) {
+            buildCluster(r, false);
+          }
+        });
+        needsRender = true;
+      } catch (_) {}
+      // 间隔 150ms 避免连续大请求卡顿
+      setTimeout(loadNext, 150);
+    }).catch(e => {
+      console.warn('lazy load failed', fl.key, e);
+      setTimeout(loadNext, 150);
+    });
+  };
+  // 首屏稳定后 1s 开始
+  setTimeout(loadNext, 1000);
+}
+
+// ── 弹簧动画 ─────────────────────────────────────────────────
+const animQ = [];
+function spring(t) { return t <= 0 ? 0 : 1 - Math.exp(-5 * t) * Math.cos(8 * t); }
+
+// ── 花丛偏移（黄金螺旋） ──────────────────────────────────────
+function clusterOffsets(n) {
+  if (n === 1) return [{ dx: 0, dz: 0 }];
+  const ga = Math.PI * (3 - Math.sqrt(5));
+  return Array.from({ length: n }, (_, i) => ({
+    dx: 0.08 * Math.sqrt(i / (n - 1)) * Math.cos(i * ga),
+    dz: 0.08 * Math.sqrt(i / (n - 1)) * Math.sin(i * ga),
+  }));
+}
+
+// ── 花丛管理 ─────────────────────────────────────────────────
+const clusters    = [];
+const meshCluster = new Map();
+
+// 移除一丛花时，把它的 mesh 从命中表里清掉 —— 否则这张表会一直攥着已删花的引用，
+// 导致旧花朵永远无法被回收（长时间反复增删改的内存泄漏根源）。
+// 注意：不要 dispose geometry/material —— 它们是同花种所有克隆共享的模板资源，dispose 会搞坏其他同种花。
+function forgetClusterMeshes(group) {
+  if (!group) return;
+  group.traverse(o => { if (o.isMesh) meshCluster.delete(o.uuid); });
+}
+
+function buildCluster(rec, animate) {
+  const tmpl = templates[rec.flower]; if (!tmpl) return;
+  // 种下一朵花那一刻（新种才响，加载已有的不响）→ 一记植物生长音
+  if (animate && window.MS_SOUND && MS_SOUND.play) MS_SOUND.play('bloom');
+  const group = new THREE.Group();
+  group.position.set(rec.x, gardenSurfaceY, rec.z);
+
+  // 株数固定 2-4，重量改为影响个体大小（避免高 weight 产生大量 draw call）
+  const plantCount = Math.min(rec.weight + 1, 4);
+  const weightScale = 0.82 + rec.weight * 0.07; // weight 1→0.89×, weight 5→1.17×
+  clusterOffsets(plantCount).forEach(({ dx, dz }, idx) => {
+    const vary  = 0.72 + Math.random() * 0.46;
+    const sc    = tmpl.scale * vary * weightScale * flowerScaleMult;
+    const plant = tmpl.root.clone(true);
+    plant.position.set(dx, 0, dz);
+    plant.rotation.y = Math.random() * Math.PI * 2;
+    plant.traverse(c => { if (c.isMesh) c.renderOrder = 1; });
+    group.add(plant);
+    if (animate) {
+      animQ.push({ plant, tgtScale: sc, groundY: 0, elapsed: -(idx * 0.14), done: false });
+    }
+  });
+
+  scene.add(group);
+  const c = { ...rec, group };
+  clusters.push(c);
+  group.traverse(o => { if (o.isMesh) meshCluster.set(o.uuid, c); });
+  needsRender = true;
+  return c;
+}
+
+// ── 持久化 ───────────────────────────────────────────────────
+const KEY = 'memory-sparks:flower-records';
+// 启动迁移旧 key
+(function() {
+  try {
+    if (!localStorage.getItem(KEY)) {
+      const old = localStorage.getItem('flower_garden_v5');
+      if (old) localStorage.setItem(KEY, old);
+    }
+  } catch (_) {}
+})();
+let saved = [];
+try { saved = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (_) {}
+
+// 统一字段：老数据可能缺 date / ts / id —— 一次性补齐并写回。
+//   date：全站只用这一种日期存法（不再用 ts 兼作日期）；
+//   id：记录唯一标识，编辑/删除都按 id 定位 —— 缺 id 会误伤存档第一条，必须补。
+(function migrateRecords() {
+  let changed = false;
+  saved = saved.map(r => {
+    if (!r) return r;
+    let next = r;
+    if (!next.date) {
+      const dt = next.ts ? new Date(next.ts) : new Date();
+      const iso = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      next = { ...next, date: iso }; changed = true;
+    }
+    if (next.ts == null) { next = { ...next, ts: Date.now() }; changed = true; }
+    if (!next.id) { next = { ...next, id: 'f_' + (next.ts || Date.now()) + '_' + Math.random().toString(36).slice(2, 8) }; changed = true; }
+    return next;
+  });
+  if (changed) { try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (_) {} }
+})();
+
+// STORE-008：花园最多同时显示「最新 180 丛」，其余记录仍完整保留在存档 / 日志页，绝不丢。
+const DISPLAY_MAX = 180;
+function newestForDisplay(all) {
+  return [...all].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, DISPLAY_MAX);
+}
+// 新种花后若超过上限，移除「最旧的」一丛（仅从画面移除，存档里仍在）
+function enforceDisplayCap() {
+  if (clusters.length <= DISPLAY_MAX) return;
+  const byOld = [...clusters].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  const removeN = clusters.length - DISPLAY_MAX;
+  for (let i = 0; i < removeN; i++) {
+    const c = byOld[i];
+    const idx = clusters.indexOf(c);
+    if (idx >= 0) clusters.splice(idx, 1);
+    if (c.group) { forgetClusterMeshes(c.group); scene.remove(c.group); }
+  }
+  needsRender = true;
+}
+
+function persist() {
+  // STORE-008：花园只显示最新 180 丛，但存档保留全部。
+  // persist 只更新「当前在场景里」的花（位置/内容等），未显示的旧记录原样保留 —— 限显示、不丢数据。
+  let all = [];
+  try { all = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (_) {}
+  const live = new Map(clusters.map(({ group, ...rec }) => [rec.id, rec]));
+  const merged = all.map(r => (r.id != null && live.has(r.id)) ? live.get(r.id) : r);
+  localStorage.setItem(KEY, JSON.stringify(merged));
+  updateStats();
+}
+function loadSaved() { newestForDisplay(saved).forEach(r => buildCluster(r, false)); updateStats(); }
+function updateStats() {
+  const n = clusters.length;
+  const t = clusters.reduce((s, c) => s + c.weight, 0);
+  document.getElementById('stats').textContent = n ? `${t} 株花  ·  ${n} 份记忆` : '';
+}
+
+// ── 落点（在 SOIL_ZONES 热区内随机取点，与已有花丛保持间距）──
+function findSpot(flowerKey) {
+  const tmpl = templates[flowerKey];
+  // 花丛扩散半径 0.08（来自 clusterOffsets 最大偏移）
+  // 玫瑰额外加上模型自身半径；其余花种只校验花丛边缘
+  const clusterSpread = 0.08;
+  const xzR = (flowerKey === 'rose' && tmpl)
+    ? tmpl.xzRadius + clusterSpread
+    : clusterSpread;
+  // 逐级放宽间距：理想间距找不到就缩小，最低不破"部分重叠下限"，避免把花全堆到中心穿模
+  for (const minDist of [1.05, 0.8, 0.6, DRAG_MIN_GAP]) {
+    const pt = randomPoint(minDist, clusters, xzR);
+    if (pt) return [pt.x, pt.z];
+  }
+  // 实在满了：土壤区内任取合法点（忽略间距，但绝不固定丢中心）
+  const any = randomPoint(0, clusters, xzR) || randomPoint(0, clusters, 0);
+  return any ? [any.x, any.z] : [0, 0];
+}
+
+// ── 拖动间距约束：允许部分重叠，禁止把花完全叠在同一点 ──
+// 中心间距 < DRAG_MIN_GAP 视为"叠在一起"，拖动时会被挡住（花停在上一个有效位置）。
+// 数值越大越不许靠近；想让重叠更明显就调小。auto 落点用 1.05（基本不重叠），这里用更小值放行部分重叠。
+const DRAG_MIN_GAP = 0.45;
+function tooCloseToOthers(x, z, selfCluster) {
+  return clusters.some(c => c !== selfCluster &&
+    Math.hypot(c.x - x, c.z - z) < DRAG_MIN_GAP);
+}
+
+// ── 射线检测 ─────────────────────────────────────────────────
+const rc = new THREE.Raycaster(), ndc = new THREE.Vector2();
+function setNDC(e) {
+  ndc.set(
+    (e.clientX / window.innerWidth) * 2 - 1,
+    -(e.clientY / window.innerHeight) * 2 + 1
+  );
+}
+function hitCluster(e) {
+  setNDC(e); rc.setFromCamera(ndc, camera);
+  const meshes = [];
+  clusters.forEach(c => c.group.traverse(o => { if (o.isMesh) meshes.push(o); }));
+  const hits = rc.intersectObjects(meshes, false);
+  return hits.length ? meshCluster.get(hits[0].object.uuid) || null : null;
+}
+// 复用同一个向量：拖拽 pointermove 高频调用，避免每次 new THREE.Vector3 产生 GC 压力
+// （调用方立即读取 x/z，不留存引用，复用安全）
+const _groundVec = new THREE.Vector3();
+function groundPt(e) {
+  setNDC(e); rc.setFromCamera(ndc, camera);
+  rc.ray.intersectPlane(groundPlane, _groundVec);
+  return _groundVec;
+}
+
+// ── 拖拽 / 点击 ───────────────────────────────────────────────
+let drag = null;
+canvas.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  const c = hitCluster(e); if (!c) return;
+  controls.enabled = false;
+  drag = { cluster: c, sx: e.clientX, sy: e.clientY, moved: false };
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 5) drag.moved = true;
+  if (drag.moved) {
+    const pt = groundPt(e);
+    // 只在热区内移动 + 不准叠到别的花头上（部分重叠 OK，完全重合不行）；不满足则花停在上一个有效位置
+    if (pt && Math.abs(pt.x) <= FENCE && Math.abs(pt.z) <= FENCE &&
+        SOIL_ZONES.some(z => pointInPoly(pt.x, pt.z, z)) &&
+        !tooCloseToOthers(pt.x, pt.z, drag.cluster)) {
+      drag.cluster.x = pt.x; drag.cluster.z = pt.z;
+      drag.cluster.group.position.set(pt.x, gardenSurfaceY, pt.z);
+      needsRender = true;
+    }
+  }
+});
+canvas.addEventListener('pointerup', e => {
+  if (!drag) return;
+  if (!drag.moved) openPopup(drag.cluster); else persist();
+  drag = null; controls.enabled = true;
+});
+
+// ── 弹层 ─────────────────────────────────────────────────────
+let _popupCurrent = null;
+function openPopup(c) {
+  _popupCurrent = c;
+  const fl = FLOWER_MAP[c.flower] || {};
+  document.getElementById('popup-title').textContent   = fl.name || c.flower;
+  document.getElementById('popup-body').textContent    = c.content || c.text || '';
+  // 日期手动拆 YYYY-MM-DD 显示 —— 不走 new Date(字符串)，避免某些浏览器按 UTC 解析导致差一天
+  const dm = /^(\d{4})-(\d{2})-(\d{2})/.exec(c.date || '');
+  document.getElementById('popup-date').textContent    = dm
+    ? `${dm[1]}年${+dm[2]}月${+dm[3]}日` : '';
+  // 花种线稿水印（与列表卡片一致）
+  const decoImg = document.getElementById('popup-deco-img');
+  if (decoImg) {
+    if (FLOWER_MAP[c.flower]) { decoImg.src = `/flower-lineart/${c.flower}.png`; decoImg.parentElement.style.display = ''; }
+    else { decoImg.removeAttribute('src'); decoImg.parentElement.style.display = 'none'; }
+  }
+  const popupEl = document.getElementById('popup');
+  popupEl.classList.add('visible');
+  document.getElementById('backdrop').classList.add('on');
+  // 统一编辑按钮
+  if (window.MS && MS.bindEdit) {
+    MS.bindEdit({
+      container: popupEl,
+      getId: () => _popupCurrent?.id || _popupCurrent?.ts,
+      label: '修剪',
+      onEdit: (rid) => {
+        closePopup();
+        // 按 id 在 localStorage 记录里定位 —— 不能用 clusters 序号：
+        // 新增花时 ms-composer 把新记录塞到存档最前，clusters 却把新花放最后，两者顺序不一致，
+        // 用 clusters 序号会编辑到另一朵花。统一按存档真实顺序找索引。
+        try {
+          const recs = JSON.parse(localStorage.getItem(KEY) || '[]');
+          const idx = recs.findIndex(r => (r.id || r.ts) === rid);
+          if (idx >= 0 && window.MS && MS.composer) MS.composer.open(idx);
+        } catch (_) {}
+      },
+    });
+  }
+  // 统一删除按钮
+  if (window.MS && MS.bindDelete) {
+    MS.bindDelete({
+      container: popupEl,
+      getId: () => _popupCurrent?.id || _popupCurrent?.ts,
+      question: '让这朵花凋谢？',
+      yes: '凋谢',
+      onDelete: (rid) => {
+        const idx = clusters.findIndex(x => (x.id || x.ts) === rid);
+        if (idx >= 0) {
+          const c = clusters[idx];
+          // 移除整个 group（含 mesh + 装饰元素）而不是只删 mesh —— 之前删 mesh 不彻底花没消失
+          if (c.group) { forgetClusterMeshes(c.group); scene.remove(c.group); }
+          else if (c.mesh && c.mesh.parent) c.mesh.parent.remove(c.mesh);
+          clusters.splice(idx, 1);
+          needsRender = true;
+        }
+        // STORE-008：从全量存档按 id 精准删除（不能靠 persist 从场景反推，否则未显示的旧记录会被漏删）
+        try {
+          const all = JSON.parse(localStorage.getItem(KEY) || '[]').filter(r => (r.id || r.ts) !== rid);
+          localStorage.setItem(KEY, JSON.stringify(all));
+        } catch (_) {}
+        updateStats();
+        closePopup();
+      },
+    });
+  }
+}
+function closePopup() {
+  document.getElementById('popup').classList.remove('visible');
+  document.getElementById('backdrop').classList.remove('on');
+}
+document.getElementById('popup-close').addEventListener('click', closePopup);
+
+// ── Composer ─────────────────────────────────────────────────
+let selWeight = 1;  // 情感重量已下线，固定 1（驱动花朵尺寸）
+
+// 录入界面：交给 ms-composer 统一渲染
+function _bootFlowerComposer() {
+  if (!window.MS || !MS.composer) { setTimeout(_bootFlowerComposer, 60); return; }
+  const flowerBtnsHTML = FLOWERS.map((fl, i) => `
+    <button type="button" data-flower="${fl.key}"${i === 0 ? ' class="on"' : ''}>
+      <span>${fl.name}</span>
+      <span class="emotion">${fl.emotion}</span>
+    </button>
+  `).join('');
+  const extraHTML = `
+    <div>
+      <span class="msc-extra-label">这是什么花</span>
+      <div class="msc-flower-grid" data-msc-extra="flower-grid">${flowerBtnsHTML}</div>
+    </div>
+  `;
+  MS.composer.init({
+    planet: 'flower',
+    storageKey: KEY,
+    capabilities: { image: false, video: false, audio: false },
+    textareaPlaceholder: '想要保留的这束花是什么故事……',
+    textareaMaxLength: 100,
+    extraHTML,
+    extraInit: (extraEl, editingRec) => {
+      const cur = editingRec?.flower && FLOWER_MAP[editingRec.flower] ? editingRec.flower : FLOWERS[0].key;
+      extraEl.querySelectorAll('[data-flower]').forEach(b => {
+        b.classList.toggle('on', b.dataset.flower === cur);
+        b.addEventListener('click', () => {
+          extraEl.querySelectorAll('[data-flower]').forEach(x => x.classList.remove('on'));
+          b.classList.add('on');
+        });
+      });
+    },
+    extraGet: (extraEl) => {
+      const active = extraEl.querySelector('[data-flower].on');
+      return { flower: active ? active.dataset.flower : FLOWERS[0].key };
+    },
+    beforeSave: (payload, editingIdx) => {
+      // 新建：补 x/z/ts（编辑模式 ms-composer spread 保留原值）
+      if (editingIdx == null) {
+        try {
+          const [x, z] = findSpot(payload.flower || FLOWERS[0].key);
+          payload.x = x; payload.z = z; payload.ts = Date.now();
+        } catch (_) {}
+      }
+      // 路 A 统一 text，但花星交互页/list 仍读 content 兼容
+      if (payload.text) payload.content = payload.text;
+      // weight 已下线，固定 1
+      if (typeof payload.weight !== 'number') payload.weight = selWeight;
+      return payload;
+    },
+    onOpened: () => { document.body.classList.add('flower-composer-open'); },
+    onClosed: () => { document.body.classList.remove('flower-composer-open'); },
+    onSaved: (payload, editingIdx) => {
+      // 只处理 1 朵花的差异（不调 __msReloadAll 清场重建——会让 50 朵花全部重建导致卡顿）
+      try {
+        if (editingIdx == null) {
+          // 新建：直接 buildCluster 单朵
+          buildCluster(payload, true);
+          enforceDisplayCap(); // STORE-008：超过 180 丛时移出最旧的（仅画面，存档仍在）
+        } else {
+          // 编辑：找到原 cluster，移除旧 group，buildCluster 新参数（位置/id 沿用原值）
+          const idx = clusters.findIndex(c => c.id === payload.id);
+          if (idx >= 0) {
+            const orig = clusters[idx];
+            if (orig.group) { forgetClusterMeshes(orig.group); scene.remove(orig.group); }
+            else if (orig.mesh && orig.mesh.parent) orig.mesh.parent.remove(orig.mesh);
+            clusters.splice(idx, 1);
+            // 用原花的坐标/ts 打底 + payload 的新花种/内容覆盖：
+            // payload 编辑时不带 x/z（坐标只在新种花时生成），直接用会丢位置。
+            buildCluster({ ...orig, ...payload }, true);
+          } else {
+            // 兜底（找不到对应 cluster）：单朵 buildCluster
+            buildCluster(payload, true);
+          }
+        }
+        needsRender = true;
+      } catch (e) { console.warn('[flower] onSaved failed:', e); }
+      flowerSyncFile(); // 录入主路径建库（STORE-006）
+    },
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _bootFlowerComposer);
+else _bootFlowerComposer();
+
+// 父 App 列表删除/编辑后同步：清场 + 重读 + 重种（C4）
+window.__msReloadAll = function() {
+  try {
+    clusters.forEach(c => scene.remove(c.group));
+    clusters.length = 0;
+    meshCluster.clear();
+    animQ.length = 0;
+    needsRender = true;
+    saved = JSON.parse(localStorage.getItem(KEY) || '[]');
+    newestForDisplay(saved).forEach(r => buildCluster(r, false));
+    updateStats();
+  } catch (e) { console.warn('[flower] reload failed:', e); }
+  flowerSyncFile(); // 父级删除/编辑后同步 records.json（STORE-006）
+};
+
+// U盘建库（STORE-006）：花星纯文字、无媒体（mediaFields:[]）。同步进 flower/records.json + 总索引 / 插盘恢复 / 通知父级。
+function flowerSyncFile() {
+  const s = window.MS && window.MS.mediaStore;
+  if (s && s.syncRecordsFromStorage) {
+    s.syncRecordsFromStorage('flower', KEY, {
+      meta: { name: '花星', keyword: '爱' }, mediaFields: [],
+    }).catch(() => {});
+  }
+}
+function flowerRestoreFile() {
+  const s = window.MS && window.MS.mediaStore;
+  if (!s || !s.restoreToStorage) return Promise.resolve(false);
+  return s.restoreToStorage('flower', KEY).then(restored => {
+    if (restored) {
+      try { window.parent && window.parent.postMessage({ type: 'memory-sparks:storage-changed', key: KEY }, '*'); } catch (_) {}
+    }
+    return restored;
+  });
+}
+(function installFlowerFsaHandle() {
+  const s = window.MS && window.MS.mediaStore;
+  if (s && s.installHandleListener) {
+    s.installHandleListener(() => {
+      flowerRestoreFile().then(restored => {
+        if (restored && typeof window.__msReloadAll === 'function') window.__msReloadAll();
+      }).catch(() => {});
+    });
+  }
+})();
+
+// hint-row: 收起卡片（body 同步切类，让模态对齐）
+document.querySelectorAll('.hint-row').forEach(row => {
+  row.addEventListener('click', e => {
+    e.stopPropagation();
+    row.closest('.intro-card').classList.add('collapsed');
+    document.body.classList.add('card-collapsed');
+  });
+});
+document.querySelectorAll('.intro-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (card.classList.contains('collapsed')) {
+      card.classList.remove('collapsed');
+      document.body.classList.remove('card-collapsed');
+    }
+  });
+});
+document.getElementById('backdrop').addEventListener('click', () => { closePopup(); });
+
+// ── Resize（canvas 全屏，场景铺满整个背景）───────────────────
+function onResize() {
+  const W = window.innerWidth, H = window.innerHeight;
+  renderer.setSize(W, H);
+  renderer.setViewport(0, 0, W, H);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+// ── 按需渲染循环（场景静止时不烧 GPU）─────────────────────────
+let prev = performance.now();
+let needsRender = true;
+const requestRender = () => { needsRender = true; };
+
+controls.addEventListener('change', requestRender);
+window.addEventListener('resize', requestRender);
+
+(function tick() {
+  requestAnimationFrame(tick);
+  const now = performance.now(), dt = Math.min((now - prev) * 0.001, 0.05);
+  prev = now;
+
+  // 动画推进 → 触发渲染
+  let anyActive = false;
+  for (const a of animQ) {
+    if (a.done) continue;
+    anyActive = true;
+    a.elapsed += dt; if (a.elapsed < 0) continue;
+    const r = spring(a.elapsed);
+    a.plant.scale.setScalar(Math.max(a.tgtScale * Math.min(r, 1.05), 0.001));
+    a.plant.position.y = a.groundY * Math.min(r, 1);
+    if (a.elapsed > 2.5) { a.plant.scale.setScalar(a.tgtScale); a.plant.position.y = a.groundY; a.done = true; }
+  }
+  if (anyActive) needsRender = true;
+  else if (animQ.length) animQ.length = 0;  // 动画全部结束 → 清空队列，静止时不再每帧空遍历
+
+  // OrbitControls damping 期间持续触发
+  if (controls.update()) needsRender = true;
+
+  if (needsRender) {
+    renderer.clear();
+    renderer.render(scene, camera);
+    needsRender = false;
+  }
+})();
+
+/* ── 卡片入场动画（标题逐字浮现） ── */
+function animateCardEntrance() {
+  if (typeof gsap === 'undefined') return;
+  const card = document.querySelector('.intro-card');
+  if (!card) return;
+
+  const nameEl  = card.querySelector('.p-name, h1');
+  const eyebrow = card.querySelector('.p-eyebrow, .eyebrow');
+  const story   = card.querySelector('.p-story, .story');
+  const orb     = card.querySelector('.planet-orb');
+  const hint    = card.querySelector('.hint-row');
+
+  let chars = [];
+  if (nameEl) {
+    const text = nameEl.textContent;
+    nameEl.innerHTML = '';
+    for (const ch of text) {
+      const span = document.createElement('span');
+      span.textContent = ch;
+      span.style.display = 'inline-block';
+      nameEl.appendChild(span);
+      chars.push(span);
+    }
+  }
+
+  if (orb)     gsap.set(orb,     { autoAlpha: 0, scale: 0.88 });
+  if (eyebrow) gsap.set(eyebrow, { autoAlpha: 0, y: -4 });
+  if (chars.length) gsap.set(chars, { autoAlpha: 0, y: 14, filter: 'blur(8px)' });
+  if (story)   gsap.set(story,   { autoAlpha: 0, y: 6 });
+  if (hint)    gsap.set(hint,    { autoAlpha: 0 });
+
+  const tl = gsap.timeline({ delay: 0.25 });
+  if (orb)     tl.to(orb, { autoAlpha: 1, scale: 1, duration: 1.0, ease: 'power2.out' });
+  if (eyebrow) tl.to(eyebrow, { autoAlpha: 0.45, y: 0, duration: 0.5, ease: 'power2.out' }, '-=0.55');
+  if (chars.length) tl.to(chars, {
+    autoAlpha: 1, y: 0, filter: 'blur(0px)',
+    duration: 0.6, ease: 'power2.out', stagger: 0.06
+  }, '-=0.30');
+  if (story)   tl.to(story, { autoAlpha: 0.72, y: 0, duration: 0.7, ease: 'power2.out' }, '-=0.35');
+  if (hint)    tl.to(hint,  { autoAlpha: 0.52, duration: 0.4, ease: 'power2.out' }, '-=0.45');
+}
+// B4.1：旧 .intro-card 已被 ms-mount 隐藏（用 ms-intro-card 替代），
+// 这里调用 animateCardEntrance 在 display:none 元素上无效但占 RAF —— 去掉避免抖动叠加
+// animateCardEntrance();
+
+// ── 启动 ─────────────────────────────────────────────────────
+loadModels().then(() => {
+  // 不再 seedDemoGarden；空状态留给用户
+  if (saved.length) loadSaved();
+}).catch(showErr);
+
+} catch(e) { showErr(e); }
+</script>
+
+<script>
+  // ── Memory Sparks · 统一组件挂载（介绍卡 + 添加按钮） ──
+  // 在 DOM ready 后挂载，避免被原有 init 顺序覆盖
+  (function bootMSShared() {
+    // onAdd 直接打开录入面板（ms-composer）——不再依赖"点击隐藏旧按钮"的脆弱链路
+    function go() {
+      if (window.MS && window.MS.bootstrap) {
+        MS.bootstrap('flower', { onAdd: () => { if (window.MS && MS.composer) MS.composer.open(); } });
+      } else setTimeout(go, 60);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+  })();
+</script>
+
+</body>
+</html>

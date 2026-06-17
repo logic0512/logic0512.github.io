@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>还能活多久 — 原型</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300;1,400&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #F8F7F4;
+      --bg2:     #EEECEA;
+      --text:    #1C1C1A;
+      --text2:   #9A9490;
+      --accent:  #C8782A;
+      --border:  rgba(28,28,26,0.09);
+      --tr:      1.2s ease;
+    }
+    [data-night] {
+      --bg:      #0E0E0C;
+      --bg2:     #1A1A18;
+      --text:    #E6DDD2;
+      --text2:   #6A6460;
+      --accent:  #C8782A;
+      --border:  rgba(230,221,210,0.09);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #3a3a3a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    /* ── Phone shell ── */
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 48px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.55);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      transition: background var(--tr);
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 28px 0;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 3;
+    }
+    .status-time {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text2);
+      letter-spacing: 1px;
+      transition: color var(--tr);
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.5;
+    }
+
+    /* ── Turrell background image layer ── */
+    .halo-layer {
+      position: absolute;
+      top: -55px; left: -21px;
+      width: 439px; height: 588px;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    .halo-layer img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    }
+
+    /* ── Figures layer ── */
+    .figures-layer {
+      position: absolute;
+      left: 36px;
+      top: 368px;
+      width: 110px;
+      height: 195px;
+      pointer-events: none;
+      z-index: 2;
+      color: var(--text);
+      opacity: 0.85;
+      transition: color var(--tr), opacity var(--tr);
+    }
+
+    /* ── Coin area ── */
+    .coin-area {
+      flex: 1;
+      position: relative;
+      z-index: 2;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      perspective: 1400px;
+      min-height: 0;
+    }
+
+    .coin-inner {
+      width: 100%; height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.77,0,0.175,1);
+    }
+    .coin-inner.flipped { transform: rotateY(180deg); }
+
+    .coin-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 36px 20px;
+    }
+    .coin-back { transform: rotateY(180deg); }
+
+    .big-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 152px;
+      line-height: 0.84;
+      letter-spacing: -7px;
+      margin-left: -5px;
+      transition: color var(--tr);
+    }
+    .big-num.primary   { color: var(--text); }
+    .big-num.secondary { color: var(--text2); }
+
+    .num-label {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 3.5px;
+      margin-top: 10px;
+      transition: color var(--tr);
+    }
+    .num-label.accent { color: var(--accent); }
+    .num-label.dim    { color: var(--text2); }
+
+    .flip-hint {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .flip-line {
+      flex: 1; height: 1px;
+      background: var(--border);
+      transition: background var(--tr);
+    }
+    .flip-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 10px;
+      font-style: italic;
+      color: var(--text2);
+      letter-spacing: 2px;
+      transition: color var(--tr);
+    }
+
+    /* ── Corner bar ── */
+    .corner-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 36px 10px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+    .q-btn {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: border-color var(--tr);
+    }
+    .q-btn span {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 14px;
+      color: var(--text2);
+      transition: color var(--tr);
+    }
+    .phase-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 11px;
+      font-style: italic;
+      color: var(--text2);
+      letter-spacing: 1.5px;
+      transition: color var(--tr);
+    }
+
+    /* ── Tooltip ── */
+    .tooltip {
+      position: absolute;
+      bottom: 90px;
+      left: 36px; right: 36px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text2);
+      line-height: 1.9;
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(5px);
+      transition: opacity 0.2s ease, transform 0.2s ease,
+                  background var(--tr), color var(--tr);
+    }
+    .tooltip.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+    /* ── Bottom nav ── */
+    .bottom-nav {
+      display: flex;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      transition: border-color var(--tr);
+      height: 72px;
+    }
+    .nav-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s ease;
+      position: relative;
+    }
+    .nav-tab::after {
+      content: '';
+      position: absolute;
+      right: 0; top: 20%; bottom: 20%;
+      width: 1px;
+      background: var(--border);
+      transition: background var(--tr);
+    }
+    .nav-tab:last-child::after { display: none; }
+    .nav-tab:active { background: var(--bg2); }
+    .nav-char {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text);
+      line-height: 1;
+      transition: color var(--tr);
+    }
+    .nav-name {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 9.5px;
+      font-weight: 300;
+      color: var(--text2);
+      letter-spacing: 0.5px;
+      transition: color var(--tr);
+    }
+    .nav-tab.active .nav-char { color: var(--accent); }
+    .nav-tab.active .nav-name { color: var(--accent); opacity: 0.7; }
+
+    /* ══════════════════════════════════════
+       Poster Panel — Exhibition poster style
+       Absolute positioning for art-directed layout
+    ══════════════════════════════════════ */
+    .poster-panel {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.55s cubic-bezier(0.32,0,0.15,1);
+      overflow: hidden;
+    }
+    .poster-panel.open { transform: translateY(0); }
+
+    .poster-bg {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      transition: background var(--tr);
+    }
+
+    .poster-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Header — title only, centered */
+    .poster-header {
+      position: absolute;
+      top: 32px;
+      left: 36px;
+      right: 36px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .poster-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 5px;
+      color: var(--text);
+      text-transform: uppercase;
+      transition: color var(--tr);
+    }
+    .poster-close {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 300;
+      color: var(--text);
+      transition: color var(--tr);
+      transform: rotate(45deg);
+    }
+
+    /* Hero number — dominates the poster */
+    .poster-big-num {
+      position: absolute;
+      top: 100px;
+      left: 24px;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 300px;
+      line-height: 0.82;
+      letter-spacing: -16px;
+      color: var(--accent);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* Quote — below number, like artist name on exhibition poster */
+    .poster-quote {
+      position: absolute;
+      bottom: 140px;
+      left: 36px;
+      right: 36px;
+    }
+    .poster-quote-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--text2);
+      line-height: 1.8;
+      letter-spacing: 0.5px;
+      transition: color var(--tr);
+    }
+    .poster-quote-author {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text2);
+      opacity: 0.6;
+      margin-top: 12px;
+      letter-spacing: 1px;
+      transition: color var(--tr);
+    }
+
+    /* Footer — seal + dates */
+    .poster-footer {
+      position: absolute;
+      bottom: 44px;
+      left: 36px;
+      right: 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .poster-seal {
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: border-color var(--tr);
+    }
+    .poster-seal-char {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 17px;
+      font-weight: 300;
+      color: var(--text2);
+      line-height: 1;
+      transition: color var(--tr);
+    }
+    .poster-seal-label {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 7px;
+      font-weight: 300;
+      color: var(--text2);
+      letter-spacing: 2.5px;
+      transition: color var(--tr);
+    }
+    .poster-dates { text-align: right; }
+    .poster-date-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 9px;
+      font-weight: 300;
+      letter-spacing: 2.5px;
+      color: var(--text2);
+      margin-bottom: 8px;
+      transition: color var(--tr);
+    }
+    .poster-date-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 0;
+      margin-top: 4px;
+    }
+    .poster-date-row:first-child { margin-top: 0; }
+    .poster-date-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+      font-weight: 300;
+      font-style: italic;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      transition: color var(--tr);
+    }
+    .poster-date-dash {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text2);
+      padding: 0 6px;
+      transition: color var(--tr);
+    }
+
+    /* ══════════════════════════════════════
+       Page Panels — shared slide-up panel
+    ══════════════════════════════════════ */
+    .page-panel {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.55s cubic-bezier(0.32,0,0.15,1), opacity 0.3s ease;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .page-panel.swiping {
+      transition: none;
+    }
+    .page-panel.open { transform: translateY(0); }
+
+    .page-panel-inner {
+      position: relative;
+      min-height: 100%;
+      padding: 52px 28px 90px;
+    }
+
+    /* Panel header */
+    .pp-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    .pp-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text);
+      transition: color var(--tr);
+    }
+    .pp-close {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 300;
+      color: var(--text);
+      transform: rotate(45deg);
+      transition: color var(--tr);
+      flex-shrink: 0;
+    }
+    .pp-subtitle {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text2);
+      margin-bottom: 28px;
+      transition: color var(--tr);
+    }
+
+    /* Section titles inside panels */
+    .pp-section {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text2);
+      letter-spacing: 2px;
+      margin: 28px 0 12px;
+      transition: color var(--tr);
+    }
+
+    /* ── 筹 Panel ── */
+    .chou-balance {
+      text-align: center;
+      padding: 40px 0 16px;
+    }
+    .chou-balance-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+      font-weight: 300;
+      font-size: 64px;
+      color: var(--text);
+      letter-spacing: -3px;
+      line-height: 1;
+      transition: color var(--tr);
+    }
+    .chou-balance-label {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text2);
+      margin-top: 4px;
+      letter-spacing: 2px;
+      transition: color var(--tr);
+    }
+    .chou-income-btn {
+      display: block;
+      margin: 32px auto 0;
+      padding: 8px 28px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--accent);
+      background: transparent;
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .chou-income-btn:active { background: rgba(200,120,42,0.1); }
+
+    .chou-top-fixed {
+      /* Fixed layout: balance + income btn + chart stay at top */
+    }
+    .history-scroll {
+      max-height: calc(844px - 480px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-right: 2px;
+    }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-box {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 28px 24px 20px;
+      width: 310px;
+      max-width: 85vw;
+      transform: translateY(18px);
+      transition: transform 0.3s cubic-bezier(0.32,0,0.15,1), background var(--tr);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    }
+    .modal-overlay.show .modal-box {
+      transform: translateY(0);
+    }
+    .modal-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 18px;
+      transition: color var(--tr);
+    }
+    .modal-input {
+      width: 100%;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--text);
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      outline: none;
+      margin-bottom: 12px;
+      transition: color var(--tr), background var(--tr), border-color var(--tr);
+    }
+    .modal-input::placeholder { color: var(--text2); opacity: 0.5; }
+    .modal-input-sm {
+      width: 100%;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text);
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      outline: none;
+      margin-bottom: 12px;
+      transition: color var(--tr), background var(--tr), border-color var(--tr);
+    }
+    .modal-input-sm::placeholder { color: var(--text2); opacity: 0.5; }
+    .modal-select {
+      width: 100%;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text);
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      outline: none;
+      margin-bottom: 12px;
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      transition: color var(--tr), background var(--tr), border-color var(--tr);
+    }
+    .modal-desc {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text2);
+      line-height: 1.8;
+      margin-bottom: 20px;
+      transition: color var(--tr);
+    }
+    .modal-desc.danger { color: #C0392B; }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .modal-btn {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      padding: 8px 20px;
+      border-radius: 18px;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .modal-btn-cancel {
+      color: var(--text2);
+      background: transparent;
+      border: 1px solid var(--border);
+    }
+    .modal-btn-confirm {
+      color: #fff;
+      background: var(--accent);
+    }
+    .modal-btn-confirm:active { opacity: 0.85; }
+    .modal-btn-danger {
+      color: #fff;
+      background: #C0392B;
+    }
+    .modal-btn-danger:active { opacity: 0.85; }
+
+    /* ── Toast ── */
+    .app-toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--accent);
+      color: #fff;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      padding: 8px 24px;
+      border-radius: 20px;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      white-space: nowrap;
+    }
+    .app-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── OCR section for 转 ── */
+    .zhuan-ocr-section {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .zhuan-ocr-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 0;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text2);
+      background: var(--bg2);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: color var(--tr), border-color var(--tr), background var(--tr);
+    }
+    .zhuan-ocr-btn:active { background: var(--border); }
+    .zhuan-ocr-btn svg {
+      width: 16px; height: 16px;
+      flex-shrink: 0;
+    }
+
+    /* ── Today records scrollable ── */
+    .today-records-scroll {
+      max-height: 220px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* 7-day bar chart */
+    .bar-chart-7 {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      height: 80px;
+      gap: 6px;
+      padding: 0 4px;
+    }
+    .bar-day {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .bar-col {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      background: var(--accent);
+      opacity: 0.5;
+      min-height: 2px;
+      transition: background var(--tr);
+    }
+    .bar-col.income { background: var(--text2); opacity: 0.3; }
+    .bar-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 10px;
+      color: var(--text2);
+      transition: color var(--tr);
+    }
+
+    /* History list */
+    .history-list { list-style: none; }
+    .history-date-group {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text2);
+      letter-spacing: 1px;
+      padding: 12px 0 6px;
+      border-bottom: 1px solid var(--border);
+      transition: color var(--tr), border-color var(--tr);
+    }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      transition: border-color var(--tr);
+    }
+    .history-name {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text);
+      transition: color var(--tr);
+    }
+    .history-tag {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 10px;
+      color: var(--text2);
+      margin-left: 8px;
+      transition: color var(--tr);
+    }
+    .history-amount {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text);
+      transition: color var(--tr);
+    }
+    .history-amount.income-amt { color: var(--accent); }
+
+    /* ── 负 Panel ── */
+    .fu-list { list-style: none; }
+    .fu-item {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      transition: border-color var(--tr);
+    }
+    .fu-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .fu-name {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text);
+      transition: color var(--tr);
+    }
+    .fu-amount {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 300;
+      color: var(--text);
+      transition: color var(--tr);
+    }
+    .fu-cycle {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text2);
+      margin-left: 6px;
+      transition: color var(--tr);
+    }
+    .fu-meta {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text2);
+      margin-top: 4px;
+      transition: color var(--tr);
+    }
+    .fu-add-btn {
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      padding: 12px 0;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text2);
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: color var(--tr), border-color var(--tr);
+    }
+
+    /* ── 转 Panel ── */
+    .zhuan-input-area {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 4px;
+      transition: background var(--tr), border-color var(--tr);
+    }
+    .zhuan-row1 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .zhuan-yen {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--text2);
+      transition: color var(--tr);
+    }
+    .zhuan-amount-input {
+      flex: 1;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px;
+      font-weight: 300;
+      color: var(--text);
+      background: transparent;
+      border: none;
+      outline: none;
+      letter-spacing: -0.5px;
+      transition: color var(--tr);
+    }
+    .zhuan-amount-input::placeholder { color: var(--text2); opacity: 0.5; }
+    .zhuan-confirm-btn {
+      padding: 4px 14px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 12px;
+      font-weight: 300;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .zhuan-row2 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .zhuan-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px 10px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: color var(--tr), border-color var(--tr), background var(--tr);
+      background: transparent;
+    }
+    .zhuan-pill.on {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(200,120,42,0.08);
+    }
+    .zhuan-pill-check {
+      font-size: 10px;
+      opacity: 0.6;
+    }
+    .zhuan-note-input {
+      flex: 1;
+      min-width: 60px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text);
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      outline: none;
+      padding: 2px 0;
+      transition: color var(--tr), border-color var(--tr);
+    }
+    .zhuan-note-input::placeholder { color: var(--text2); opacity: 0.5; }
+    .zhuan-camera {
+      width: 22px; height: 22px;
+      color: var(--text2);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: color var(--tr);
+    }
+
+    /* Mini bars for 转 */
+    .mini-bars {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      height: 48px;
+      gap: 6px;
+      padding: 0 4px;
+    }
+    .mini-bar-day {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .mini-bar-col {
+      width: 100%;
+      border-radius: 3px 3px 0 0;
+      background: var(--accent);
+      opacity: 0.45;
+      min-height: 2px;
+      transition: background var(--tr);
+    }
+    .mini-bar-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 9px;
+      color: var(--text2);
+      transition: color var(--tr);
+    }
+
+    /* Today records */
+    .today-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      transition: border-color var(--tr);
+    }
+    .today-left {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .today-name {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text);
+      transition: color var(--tr);
+    }
+    .today-tag {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 10px;
+      color: var(--text2);
+      transition: color var(--tr);
+    }
+    .today-amount {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text);
+      transition: color var(--tr);
+    }
+
+    /* ── 设 Panel ── */
+    .she-slot {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      transition: border-color var(--tr);
+    }
+    .she-slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .she-slot-label {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text2);
+      transition: color var(--tr);
+    }
+    .she-slot-label.filled {
+      color: var(--text);
+    }
+    .she-slot-action {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      transition: color var(--tr);
+    }
+    .she-slot-meta {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text2);
+      margin-top: 4px;
+      transition: color var(--tr);
+    }
+    .she-slot-empty {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text2);
+      opacity: 0.5;
+      padding: 8px 0;
+    }
+    .she-danger-btn {
+      display: block;
+      width: 100%;
+      margin-top: 40px;
+      padding: 14px 0;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: #C0392B;
+      background: transparent;
+      border: 1px solid rgba(192,57,43,0.3);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .she-danger-btn:active { background: rgba(192,57,43,0.08); }
+
+    /* ── Demo controls ── */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      max-width: 420px;
+    }
+    .ctrl-btn {
+      font-size: 11px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.22);
+      color: #fff;
+      cursor: pointer;
+      background: transparent;
+      transition: background 0.15s;
+    }
+    .ctrl-btn:hover, .ctrl-btn.on { background: rgba(255,255,255,0.18); }
+    .ctrl-night {
+      background: rgba(200,120,42,0.3);
+      border-color: rgba(200,120,42,0.5);
+    }
+    .ctrl-night:hover { background: rgba(200,120,42,0.48); }
+  </style>
+</head>
+<body>
+
+<div class="phone" id="app">
+
+  <div class="status-bar">
+    <span class="status-time" id="clockDisplay">09:41</span>
+    <div class="status-dot"></div>
+  </div>
+
+  <!-- Turrell background image -->
+  <div class="halo-layer" id="haloLayer">
+    <img src="circles.png" alt="">
+  </div>
+
+  <!-- Two walking figures — from Figma SVG -->
+  <svg class="figures-layer" viewBox="0 0 110 195" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M26.4789 64.2299C25.3899 64.8159 24.3049 65.4609 24.0669 65.6639C23.5449 66.1089 22.7439 72.4279 22.7259 76.2499C22.7189 77.7629 22.3009 78.9999 21.7969 78.9999C21.2939 78.9999 21.1309 79.4029 21.4349 79.8949C21.7399 80.3879 21.3789 81.0239 20.6339 81.3099C19.2589 81.8379 16.9999 89.1219 16.9999 93.0299C16.9999 94.4939 17.9519 95.5329 19.9999 96.3059C23.2189 97.5209 23.2929 97.8049 23.2369 108.828C23.2139 113.268 22.6929 114.798 20.1049 118.019C16.3289 122.717 16.2949 123.3 19.6349 125.927C22.5319 128.206 26.3329 128.933 24.1999 126.8C23.5399 126.14 22.9999 124.865 22.9999 123.967C22.9999 122.113 29.5049 114.214 30.3539 115.037C30.6579 115.332 31.2659 118.471 31.7039 122.012L32.4999 128.449L35.9999 128.734C41.3329 129.168 43.0729 128.149 39.8819 126.46C37.3109 125.099 35.9999 121.7 35.9999 116.394C35.9999 114.639 36.7009 113.882 38.7499 113.426C44.6169 112.12 45.1489 111.83 44.5449 110.257C44.2159 109.398 42.8249 103.027 41.4539 96.0979C38.8639 82.9989 36.4419 74.3919 34.7449 72.2499C34.2009 71.5629 32.7139 70.9999 31.4399 70.9999C29.3699 70.9999 29.1839 70.6439 29.6729 67.6269C30.3009 63.7579 29.3109 62.7049 26.4789 64.2299ZM30.9999 65.3779C30.9999 65.5849 31.7879 66.3729 32.7499 67.1279C34.3359 68.3709 34.3709 68.3359 33.1279 66.7499C31.8209 65.0839 30.9999 64.5549 30.9999 65.3779ZM83.9999 75.5959C82.6249 76.3659 81.6079 77.4349 81.7409 77.9699C81.8909 78.5809 80.9679 78.5579 79.2609 77.9089C77.3629 77.1869 76.4349 77.1959 76.1869 77.9379C75.9929 78.5219 74.8339 78.9999 73.6119 78.9999C70.9059 78.9999 64.4309 84.7349 63.0569 88.3489C61.9359 91.2979 62.6049 93.9089 64.9379 95.6959C66.2079 96.6689 66.8139 96.4849 68.1819 94.7109C69.1059 93.5109 70.0149 92.7479 70.2019 93.0149C70.3879 93.2819 71.5379 95.6379 72.7569 98.2499C75.0599 103.183 75.5659 103.561 77.8969 102.085C78.9989 101.387 79.0829 100.367 78.2919 97.2509C77.3809 93.6639 77.5509 92.9519 80.1449 89.4729C81.7149 87.3669 82.9999 84.9939 82.9999 84.1989C82.9999 82.9859 83.2569 82.9689 84.6069 84.0889C85.8259 85.0999 86.0709 86.4659 85.6219 89.7409C84.9709 94.4929 80.3809 105 78.9559 105C78.4619 105 75.5689 103.9 72.5289 102.555L66.9999 100.11V106.524C66.9999 110.596 66.1179 115.639 64.5859 120.334C60.8359 131.821 60.8589 132.251 65.2619 133.304C67.3319 133.799 69.7399 133.93 70.6139 133.595C71.9779 133.071 71.8999 132.738 70.0649 131.242L67.9259 129.5L70.3229 124.5C71.6409 121.75 73.2909 117.743 73.9879 115.595L75.2569 111.69L77.1509 114.095C78.7149 116.081 78.9969 117.892 78.7719 124.5L78.4999 132.5L83.3899 132.81C89.2759 133.184 91.6469 131.577 87.5209 130.008L84.7169 128.942L85.3589 121.221C85.8849 114.905 85.6479 112.571 84.0589 108.392C82.8029 105.09 82.4589 102.941 83.0869 102.313C83.6199 101.78 84.9939 98.0029 86.1399 93.9209C87.2859 89.8399 88.6779 85.9379 89.2339 85.2499C89.9579 84.3549 89.8139 83.9999 88.7289 83.9999C86.8109 83.9999 85.5999 80.9999 86.9669 79.6329C87.6099 78.9899 87.9999 78.9709 87.9999 79.5829C87.9999 80.9329 93.2999 80.5989 93.7599 79.2199C93.9629 78.6099 93.6349 77.1859 93.0299 76.0549C91.7469 73.6589 87.8159 73.4589 83.9999 75.5959ZM79.4179 79.6069C80.2879 79.9409 80.9999 80.8959 80.9999 81.7289C80.9999 82.8609 80.6699 82.9709 79.6979 82.1639C78.9819 81.5699 77.2939 81.3459 75.9479 81.6669C73.5539 82.2369 73.5439 82.2149 75.4999 80.6569C77.8849 78.7569 77.4839 78.8649 79.4179 79.6069ZM72.4809 86.6989C70.7339 90.8799 69.9999 91.8919 69.9999 90.1169C69.9999 88.6879 72.8289 82.9999 73.5389 82.9999C73.8069 82.9999 73.3309 84.6639 72.4809 86.6989Z" fill="currentColor"/>
+  </svg>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip">
+    余额 ÷ 近7天日均 = 还能活几天。<br>就一行公式。
+  </div>
+
+  <!-- Coin flip area -->
+  <div class="coin-area" id="coinArea">
+    <div class="coin-inner" id="coinInner">
+
+      <!-- FRONT: 剩余天数 -->
+      <div class="coin-face coin-front">
+        <div class="flip-hint">
+          <div class="flip-line"></div>
+          <div class="flip-text">轻触翻面</div>
+          <div class="flip-line"></div>
+        </div>
+        <div class="big-num primary" id="f-remain">183</div>
+        <div class="num-label accent">还能活的天数</div>
+      </div>
+
+      <!-- BACK: 已存活天数 -->
+      <div class="coin-face coin-back">
+        <div class="flip-hint">
+          <div class="flip-line"></div>
+          <div class="flip-text">轻触翻面</div>
+          <div class="flip-line"></div>
+        </div>
+        <div class="big-num secondary" id="b-survived">21</div>
+        <div class="num-label dim">已存活天数</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Corner bar -->
+  <div class="corner-bar">
+    <div class="q-btn" id="qBtn"><span>?</span></div>
+    <div class="phase-label" id="phaseLabel">— 白天 —</div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav class="bottom-nav">
+    <div class="nav-tab active" data-tab="筹">
+      <div class="nav-char">筹</div>
+      <div class="nav-name">我的筹码</div>
+    </div>
+    <div class="nav-tab" data-tab="负">
+      <div class="nav-char">负</div>
+      <div class="nav-name">固定负重</div>
+    </div>
+    <div class="nav-tab" data-tab="转">
+      <div class="nav-char">转</div>
+      <div class="nav-name">每日流转</div>
+    </div>
+    <div class="nav-tab" data-tab="印">
+      <div class="nav-char">印</div>
+      <div class="nav-name">生存印章</div>
+    </div>
+    <div class="nav-tab" data-tab="设">
+      <div class="nav-char"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-1.42 3.42 2 2 0 0 1-1.41-.59l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-3.42-1.42 2 2 0 0 1 .59-1.41l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 1.42-3.42 2 2 0 0 1 1.41.59l.06.06A1.65 1.65 0 0 0 9 4.6h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 3.42 1.42 2 2 0 0 1-.59 1.41l-.06.06A1.65 1.65 0 0 0 19.4 9v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      <div class="nav-name">设置</div>
+    </div>
+  </nav>
+
+  <!-- ══ Poster Panel — Exhibition poster ══ -->
+  <div class="poster-panel" id="posterPanel">
+    <div class="poster-bg"></div>
+    <div class="poster-content">
+
+      <div class="poster-header">
+        <div class="poster-title">Survival Record</div>
+        <div class="poster-close" id="posterClose">+</div>
+      </div>
+
+      <div class="poster-big-num" id="posterNum">183</div>
+
+      <div class="poster-quote">
+        <div class="poster-quote-text" id="posterQuote">时间只是我垂钓于其中的溪流，我饮尽其中滋味。</div>
+        <div class="poster-quote-author" id="posterAuthor">— 梭罗</div>
+      </div>
+
+      <div class="poster-footer">
+        <div class="poster-seal">
+          <div class="poster-seal-char">印</div>
+          <div class="poster-seal-label">生存封印</div>
+        </div>
+        <div class="poster-dates">
+          <div class="poster-date-label">EXHIBITION DURATION:</div>
+          <div class="poster-date-row">
+            <div class="poster-date-val" id="posterStart">MAR 12</div>
+          </div>
+          <div class="poster-date-row">
+            <div class="poster-date-dash">—</div>
+            <div class="poster-date-val" id="posterToday">APR 03</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ 筹 Panel — 我的筹码 ══ -->
+  <div class="page-panel" id="chouPanel">
+    <div class="page-panel-inner">
+      <div class="pp-header">
+        <div class="pp-title">我的筹码</div>
+        <div class="pp-close" data-panel-close>+</div>
+      </div>
+      <div class="pp-subtitle">「钱从哪来，都记这里。」</div>
+
+      <div class="chou-top-fixed">
+        <div class="chou-balance">
+          <div class="chou-balance-num">¥54,820</div>
+          <div class="chou-balance-label">当 前 余 额</div>
+        </div>
+        <button class="chou-income-btn" id="chouIncomeBtn">+ 记一笔收入</button>
+
+        <div class="pp-section" style="margin-top:56px;">近 7 天收支概览</div>
+        <div class="bar-chart-7">
+          <div class="bar-day"><div class="bar-col" style="height:53px"></div><div class="bar-label">27</div></div>
+          <div class="bar-day"><div class="bar-col" style="height:30px"></div><div class="bar-label">28</div></div>
+          <div class="bar-day">
+            <div class="bar-col income" style="height:70px"></div>
+            <div class="bar-col" style="height:65px"></div>
+            <div class="bar-label">29</div>
+          </div>
+          <div class="bar-day"><div class="bar-col" style="height:18px"></div><div class="bar-label">30</div></div>
+          <div class="bar-day"><div class="bar-col" style="height:59px"></div><div class="bar-label">31</div></div>
+          <div class="bar-day"><div class="bar-col" style="height:36px"></div><div class="bar-label">01</div></div>
+          <div class="bar-day"><div class="bar-col" style="height:50px"></div><div class="bar-label">02</div></div>
+        </div>
+      </div>
+
+      <div class="pp-section">历 史 记 录</div>
+      <div class="history-scroll">
+        <ul class="history-list">
+          <li class="history-date-group">今天 · 04月03日</li>
+          <li class="history-item">
+            <div><span class="history-name">午餐</span><span class="history-tag">饮食</span></div>
+            <div class="history-amount">-¥32</div>
+          </li>
+          <li class="history-item">
+            <div><span class="history-name">地铁</span><span class="history-tag">交通</span></div>
+            <div class="history-amount">-¥6</div>
+          </li>
+          <li class="history-item">
+            <div><span class="history-name">咖啡</span><span class="history-tag">饮食</span></div>
+            <div class="history-amount">-¥28</div>
+          </li>
+          <li class="history-date-group">昨天 · 04月02日</li>
+          <li class="history-item">
+            <div><span class="history-name">超市</span><span class="history-tag">购物</span></div>
+            <div class="history-amount">-¥188</div>
+          </li>
+          <li class="history-item">
+            <div><span class="history-name">外卖</span><span class="history-tag">饮食</span></div>
+            <div class="history-amount">-¥45</div>
+          </li>
+          <li class="history-date-group">03月29日</li>
+          <li class="history-item">
+            <div><span class="history-name">工资</span><span class="history-tag">收入</span></div>
+            <div class="history-amount income-amt">+¥5,000</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 负 Panel — 固定负重 ══ -->
+  <div class="page-panel" id="fuPanel">
+    <div class="page-panel-inner">
+      <div class="pp-header">
+        <div class="pp-title">固定负重</div>
+        <div class="pp-close" data-panel-close>+</div>
+      </div>
+      <div class="pp-subtitle">「那些每月必来报到的账单。」</div>
+
+      <ul class="fu-list">
+        <li class="fu-item">
+          <div class="fu-row">
+            <span class="fu-name">房租</span>
+            <div><span class="fu-amount">¥3,200</span><span class="fu-cycle">/月</span></div>
+          </div>
+          <div class="fu-meta">下次扣款：04月05日</div>
+        </li>
+        <li class="fu-item">
+          <div class="fu-row">
+            <span class="fu-name">手机话费</span>
+            <div><span class="fu-amount">¥128</span><span class="fu-cycle">/月</span></div>
+          </div>
+          <div class="fu-meta">下次扣款：04月15日</div>
+        </li>
+        <li class="fu-item">
+          <div class="fu-row">
+            <span class="fu-name">保险</span>
+            <div><span class="fu-amount">¥450</span><span class="fu-cycle">/年</span></div>
+          </div>
+          <div class="fu-meta">下次扣款：2027年03月</div>
+        </li>
+      </ul>
+      <button class="fu-add-btn" id="fuAddBtn">+ 添加固定支出</button>
+    </div>
+  </div>
+
+  <!-- ══ 转 Panel — 每日流转 ══ -->
+  <div class="page-panel" id="zhuanPanel">
+    <div class="page-panel-inner">
+      <div class="pp-header">
+        <div class="pp-title">每日流转</div>
+        <div class="pp-close" data-panel-close>+</div>
+      </div>
+      <div class="pp-subtitle">「花了什么记下来，哪些影响节奏你说了算。」</div>
+
+      <!-- Manual input area -->
+      <div class="zhuan-input-area">
+        <div class="zhuan-row1">
+          <span class="zhuan-yen">¥</span>
+          <input class="zhuan-amount-input" id="zhuanAmountInput" type="number" placeholder="0.00">
+          <button class="zhuan-confirm-btn" id="zhuanConfirmBtn">记下</button>
+        </div>
+        <div class="zhuan-row2">
+          <span class="zhuan-pill on" data-cat="饮食">饮食 <span class="zhuan-pill-check">✓</span></span>
+          <span class="zhuan-pill" data-cat="交通">交通 <span class="zhuan-pill-check">✓</span></span>
+          <span class="zhuan-pill" data-cat="娱乐">娱乐 <span class="zhuan-pill-check">✓</span></span>
+          <span class="zhuan-pill" data-cat="购物">购物 <span class="zhuan-pill-check">✓</span></span>
+          <input class="zhuan-note-input" id="zhuanNoteInput" placeholder="备注...">
+        </div>
+      </div>
+
+      <!-- OCR / Photo input area -->
+      <div class="zhuan-ocr-section">
+        <button class="zhuan-ocr-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          拍照记账
+        </button>
+        <button class="zhuan-ocr-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          截图识别
+        </button>
+      </div>
+
+      <div class="pp-section">近 7 天支出</div>
+      <div class="mini-bars">
+        <div class="mini-bar-day"><div class="mini-bar-col" style="height:27px"></div><div class="mini-bar-label">27</div></div>
+        <div class="mini-bar-day"><div class="mini-bar-col" style="height:15px"></div><div class="mini-bar-label">28</div></div>
+        <div class="mini-bar-day"><div class="mini-bar-col" style="height:40px"></div><div class="mini-bar-label">29</div></div>
+        <div class="mini-bar-day"><div class="mini-bar-col" style="height:9px"></div><div class="mini-bar-label">30</div></div>
+        <div class="mini-bar-day"><div class="mini-bar-col" style="height:30px"></div><div class="mini-bar-label">31</div></div>
+        <div class="mini-bar-day"><div class="mini-bar-col" style="height:18px"></div><div class="mini-bar-label">01</div></div>
+        <div class="mini-bar-day"><div class="mini-bar-col" style="height:25px"></div><div class="mini-bar-label">02</div></div>
+      </div>
+
+      <div class="pp-section">今 日 记 录</div>
+      <div class="today-records-scroll" id="todayRecordsScroll">
+        <div class="today-item">
+          <div class="today-left"><span class="today-name">午餐</span><span class="today-tag">饮食</span></div>
+          <div class="today-amount">-¥32</div>
+        </div>
+        <div class="today-item">
+          <div class="today-left"><span class="today-name">地铁</span><span class="today-tag">交通</span></div>
+          <div class="today-amount">-¥6</div>
+        </div>
+        <div class="today-item">
+          <div class="today-left"><span class="today-name">咖啡</span><span class="today-tag">饮食</span></div>
+          <div class="today-amount">-¥28</div>
+        </div>
+        <div class="today-item">
+          <div class="today-left"><span class="today-name">水果</span><span class="today-tag">饮食</span></div>
+          <div class="today-amount">-¥18</div>
+        </div>
+        <div class="today-item">
+          <div class="today-left"><span class="today-name">打车</span><span class="today-tag">交通</span></div>
+          <div class="today-amount">-¥23</div>
+        </div>
+        <div class="today-item">
+          <div class="today-left"><span class="today-name">奶茶</span><span class="today-tag">饮食</span></div>
+          <div class="today-amount">-¥15</div>
+        </div>
+        <div class="today-item">
+          <div class="today-left"><span class="today-name">电影票</span><span class="today-tag">娱乐</span></div>
+          <div class="today-amount">-¥45</div>
+        </div>
+        <div class="today-item">
+          <div class="today-left"><span class="today-name">文具</span><span class="today-tag">购物</span></div>
+          <div class="today-amount">-¥12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 设 Panel — 设置 ══ -->
+  <div class="page-panel" id="shePanel">
+    <div class="page-panel-inner">
+      <div class="pp-header">
+        <div class="pp-title">设置</div>
+        <div class="pp-close" data-panel-close>+</div>
+      </div>
+      <div class="pp-subtitle"></div>
+
+      <div class="pp-section">存 档</div>
+      <div class="she-slot" data-slot="1" data-filled="true">
+        <div class="she-slot-header">
+          <span class="she-slot-label filled">存档 1 · 04月01日 14:30</span>
+          <button class="she-slot-action" data-slot-action="load">读取</button>
+        </div>
+        <div class="she-slot-meta">余额 ¥58,200 · 剩余 194 天</div>
+      </div>
+      <div class="she-slot" data-slot="2" data-filled="false">
+        <div class="she-slot-header">
+          <span class="she-slot-label">存档 2</span>
+          <button class="she-slot-action" data-slot-action="save">存档</button>
+        </div>
+        <div class="she-slot-empty">— 空 —</div>
+      </div>
+      <div class="she-slot" data-slot="3" data-filled="false">
+        <div class="she-slot-header">
+          <span class="she-slot-label">存档 3</span>
+          <button class="she-slot-action" data-slot-action="save">存档</button>
+        </div>
+        <div class="she-slot-empty">— 空 —</div>
+      </div>
+
+      <button class="she-danger-btn" id="sheDangerBtn">清零所有数据</button>
+    </div>
+  </div>
+
+  <!-- Shared modal overlay -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box" id="modalBox"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="app-toast" id="appToast"></div>
+
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn on"  onclick="setDemo('充裕',183,21,this)">充裕 &gt;180</button>
+  <button class="ctrl-btn"     onclick="setDemo('正常',112,54,this)">正常 60–180</button>
+  <button class="ctrl-btn"     onclick="setDemo('偏紧',44,92,this)">偏紧 30–60</button>
+  <button class="ctrl-btn"     onclick="setDemo('警戒',18,128,this)">警戒 &lt;30</button>
+  <button class="ctrl-btn"     onclick="setDemo('归零',0,156,this)">归零 ≤0</button>
+  <button class="ctrl-btn ctrl-night" onclick="toggleNight()">☀︎ / ☽</button>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   Turrell background — image-based opacity control
+══════════════════════════════════════ */
+const HALO_OPACITY = {
+  '充裕': 1.0,
+  '正常': 0.75,
+  '偏紧': 0.48,
+  '警戒': 0.22,
+  '归零': 0.04,
+};
+
+function applyHalo(state) {
+  document.getElementById('haloLayer').style.opacity = HALO_OPACITY[state];
+}
+
+
+/* ══════════════════════════════════════
+   Quotes — 30 representative quotes from quotes.md
+   Same quote within the same calendar day
+══════════════════════════════════════ */
+const QUOTES = [
+  ['时间只是我垂钓于其中的溪流，我饮尽其中滋味。','梭罗'],
+  ['我走进森林，是因为我想从容地生活，只面对生命最基本的事实。','梭罗'],
+  ['一个人的财富，与他能够放弃的东西数量成正比。','梭罗'],
+  ['不是我们拥有的时间太少，而是我们浪费的时间太多。','塞内卡'],
+  ['把每一天都当作一段完整的生命来珍惜。','塞内卡'],
+  ['收回你的感官，把时间还给自己。','马可·奥勒留'],
+  ['向外看的人在做梦，向内看的人才是清醒的。','荣格'],
+  ['我要的不是宏大的生命，而是真实的生命。','王小波'],
+  ['我的时间表上只有一件事：好好活。','史铁生'],
+  ['余生，可以慢慢爱，慢慢走。','杨绛'],
+  ['我们所受的苦，大多来自想象，而非现实。','塞内卡'],
+  ['不要让明天的焦虑毁掉今天。','马可·奥勒留'],
+  ['不确定性是生命的本质，抵抗它比承受它更累。','荣格'],
+  ['即使在最黑暗的处境，人仍有选择自己态度的自由。','维克多·弗兰克尔'],
+  ['想象西西弗斯是快乐的。','加缪'],
+  ['生活永远不会像你担心的那么糟。','查理·芒格'],
+  ['反过来想，总是反过来想。','查理·芒格'],
+  ['焦虑的解药，是行动。','保罗·格雷厄姆'],
+  ['钱是燃料，不是目的地。','纳瓦尔·拉维坎特'],
+  ['大多数物品的代价，不是用钱来衡量的，而是用你的生命来衡量的。','梭罗'],
+  ['少花一分，就是多赚一分自由。','本杰明·富兰克林'],
+  ['花钱的速度，是消耗生命的速度。','史铁生'],
+  ['我不是我所经历的事情，我是我选择成为的人。','荣格'],
+  ['活着的全部意义，就是探索自己是谁。','荣格'],
+  ['你的时间有限，不要浪费在重复别人的生活上。','史蒂夫·乔布斯'],
+  ['活得坦荡，是一种世界观。','王小波'],
+  ['我来到这个世界上，是为了看太阳。','巴尔蒙特'],
+  ['好好活，就是做有意义的事。','史铁生'],
+  ['我们曾如此渴望命运的波澜，到最后才发现，人生最曼妙的风景，是内心的淡定与从容。','杨绛'],
+  ['活着的本身，就已经是一种勇气。','加缪'],
+];
+
+function getDailyQuote() {
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth()+1) * 100 + today.getDate();
+  return QUOTES[seed % QUOTES.length];
+}
+
+function applyQuote() {
+  const [text, author] = getDailyQuote();
+  document.getElementById('posterQuote').textContent = text;
+  document.getElementById('posterAuthor').textContent = '— ' + author;
+}
+
+
+/* ══════════════════════════════════════
+   Theme
+══════════════════════════════════════ */
+let isNight    = false;
+let currentState = '充裕';
+
+function applyTheme(night) {
+  isNight = night;
+  const app = document.getElementById('app');
+  night ? app.setAttribute('data-night','') : app.removeAttribute('data-night');
+  document.getElementById('phaseLabel').textContent = night ? '— 夜晚 —' : '— 白天 —';
+  document.querySelector('#haloLayer img').src = night ? 'circles-dark.png' : 'circles.png';
+  applyHalo(currentState);
+}
+function toggleNight() { applyTheme(!isNight); }
+function checkAutoTheme() {
+  const h = new Date().getHours();
+  applyTheme(h < 6 || h >= 18);
+}
+
+
+/* ══════════════════════════════════════
+   Clock
+══════════════════════════════════════ */
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clockDisplay').textContent =
+    `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+}
+
+
+/* ══════════════════════════════════════
+   Coin flip
+══════════════════════════════════════ */
+let flipped = false;
+document.getElementById('coinArea').addEventListener('click', e => {
+  if (e.target.closest('#qBtn')) return;
+  flipped = !flipped;
+  document.getElementById('coinInner').classList.toggle('flipped', flipped);
+  if (navigator.vibrate) navigator.vibrate(40);
+});
+
+
+/* ══════════════════════════════════════
+   Tooltip
+══════════════════════════════════════ */
+let tipOpen = false;
+document.getElementById('qBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  tipOpen = !tipOpen;
+  document.getElementById('tooltip').classList.toggle('show', tipOpen);
+});
+document.getElementById('app').addEventListener('click', () => {
+  if (tipOpen) {
+    tipOpen = false;
+    document.getElementById('tooltip').classList.remove('show');
+  }
+});
+
+
+/* ══════════════════════════════════════
+   Poster Panel
+══════════════════════════════════════ */
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN',
+                'JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function fmtDate(d) {
+  return `${MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function openPoster() {
+  document.getElementById('posterNum').textContent =
+    document.getElementById('f-remain').textContent;
+  applyQuote();
+  document.getElementById('posterPanel').classList.add('open');
+}
+function closePoster() {
+  closeAllPanels();
+  switchToTab('筹');
+}
+
+document.getElementById('posterClose').addEventListener('click', e => {
+  e.stopPropagation();
+  closePoster();
+});
+
+function updatePosterDates(survivedDays) {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - survivedDays);
+  document.getElementById('posterStart').textContent = fmtDate(start);
+  document.getElementById('posterToday').textContent = fmtDate(today);
+}
+updatePosterDates(21);
+
+
+/* ══════════════════════════════════════
+   Nav tabs — open/close all panels
+══════════════════════════════════════ */
+const TAB_PANEL_MAP = {
+  '筹': 'chouPanel',
+  '负': 'fuPanel',
+  '转': 'zhuanPanel',
+  '设': 'shePanel',
+};
+
+function closeAllPanels() {
+  document.getElementById('posterPanel').classList.remove('open');
+  Object.values(TAB_PANEL_MAP).forEach(id => {
+    document.getElementById(id).classList.remove('open');
+  });
+}
+
+function switchToTab(tabName) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const target = document.querySelector(`[data-tab="${tabName}"]`);
+  if (target) target.classList.add('active');
+}
+
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const t = tab.dataset.tab;
+    closeAllPanels();
+    switchToTab(t);
+
+    if (t === '印') {
+      openPoster();
+    } else if (TAB_PANEL_MAP[t]) {
+      document.getElementById(TAB_PANEL_MAP[t]).classList.add('open');
+    }
+    // All tabs open their corresponding panel
+  });
+});
+
+// Panel close buttons — return to home (筹 tab, no panel)
+document.querySelectorAll('[data-panel-close]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    closeAllPanels();
+    switchToTab('筹');
+  });
+});
+
+// Swipe-down gesture to close panels
+const SWIPE_THRESHOLD = 70;
+document.querySelectorAll('.page-panel').forEach(panel => {
+  let startY = 0, startX = 0, startTime = 0;
+
+  panel.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
+    startTime = Date.now();
+    // Only capture if scroll is near top
+    if (panel.scrollTop <= 5) {
+      panel.classList.add('swiping');
+    }
+  }, { passive: true });
+
+  panel.addEventListener('touchmove', e => {
+    if (!panel.classList.contains('swiping')) return;
+    const dy = e.touches[0].clientY - startY;
+    const dx = e.touches[0].clientX - startX;
+    // Only process vertical swipe
+    if (dy > 0) {
+      panel.style.transform = `translateY(${dy}px)`;
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  panel.addEventListener('touchend', e => {
+    if (!panel.classList.contains('swiping')) return;
+    panel.classList.remove('swiping');
+    const dy = e.changedTouches[0].clientY - startY;
+    const dt = Date.now() - startTime;
+    panel.style.transform = '';
+    if (dy > SWIPE_THRESHOLD && dt < 400) {
+      closeAllPanels();
+      switchToTab('筹');
+    }
+  });
+});
+
+// Poster panel swipe-down
+const posterPanel = document.getElementById('posterPanel');
+let pStartY = 0, pStartTime = 0;
+posterPanel.addEventListener('touchstart', e => {
+  pStartY = e.touches[0].clientY;
+  pStartTime = Date.now();
+}, { passive: true });
+posterPanel.addEventListener('touchmove', e => {
+  const dy = e.touches[0].clientY - pStartY;
+  if (dy > 0) {
+    posterPanel.style.transform = `translateY(${dy}px)`;
+    e.preventDefault();
+  }
+}, { passive: false });
+posterPanel.addEventListener('touchend', e => {
+  const dy = e.changedTouches[0].clientY - pStartY;
+  const dt = Date.now() - pStartTime;
+  posterPanel.style.transform = '';
+  if (dy > SWIPE_THRESHOLD && dt < 400) {
+    closeAllPanels();
+    switchToTab('筹');
+  }
+});
+
+// Pill toggle in 转 panel — single select
+document.querySelectorAll('.zhuan-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.zhuan-pill').forEach(p => p.classList.remove('on'));
+    pill.classList.add('on');
+  });
+});
+
+
+/* ══════════════════════════════════════
+   Toast helper
+══════════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('appToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+
+/* ══════════════════════════════════════
+   Modal helper
+══════════════════════════════════════ */
+function showModal(html) {
+  const overlay = document.getElementById('modalOverlay');
+  document.getElementById('modalBox').innerHTML = html;
+  overlay.classList.add('show');
+}
+function hideModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) hideModal();
+});
+
+
+/* ══════════════════════════════════════
+   筹 — 记一笔收入 modal
+══════════════════════════════════════ */
+document.getElementById('chouIncomeBtn').addEventListener('click', () => {
+  showModal(`
+    <div class="modal-title">记一笔收入</div>
+    <input class="modal-input" id="modalIncomeAmt" type="number" placeholder="¥ 金额">
+    <input class="modal-input-sm" id="modalIncomeNote" placeholder="备注（选填）">
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="hideModal()">取消</button>
+      <button class="modal-btn modal-btn-confirm" id="modalIncomeConfirm">确认</button>
+    </div>
+  `);
+  setTimeout(() => {
+    document.getElementById('modalIncomeConfirm').addEventListener('click', () => {
+      const amt = parseFloat(document.getElementById('modalIncomeAmt').value);
+      if (!amt || amt <= 0) return;
+      const note = document.getElementById('modalIncomeNote').value || '收入';
+      // Update balance
+      const balEl = document.querySelector('.chou-balance-num');
+      const cur = parseFloat(balEl.textContent.replace(/[¥,]/g, ''));
+      const newBal = cur + amt;
+      balEl.textContent = '¥' + newBal.toLocaleString();
+      // Add to history
+      const list = document.querySelector('.history-list');
+      const firstGroup = list.querySelector('.history-date-group');
+      const li = document.createElement('li');
+      li.className = 'history-item';
+      li.innerHTML = `<div><span class="history-name">${note}</span><span class="history-tag">收入</span></div><div class="history-amount income-amt">+¥${amt.toLocaleString()}</div>`;
+      firstGroup.insertAdjacentElement('afterend', li);
+      hideModal();
+      showToast('已记录');
+    });
+  }, 0);
+});
+
+
+/* ══════════════════════════════════════
+   转 — 记下 interaction
+══════════════════════════════════════ */
+document.getElementById('zhuanConfirmBtn').addEventListener('click', () => {
+  const amtInput = document.getElementById('zhuanAmountInput');
+  const amt = parseFloat(amtInput.value);
+  if (!amt || amt <= 0) return;
+  const activePill = document.querySelector('.zhuan-pill.on');
+  const cat = activePill ? activePill.dataset.cat : '其他';
+  const noteInput = document.getElementById('zhuanNoteInput');
+  const note = noteInput.value || cat;
+  // Add to today's records
+  const scroll = document.getElementById('todayRecordsScroll');
+  const div = document.createElement('div');
+  div.className = 'today-item';
+  div.innerHTML = `<div class="today-left"><span class="today-name">${note}</span><span class="today-tag">${cat}</span></div><div class="today-amount">-¥${amt}</div>`;
+  scroll.insertBefore(div, scroll.firstChild);
+  // Clear inputs
+  amtInput.value = '';
+  noteInput.value = '';
+  showToast('已记录');
+});
+
+
+/* ══════════════════════════════════════
+   负 — 添加固定支出 modal
+══════════════════════════════════════ */
+document.getElementById('fuAddBtn').addEventListener('click', () => {
+  showModal(`
+    <div class="modal-title">添加固定支出</div>
+    <input class="modal-input-sm" id="modalFuName" placeholder="名称（如：房租）">
+    <input class="modal-input" id="modalFuAmt" type="number" placeholder="¥ 金额">
+    <select class="modal-select" id="modalFuCycle">
+      <option value="/月">每月</option>
+      <option value="/季">每季</option>
+      <option value="/年">每年</option>
+    </select>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="hideModal()">取消</button>
+      <button class="modal-btn modal-btn-confirm" id="modalFuConfirm">确认</button>
+    </div>
+  `);
+  setTimeout(() => {
+    document.getElementById('modalFuConfirm').addEventListener('click', () => {
+      const name = document.getElementById('modalFuName').value;
+      const amt = document.getElementById('modalFuAmt').value;
+      const cycle = document.getElementById('modalFuCycle').value;
+      if (!name || !amt) return;
+      const list = document.querySelector('.fu-list');
+      const li = document.createElement('li');
+      li.className = 'fu-item';
+      li.innerHTML = `<div class="fu-row"><span class="fu-name">${name}</span><div><span class="fu-amount">¥${parseFloat(amt).toLocaleString()}</span><span class="fu-cycle">${cycle}</span></div></div><div class="fu-meta">刚刚添加</div>`;
+      list.appendChild(li);
+      hideModal();
+      showToast('已记录');
+    });
+  }, 0);
+});
+
+
+/* ══════════════════════════════════════
+   设 — 存档 / 读取 / 清零
+══════════════════════════════════════ */
+document.querySelectorAll('[data-slot-action]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const slot = btn.closest('.she-slot');
+    const action = btn.dataset.slotAction;
+    const filled = slot.dataset.filled === 'true';
+    if (action === 'load' && filled) {
+      showModal(`
+        <div class="modal-title">读取存档</div>
+        <div class="modal-desc">读取此档案后，当前未存档的数据将被覆盖，是否继续？</div>
+        <div class="modal-actions">
+          <button class="modal-btn modal-btn-cancel" onclick="hideModal()">取消</button>
+          <button class="modal-btn modal-btn-confirm" onclick="hideModal();showToast('已读取')">确认读取</button>
+        </div>
+      `);
+    } else if (action === 'save' && !filled) {
+      showToast('已存档');
+      // Update slot UI
+      const now = new Date();
+      const m = String(now.getMonth()+1).padStart(2,'0');
+      const d = String(now.getDate()).padStart(2,'0');
+      const h = String(now.getHours()).padStart(2,'0');
+      const mi = String(now.getMinutes()).padStart(2,'0');
+      slot.dataset.filled = 'true';
+      btn.dataset.slotAction = 'load';
+      btn.textContent = '读取';
+      const label = slot.querySelector('.she-slot-label');
+      label.classList.add('filled');
+      label.textContent = `存档 ${slot.dataset.slot} · ${m}月${d}日 ${h}:${mi}`;
+      const empty = slot.querySelector('.she-slot-empty');
+      if (empty) {
+        empty.className = 'she-slot-meta';
+        const balText = document.querySelector('.chou-balance-num').textContent;
+        const remain = document.getElementById('f-remain').textContent;
+        empty.textContent = `余额 ${balText.replace('¥','')} · 剩余 ${remain} 天`;
+      }
+    }
+  });
+});
+
+document.getElementById('sheDangerBtn').addEventListener('click', () => {
+  showModal(`
+    <div class="modal-title">确认清零</div>
+    <div class="modal-desc danger">此操作将清空所有数据，无法撤销。确认清零？</div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-cancel" onclick="hideModal()">取消</button>
+      <button class="modal-btn modal-btn-danger" onclick="hideModal();showToast('已清零')">确认清零</button>
+    </div>
+  `);
+});
+
+
+/* ══════════════════════════════════════
+   Demo switcher
+══════════════════════════════════════ */
+function setDemo(state, remain, survived, btn) {
+  currentState = state;
+  document.getElementById('f-remain').textContent   = remain;
+  document.getElementById('b-survived').textContent = survived;
+  applyHalo(state);
+  document.querySelectorAll('.ctrl-btn:not(.ctrl-night)').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  updatePosterDates(survived);
+  document.getElementById('posterNum').textContent = remain;
+}
+
+
+/* ══════════════════════════════════════
+   Init
+══════════════════════════════════════ */
+checkAutoTheme();
+updateClock();
+applyQuote();
+setInterval(updateClock, 30000);
+setInterval(checkAutoTheme, 60000);
+</script>
+</body>
+</html>

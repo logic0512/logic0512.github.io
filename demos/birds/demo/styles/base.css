@@ -1,0 +1,251 @@
+/* ==========================================================================
+   base.css · 设计 Tokens + reset + 画布缩放 + 通用组件
+   参考：docs/specs/2026-04-22-design-handoff.md §2 / §4
+   ========================================================================== */
+
+/* ---------- Tokens ------------------------------------------------------- */
+:root {
+  /* 羊皮纸 · 背景族 */
+  --parchment-0: #F4EBD8;
+  --parchment-1: #EADDBF;
+  --parchment-2: #D9C8A3;
+
+  /* 墨黑 · 文字族 */
+  --ink-900: #1F1A14;
+  --ink-800: #2E2418;
+  --ink-700: #4A3A28;
+  --ink-500: #8C7658;
+  --ink-300: #B8A383;
+
+  /* 点缀色 */
+  --accent-gold:      #C8A35A;
+  --accent-gold-deep: #A8823A;
+  --accent-red:       #8B3A2B;
+
+  /* 透视层四器官（与 mockups 对齐） */
+  --organ-airsac: #4A78B0;
+  --organ-heart:  #B04A3A;
+  --organ-syrinx: #E0C040;
+  --organ-egg:    #9B9B9B;
+
+  /* 字体 */
+  --font-han:      "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  --font-han-sans: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-latin:    "Crimson Pro", "EB Garamond", "Times New Roman", serif;
+
+  /* 阴影 */
+  --shadow-card:   0 8px 24px rgba(31,26,20,.14), 0 2px 6px rgba(31,26,20,.08);
+  --shadow-bubble: 0 12px 32px rgba(31,26,20,.20), 0 3px 8px rgba(31,26,20,.10);
+
+  /* 圆角 */
+  --radius-pill:  40px;
+  --radius-card:  12px;
+  --radius-image: 8px;
+  --radius-badge: 4px;
+
+  /* 动效 */
+  --duration-fast: 180ms;
+  --duration-base: 300ms;
+  --duration-slow: 400ms;
+  --ease-out:      cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* z-index 层级（见 handoff §1） */
+  --z-canvas:   1;
+  --z-ui:       5;
+  --z-popup:    6;
+  --z-pin:      10;
+  --z-backdrop: 90;
+  --z-modal:    100;
+}
+
+/* ---------- Reset -------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--parchment-0);
+  font-family: var(--font-han);
+  color: var(--ink-800);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+ul, ol { list-style: none; }
+img, svg, video { display: block; max-width: 100%; user-select: none; -webkit-user-drag: none; }
+a { color: inherit; text-decoration: none; }
+
+/* ---------- 画布缩放 ----------------------------------------------------- */
+/* 1920×1080 固定画布，JS 通过 fitViewport 按 min(vw/1920, vh/1080) 等比缩放并居中 */
+#stage {
+  position: absolute;
+  top: 0; left: 0;
+  width: 1920px; height: 1080px;
+  transform-origin: 0 0;
+  background: var(--parchment-0);
+  overflow: hidden;
+  will-change: transform;
+}
+
+/* 画布内的模块容器：每个模块绝对填满画布 */
+.module {
+  position: absolute; inset: 0;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+.module.is-active { opacity: 1; pointer-events: auto; }
+
+/* ---------- 通用组件 ----------------------------------------------------- */
+
+/* tab-nav · 顶部模块切换（handoff §4.1） */
+.tab-nav {
+  position: absolute;
+  top: 32px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 4px;
+  padding: 4px;
+  background: rgba(244, 235, 216, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+  z-index: var(--z-ui);
+}
+.tab-nav__btn {
+  padding: 10px 28px;
+  font-family: var(--font-han-sans);
+  font-size: 16px;
+  letter-spacing: 3px;
+  color: var(--ink-700);
+  border-radius: var(--radius-pill);
+  transition: background var(--duration-fast) var(--ease-out),
+              color    var(--duration-fast) var(--ease-out);
+}
+.tab-nav__btn:hover { color: var(--ink-900); }
+.tab-nav__btn.is-active {
+  background: var(--ink-900);
+  color: var(--parchment-0);
+}
+
+/* page-title · 画面左上标题（handoff §4.2） */
+.page-title {
+  position: absolute;
+  top: 32px; left: 60px;
+  z-index: var(--z-ui);
+  user-select: none;
+}
+.page-title__zh {
+  display: block;
+  font-size: 22px;
+  letter-spacing: 6px;
+  color: var(--ink-900);
+  font-weight: 500;
+}
+.page-title__la {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-latin);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  color: var(--accent-gold);
+}
+
+/* 模块 B 入场视频（Tab 切换过渡层，handoff §6.1） */
+#module-b-intro {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+  z-index: var(--z-canvas);
+}
+
+/* ---------- 静音按钮（画布右上角常驻） ---------------------------------- */
+.audio-toggle {
+  position: absolute;
+  top: 32px; right: 32px;
+  width: 42px; height: 42px;
+  background: rgba(244, 235, 216, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(139, 118, 88, 0.35);
+  border-radius: 50%;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  z-index: var(--z-pin);
+  display: grid;
+  place-items: center;
+  transition: background var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+.audio-toggle:hover {
+  background: rgba(255, 250, 240, 0.95);
+  transform: scale(1.06);
+}
+.audio-toggle__icon {
+  width: 18px; height: 14px;
+  position: relative;
+  display: block;
+}
+.audio-toggle__icon::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 4px;
+  width: 6px; height: 6px;
+  background: var(--ink-900);
+  border-radius: 1px;
+}
+.audio-toggle__icon::after {
+  content: "";
+  position: absolute;
+  left: 4px; top: 0;
+  width: 0; height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 8px solid var(--ink-900);
+}
+.audio-toggle.is-muted .audio-toggle__icon::before,
+.audio-toggle.is-muted .audio-toggle__icon::after {
+  opacity: 0.4;
+}
+.audio-toggle.is-muted::after {
+  content: "";
+  position: absolute;
+  width: 26px; height: 2px;
+  background: var(--accent-red);
+  transform: rotate(-32deg);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+/* ---------- 降级页（<900px）--------------------------------------------- */
+.fallback {
+  display: none;
+  position: fixed; inset: 0;
+  align-items: center; justify-content: center;
+  padding: 40px;
+  text-align: center;
+  background: var(--parchment-0);
+  z-index: 9999;
+}
+.fallback__inner { max-width: 320px; }
+.fallback__title {
+  font-size: 20px;
+  color: var(--ink-900);
+  margin-bottom: 12px;
+  letter-spacing: 2px;
+}
+.fallback__desc {
+  font-size: 14px;
+  color: var(--ink-700);
+  line-height: 1.8;
+}
+@media (max-width: 900px), (max-height: 560px) {
+  #stage { display: none; }
+  .fallback { display: flex; }
+}

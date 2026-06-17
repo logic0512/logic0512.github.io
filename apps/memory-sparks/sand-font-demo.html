@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沙滩字体对比</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&family=ZCOOL+XiaoWei&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0b0e16;
+  padding: 44px 20px 60px;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.page-label {
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(200, 182, 148, 0.38);
+  text-transform: uppercase;
+  margin-bottom: 36px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr; }
+}
+
+/* ── 每块沙滩 ── */
+.card {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.sand {
+  position: relative;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 64% 14%, rgba(255,254,238,0.65), transparent 28%),
+    radial-gradient(ellipse at 14% 84%, rgba(150,195,218,0.10), transparent 26%),
+    linear-gradient(150deg, #faf3e3 0%, #ece0c8 48%, #dde8ee 100%);
+}
+
+/* 细沙颗粒 */
+.sand::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 1;
+  pointer-events: none; opacity: 0.26;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.09'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+/* 波纹 */
+.sand::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background-image: repeating-linear-gradient(173deg, rgba(155,128,80,0.04) 0 1px, transparent 1px 14px);
+}
+
+.sand-text {
+  position: relative; z-index: 2;
+  font-size: 28px;
+  font-weight: 400;
+  color: rgba(68, 47, 14, 0.70);
+  letter-spacing: 4px;
+  transform: rotate(5deg) skewX(-2deg);
+  transform-origin: center;
+  filter: url(#sand-carved);
+  text-align: center;
+  padding: 0 16px;
+}
+
+/* 当前楷体（对比用） */
+.font-kaiti    { font-family: "Kaiti SC", "STKaiti", "Songti SC", serif; }
+.font-mashan   { font-family: "Ma Shan Zheng", cursive; }
+.font-liujian  { font-family: "Liu Jian Mao Cao", cursive; }
+.font-xiaowei  { font-family: "ZCOOL XiaoWei", serif; }
+.font-zhimang  { font-family: "Zhi Mang Xing", cursive; }
+
+/* ── 信息栏 ── */
+.info {
+  background: rgba(12, 14, 20, 0.94);
+  padding: 13px 18px 15px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.info-left { flex: 1; }
+
+.font-tag {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: rgba(165, 145, 108, 0.5);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.font-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(218, 204, 178, 0.88);
+  margin-bottom: 2px;
+}
+
+.font-desc {
+  font-size: 11px;
+  color: rgba(155, 138, 108, 0.48);
+  line-height: 1.6;
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.badge-rec  { background: rgba(37,169,223,0.12); color: rgba(37,169,223,0.8); }
+.badge-cur  { background: rgba(180,150,100,0.10); color: rgba(180,150,100,0.55); }
+</style>
+</head>
+<body>
+
+<!-- 隐藏 SVG：沙刻 filter -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden;pointer-events:none">
+  <defs>
+    <filter id="sand-carved" x="-10%" y="-40%" width="120%" height="180%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.046 0.050" numOctaves="7" seed="17" result="grain"/>
+      <feDisplacementMap in="SourceGraphic" in2="grain" scale="2.6" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feOffset in="rough" dx="1.4" dy="2.1" result="od"/>
+      <feGaussianBlur in="od" stdDeviation="1.9" result="bd"/>
+      <feColorMatrix in="bd" type="matrix" values="0 0 0 0 0.17  0 0 0 0 0.10  0 0 0 0 0.03  0 0 0 0.72 0" result="groove-shadow"/>
+      <feOffset in="rough" dx="-0.9" dy="-1.6" result="ol"/>
+      <feGaussianBlur in="ol" stdDeviation="1.1" result="bl"/>
+      <feColorMatrix in="bl" type="matrix" values="0 0 0 0 1.00  0 0 0 0 0.94  0 0 0 0 0.70  0 0 0 0.58 0" result="groove-highlight"/>
+      <feMerge>
+        <feMergeNode in="groove-shadow"/>
+        <feMergeNode in="rough"/>
+        <feMergeNode in="groove-highlight"/>
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+
+<p class="page-label">沙滩字体对比 · 同一段文字 × 5 种字体</p>
+
+<div class="grid">
+
+  <!-- 当前字体：楷书 -->
+  <div class="card">
+    <div class="sand">
+      <p class="sand-text font-kaiti">把这些烦恼，<br>交给今天的海风。</p>
+    </div>
+    <div class="info">
+      <div class="info-left">
+        <span class="font-tag">当前在用</span>
+        <div class="font-name">楷书 Kaiti SC</div>
+        <div class="font-desc">传统楷书，笔画工整，偏正式</div>
+      </div>
+      <span class="badge badge-cur">现在</span>
+    </div>
+  </div>
+
+  <!-- Ma Shan Zheng -->
+  <div class="card">
+    <div class="sand">
+      <p class="sand-text font-mashan">把这些烦恼，<br>交给今天的海风。</p>
+    </div>
+    <div class="info">
+      <div class="info-left">
+        <span class="font-tag">推荐首选</span>
+        <div class="font-name">马善政 Ma Shan Zheng</div>
+        <div class="font-desc">半草书手写，笔触自然流动，像手指随意划在沙上</div>
+      </div>
+      <span class="badge badge-rec">推荐</span>
+    </div>
+  </div>
+
+  <!-- Liu Jian Mao Cao -->
+  <div class="card">
+    <div class="sand">
+      <p class="sand-text font-liujian">把这些烦恼，<br>交给今天的海风。</p>
+    </div>
+    <div class="info">
+      <div class="info-left">
+        <span class="font-tag">草书</span>
+        <div class="font-name">流江毛草 Liu Jian Mao Cao</div>
+        <div class="font-desc">奔放草书，个性最强，笔画连贯潦草</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ZCOOL XiaoWei -->
+  <div class="card">
+    <div class="sand">
+      <p class="sand-text font-xiaowei">把这些烦恼，<br>交给今天的海风。</p>
+    </div>
+    <div class="info">
+      <div class="info-left">
+        <span class="font-tag">细腻手写</span>
+        <div class="font-name">小薇 ZCOOL XiaoWei</div>
+        <div class="font-desc">细腻有温度，笔画纤细，风格清秀</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zhi Mang Xing -->
+  <div class="card">
+    <div class="sand">
+      <p class="sand-text font-zhimang">把这些烦恼，<br>交给今天的海风。</p>
+    </div>
+    <div class="info">
+      <div class="info-left">
+        <span class="font-tag">行书</span>
+        <div class="font-name">智忙行 Zhi Mang Xing</div>
+        <div class="font-desc">行书风格，介于正式与随意之间</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

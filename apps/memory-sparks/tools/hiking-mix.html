@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行星 · 森林背景混音台</title>
+<style>
+  :root { --bg:#0e1610; --panel:#16221a; --line:rgba(255,255,255,0.1); --txt:#e7efe8; --mut:#8ba898; --accent:#7ab048; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; font:15px/1.6 -apple-system,"PingFang SC",sans-serif; background:var(--bg); color:var(--txt);
+    display:flex; align-items:center; justify-content:center; padding:24px; }
+  .card { width:min(560px,100%); background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:26px 28px 30px; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .sub { color:var(--mut); font-size:13px; margin:0 0 22px; }
+  .play { width:100%; padding:14px; border-radius:12px; border:0; background:var(--accent); color:#06140a; font-size:15px; font-weight:600; cursor:pointer; margin-bottom:8px; }
+  .play.on { background:#3a5a28; color:#d9f0c8; }
+  .hint { color:var(--mut); font-size:12px; text-align:center; margin-bottom:20px; }
+  .row { margin:18px 0; }
+  .row .lab { display:flex; justify-content:space-between; margin-bottom:6px; }
+  .row .lab b { font-weight:600; }
+  .row .lab .v { color:var(--accent); font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; accent-color:var(--accent); height:26px; }
+  .sub2 { color:var(--mut); font-size:12px; margin-top:-2px; }
+  .actions { display:flex; gap:10px; margin-top:24px; }
+  .btn { flex:1; padding:11px; border-radius:10px; border:1px solid var(--line); background:#1d2c22; color:var(--txt); font-size:14px; cursor:pointer; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:#06140a; font-weight:600; }
+  pre { background:#0a120c; border:1px solid var(--line); border-radius:10px; padding:12px; font-size:12px; margin-top:14px; white-space:pre-wrap; word-break:break-all; display:none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>行星 · 森林背景混音台</h1>
+  <p class="sub">风穿叶 + 远处溪流。边听边拖，调到合适的比例，点「导出比例」把数值发我，我烘成最终背景。</p>
+
+  <button class="play" id="play">▶ 播放（循环）</button>
+  <p class="hint" id="hint">点播放开始（浏览器要求先有一次点击才出声）</p>
+
+  <div class="row">
+    <div class="lab"><b>风 音量</b><span class="v" id="windV">0.85</span></div>
+    <input type="range" id="wind" min="0" max="1" step="0.01" value="0.85">
+  </div>
+
+  <div class="row">
+    <div class="lab"><b>风 质感（低通）</b><span class="v" id="windLpV">2800 Hz</span></div>
+    <input type="range" id="windLp" min="800" max="8000" step="50" value="2800">
+    <div class="sub2">往左 = 风更暖更闷（高频/"嘶"声更少）；往右 = 更亮更尖</div>
+  </div>
+
+  <div class="row">
+    <div class="lab"><b>溪流 音量</b><span class="v" id="streamV">0.30</span></div>
+    <input type="range" id="stream" min="0" max="1" step="0.01" value="0.30">
+  </div>
+
+  <div class="row">
+    <div class="lab"><b>溪流 远近</b><span class="v" id="lpV">850 Hz</span></div>
+    <input type="range" id="lp" min="300" max="6000" step="50" value="850">
+    <div class="sub2">越往左 = 越闷越远；越往右 = 越清越近</div>
+  </div>
+
+  <div class="row">
+    <div class="lab"><b>总音量</b><span class="v" id="masterV">0.6</span></div>
+    <input type="range" id="master" min="0" max="1" step="0.01" value="0.6">
+    <div class="sub2">这是进星球后整体的背景音量（克制为宜）</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" id="exportBtn">导出比例</button>
+    <button class="btn" id="copyBtn">复制</button>
+  </div>
+  <pre id="out"></pre>
+</div>
+
+<script>
+let ctx, master, windGain, streamGain, lp, windLpF, windSrc, streamSrc, playing=false, loaded=false;
+const D=id=>document.getElementById(id);
+
+async function loadBuf(url){ const r=await fetch(url); const ab=await r.arrayBuffer(); return ctx.decodeAudioData(ab); }
+
+async function start(){
+  if(!ctx){
+    ctx = new (window.AudioContext||window.webkitAudioContext)();
+    master = ctx.createGain(); master.connect(ctx.destination);
+    windGain = ctx.createGain(); streamGain = ctx.createGain();
+    lp = ctx.createBiquadFilter(); lp.type='lowpass';
+    windLpF = ctx.createBiquadFilter(); windLpF.type='lowpass';
+    windGain.connect(windLpF); windLpF.connect(master);
+    streamGain.connect(lp); lp.connect(master);
+  }
+  if(ctx.state==='suspended') await ctx.resume();
+  if(!loaded){
+    D('hint').textContent='加载中…';
+    const [wb, sb] = await Promise.all([ loadBuf('/assets/sounds/hiking-wind.mp3'), loadBuf('/assets/sounds/hiking-stream.mp3') ]);
+    windSrc = ctx.createBufferSource(); windSrc.buffer=wb; windSrc.loop=true; windSrc.connect(windGain);
+    streamSrc = ctx.createBufferSource(); streamSrc.buffer=sb; streamSrc.loop=true; streamSrc.connect(streamGain);
+    windSrc.start(); streamSrc.start();
+    loaded=true;
+  }
+  applyAll();
+  D('hint').textContent='正在播放 · 拖滑块实时听变化';
+}
+
+function applyAll(){
+  if(!ctx) return;
+  const m=parseFloat(D('master').value);
+  windGain.gain.setTargetAtTime(parseFloat(D('wind').value), ctx.currentTime, 0.05);
+  streamGain.gain.setTargetAtTime(parseFloat(D('stream').value), ctx.currentTime, 0.05);
+  lp.frequency.setTargetAtTime(parseFloat(D('lp').value), ctx.currentTime, 0.05);
+  windLpF.frequency.setTargetAtTime(parseFloat(D('windLp').value), ctx.currentTime, 0.05);
+  master.gain.setTargetAtTime(playing? m : 0, ctx.currentTime, 0.05);
+}
+
+D('play').addEventListener('click', async ()=>{
+  if(!playing){ playing=true; D('play').classList.add('on'); D('play').textContent='⏸ 停止'; await start(); }
+  else { playing=false; D('play').classList.remove('on'); D('play').textContent='▶ 播放（循环）'; if(master) master.gain.setTargetAtTime(0, ctx.currentTime, 0.08); }
+});
+
+[['wind','windV',v=>v.toFixed(2)],['windLp','windLpV',v=>Math.round(v)+' Hz'],['stream','streamV',v=>v.toFixed(2)],['lp','lpV',v=>Math.round(v)+' Hz'],['master','masterV',v=>v.toFixed(2)]].forEach(([id,vid,fmt])=>{
+  D(id).addEventListener('input', e=>{ D(vid).textContent=fmt(parseFloat(e.target.value)); applyAll(); });
+});
+
+function exp(){ return { planet:'hiking', windVol:+D('wind').value, windLowpassHz:+D('windLp').value, streamVol:+D('stream').value, streamLowpassHz:+D('lp').value, masterVol:+D('master').value }; }
+D('exportBtn').addEventListener('click', ()=>{ const o=D('out'); o.style.display='block'; o.textContent=JSON.stringify(exp(),null,2); });
+D('copyBtn').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(JSON.stringify(exp(),null,2)); D('copyBtn').textContent='已复制✓'; setTimeout(()=>D('copyBtn').textContent='复制',1500);}catch(e){ D('exportBtn').click(); } });
+
+// 状态记忆
+try{ const s=JSON.parse(localStorage.getItem('ms-hiking-mix')||'null'); if(s){ D('wind').value=s.windVol; if(s.windLowpassHz)D('windLp').value=s.windLowpassHz; D('stream').value=s.streamVol; D('lp').value=s.streamLowpassHz; D('master').value=s.masterVol; ['wind','windLp','stream','lp','master'].forEach(id=>D(id).dispatchEvent(new Event('input'))); } }catch(e){}
+setInterval(()=>{ try{ localStorage.setItem('ms-hiking-mix', JSON.stringify(exp())); }catch(e){} }, 1500);
+</script>
+</body>
+</html>

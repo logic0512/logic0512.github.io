@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云星 · B8</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden;
+  font-family: -apple-system, 'PingFang SC', sans-serif; }
+
+body {
+  background:
+    radial-gradient(ellipse 55% 45% at 30% 55%, rgba(255,210,170,0.55) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 72% 35%, rgba(210,185,240,0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 55% 80%, rgba(255,235,200,0.40) 0%, transparent 60%),
+    linear-gradient(148deg, #d8c8ee 0%, #eee0f8 18%, #fff4ee 38%, #ffe8d8 58%, #f8d8c0 78%, #f0d0b5 100%);
+  cursor: grab;
+}
+body.drag { cursor: grabbing; }
+body.no-drag { cursor: default; }
+
+.layer { position: fixed; inset: 0; overflow: visible; will-change: transform; }
+#lyr-decor  { z-index: 1; pointer-events: none; }
+#lyr-record { z-index: 2; }
+
+/* composer 打开时藏云层 + 强制停所有 SVG 动画 + 关掉所有其他 backdrop-filter */
+/* display:none 不保证停 SVG CSS animation（浏览器行为不一致），显式 paused 才可靠 */
+body.input-open #lyr-decor { display: none; }
+body.input-open #lyr-record { display: none; }
+body.input-open #lyr-decor g,
+body.input-open #lyr-record g { animation-play-state: paused !important; }
+/* composer 打开时停掉所有在 msc-backdrop 后面的持续动画
+   这些动画每帧触发 compositor 更新 → backdrop-filter 每帧重算 → 卡
+   治愈/被子星不卡的原因就是它们在 composer 打开时把背后动画全停了 */
+body.input-open .ms-add-fab,
+body.input-open .ms-add-fab::before,
+body.input-open .btn-add,
+body.input-open .page-hint,
+body.input-open .cloud-pages button { animation-play-state: paused !important; }
+body.input-open .intro-card    { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.input-open .ms-add-fab    { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.input-open .input-mask    { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.input-open .rcard         { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.input-open .del-confirm   { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.input-open .page-hint     { backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.input-open .cloud-pages   { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* 云星 .ms-add-fab 本地强化：一圈向外扩散的发光呼吸，提示「点这里可记录」（参照行星/被子星） */
+.ms-add-fab { animation: cloudFabPulse 2.8s ease-in-out infinite; }
+.ms-add-fab:hover { animation-play-state: paused; }
+@keyframes cloudFabPulse {
+  0%, 100% {
+    box-shadow:
+      0 12px 36px rgba(50,40,100,0.16),
+      0 0 0 0 rgba(108,120,190,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  50% {
+    box-shadow:
+      0 12px 36px rgba(50,40,100,0.16),
+      0 0 0 15px rgba(108,120,190,0),
+      inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+}
+body.input-open .ms-intro-card { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* CSS 动画 */
+@keyframes drift { to { transform: translateX(-3400px); } }
+@keyframes float1 { 0%,100%{transform:translateY(0px)}   50%{transform:translateY(-12px)} }
+@keyframes float2 { 0%,100%{transform:translateY(-7px)}  50%{transform:translateY(9px)}  }
+@keyframes float3 { 0%,100%{transform:translateY(0px)}   35%{transform:translateY(-9px)} 68%{transform:translateY(6px)} }
+@keyframes float4 { 0%,100%{transform:translateY(-4px)}  50%{transform:translateY(11px)} }
+@keyframes wobble { 0%,100%{transform:rotate(-1deg)} 50%{transform:rotate(1deg)} }
+@keyframes appear { 0%{opacity:0; transform:scale(0.6)} 60%{opacity:1; transform:scale(1.06)} 100%{opacity:1; transform:scale(1)} }
+@keyframes breathe { 0%,100%{opacity:.50} 50%{opacity:.92} }
+@keyframes pulseBtn {
+  0%,100% { box-shadow: 0 8px 28px rgba(50,40,100,0.14), 0 0 0 0 rgba(80,112,168,0.34); }
+  70%     { box-shadow: 0 8px 28px rgba(50,40,100,0.14), 0 0 0 18px rgba(80,112,168,0); }
+}
+
+/* drop-shadow 放在外层 .cr（compositor 层处理，便宜）
+   gooey SVG filter 放在内层 bodyG SVG attribute（内容静态可缓存，不在 CSS 链里）
+   两者分开：float 动画改 transform 时不触发 gooey 重算 */
+.cr {
+  cursor: pointer;
+  filter: drop-shadow(0 8px 22px rgba(50,40,120,0.22));
+  transition: filter .22s;
+  will-change: transform;
+}
+.cr:hover  { filter: drop-shadow(0 10px 26px rgba(50,40,120,0.30)) brightness(1.07); }
+.cr.active { filter: drop-shadow(0 12px 30px rgba(50,40,120,0.36)) brightness(1.11); }
+.cr.appearing .cloud-body { animation: appear .55s cubic-bezier(.2,.8,.2,1); }
+.cr.dying  { transition: filter .8s ease-out; filter: drop-shadow(0 8px 18px rgba(150,140,200,0.18)) brightness(1.1); }
+.cr.del-mode .wobble-g { animation: wobble .28s ease-in-out infinite; transform-origin: center; }
+.cr.del-mode { filter: drop-shadow(0 4px 14px rgba(200,80,80,0.32)) brightness(1.05); }
+/* .cloud-body 不再设 CSS filter — SVG attribute filter="url(#fd-rec)" 不受覆盖，gooey 正常生效 */
+.cr .cloud-body { transition: opacity .35s; }
+
+/* 阅读卡片 */
+/* 弹窗 · 方案A 奶白玻璃 + 5 种图文版式（2026-06-03） */
+.rcard {
+  position: fixed; z-index: 200;
+  --c-bg: rgba(255,250,244,0.93);
+  --c-text: rgba(58,42,78,0.92);
+  --c-mute: rgba(150,120,110,0.95);
+  --c-accent: #b07a5a;
+  --c-border: rgba(150,120,110,0.30);
+  background: var(--c-bg);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid var(--c-border);
+  box-shadow: 0 22px 54px rgba(120,90,80,0.28);
+  border-radius: 20px; overflow: hidden;
+  max-width: calc(100vw - 24px);
+  pointer-events: none; opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .30s, transform .30s;
+}
+.rcard.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+.rcard-inner { display:flex; flex-direction:column; }
+/* 各版式宽度 */
+.rcard.rc--text       { width:312px; }
+.rcard.rc--img-h      { width:340px; }
+.rcard.rc--img-v      { width:264px; }
+.rcard.rc--text-img-h { width:340px; }
+.rcard.rc--text-img-v { width:404px; }
+.rcard.rc--text-img-v .rcard-inner { flex-direction:row; }
+
+.rc-body { padding:20px 22px 6px; }
+.rc-text {
+  font-size:15px; line-height:1.92; color:var(--c-text); letter-spacing:.03em;
+  white-space:pre-wrap; word-break:break-word;
+  /* 超出卡片容纳行数 → 末尾省略号，完整版去列表页点开看 */
+  display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden;
+}
+.rcard.rc--text       .rc-text { -webkit-line-clamp:9; }
+.rcard.rc--text-img-h .rc-text { -webkit-line-clamp:5; }
+.rcard.rc--text-img-v .rc-text { -webkit-line-clamp:8; }
+.rc-foot { display:flex; align-items:center; justify-content:space-between; padding:10px 22px 15px; }
+.rc-date {
+  font-size:11px; color:var(--c-mute); letter-spacing:.14em; font-variant-numeric:tabular-nums;
+  display:flex; align-items:center; gap:6px;
+}
+.rc-date::before { content:''; width:6px; height:6px; border-radius:50%; border:1.4px solid var(--c-accent); opacity:.75; }
+.rc-edit {
+  font-family:inherit; font-size:11px; letter-spacing:.1em; color:var(--c-accent);
+  background:none; border:1px solid var(--c-border); border-radius:11px;
+  padding:4px 12px; cursor:pointer; transition:background .15s, color .15s;
+}
+.rc-edit:hover { background:rgba(176,122,90,0.12); color:var(--c-text); }
+
+.rc-media { position:relative; width:100%; background:linear-gradient(135deg,#efe2d4,#e7cdbb); overflow:hidden; }
+.rc-media img { width:100%; height:100%; object-fit:cover; display:block; }
+.rc-media.h { aspect-ratio:3/2; }
+.rc-media.v { aspect-ratio:3/4; }
+.rcard.rc--text-img-v .rc-media { width:166px; flex:0 0 166px; aspect-ratio:auto; align-self:stretch; }
+.rcard.rc--text-img-v .rc-right { flex:1; display:flex; flex-direction:column; min-width:0; }
+.rcard.rc--text-img-v .rc-foot { margin-top:auto; }
+.rc-media .grad { position:absolute; inset:auto 0 0 0; height:44%; background:linear-gradient(to top, rgba(40,24,18,0.5), transparent); pointer-events:none; }
+.rc-on-date {
+  position:absolute; left:13px; bottom:11px; z-index:2; color:#fff; font-size:11px;
+  letter-spacing:.14em; font-variant-numeric:tabular-nums; text-shadow:0 1px 6px rgba(0,0,0,.45);
+  display:flex; align-items:center; gap:6px;
+}
+.rc-on-date::before { content:''; width:6px; height:6px; border-radius:50%; border:1.4px solid rgba(255,255,255,.85); }
+.rc-on-edit {
+  position:absolute; right:12px; bottom:10px; z-index:2; font-family:inherit; font-size:11px;
+  letter-spacing:.1em; color:#fff; background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.4); border-radius:11px; padding:4px 12px;
+  cursor:pointer; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+}
+.rc-on-edit:hover { background:rgba(255,255,255,0.32); }
+.rc-badge {
+  position:absolute; left:11px; top:11px; z-index:2; font-size:10.5px; color:#fff;
+  background:rgba(40,24,18,0.5); border-radius:10px; padding:2px 8px; letter-spacing:.06em;
+  -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+}
+.rcard-x {
+  position:absolute; top:11px; right:13px; z-index:4;
+  width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,0.82); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  border:1px solid rgba(120,120,140,0.25); color:rgba(58,42,78,0.82);
+  font-size:15px; line-height:1; cursor:pointer; opacity:.85; transition:opacity .15s;
+}
+.rcard-x:hover { opacity:1; }
+
+/* 中央录入面板 */
+.input-mask {
+  position: fixed; inset: 0; z-index: 280;
+  background: rgba(40,30,80,0.18);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none;
+  transition: opacity .30s;
+}
+.input-mask.show { opacity: 1; pointer-events: auto; }
+
+.input-panel {
+  position: fixed; left: 50%; top: 50%; z-index: 290;
+  width: min(520px, calc(100% - 48px));
+  background: rgba(255,252,250,0.95);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(80,112,168,0.22);
+  border-radius: 22px;
+  padding: 26px 30px 24px;
+  box-shadow: 0 30px 80px rgba(50,40,100,0.22);
+  opacity: 0; pointer-events: none;
+  transform: translate(-50%, calc(-50% + 16px));
+  transition: opacity .32s cubic-bezier(.2,.8,.2,1), transform .32s cubic-bezier(.2,.8,.2,1);
+}
+.input-mask.show ~ .input-panel {
+  opacity: 1; pointer-events: auto;
+  transform: translate(-50%, -50%);
+}
+.input-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.input-label { font-size: 13px; color: rgba(40,30,80,0.58); letter-spacing: .14em; }
+.input-x { background: none; border: none; cursor: pointer; color: rgba(40,30,80,0.30); font-size: 18px; line-height: 1; }
+.input-x:hover { color: rgba(40,30,80,0.70); }
+.input-area {
+  width: 100%;
+  min-height: 56px;
+  max-height: 36vh;
+  background: transparent; border: none; outline: none; resize: none;
+  font: 15px/1.78 -apple-system, 'PingFang SC', sans-serif;
+  color: rgba(40,30,80,0.88); letter-spacing: .02em;
+  padding: 8px 0 4px;
+}
+.input-area::placeholder { color: rgba(40,30,80,0.30); }
+.input-area::-webkit-scrollbar { width: 5px; }
+.input-area::-webkit-scrollbar-thumb { background: rgba(80,112,168,0.22); border-radius: 5px; }
+.input-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid rgba(80,112,168,0.12);
+}
+.input-count { font-size: 11px; color: rgba(80,112,168,0.50); letter-spacing: .10em; }
+.input-ok {
+  background: rgba(80,112,168,0.14);
+  border: 1px solid rgba(80,112,168,0.38);
+  color: rgba(40,30,80,0.80);
+  padding: 9px 24px; border-radius: 22px;
+  font-size: 13px; cursor: pointer; letter-spacing: .1em;
+  transition: background .2s, color .2s;
+}
+.input-ok:hover { background: rgba(80,112,168,0.24); color: rgba(40,30,80,0.95); }
+.input-ok:disabled { opacity: .42; cursor: default; }
+.input-ok:disabled:hover { background: rgba(80,112,168,0.14); }
+
+/* 删除确认 */
+.del-confirm {
+  position: fixed; z-index: 220;
+  background: rgba(255,252,250,0.94);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(200,80,80,0.30);
+  box-shadow: 0 18px 50px rgba(120,40,40,0.20);
+  border-radius: 14px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+  pointer-events: none; opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity .22s, transform .22s;
+}
+.del-confirm.show { opacity:1; transform:translateY(0); pointer-events:auto; }
+.del-confirm-txt { font-size: 13px; color: rgba(40,30,80,0.82); letter-spacing: .04em; }
+.del-yes, .del-no {
+  background: transparent; border: none; cursor: pointer;
+  font-size: 12.5px; padding: 6px 12px; border-radius: 12px;
+  letter-spacing: .08em; transition: background .15s, color .15s;
+}
+.del-yes { color: rgba(200,70,70,0.85); border: 1px solid rgba(200,70,70,0.32); }
+.del-yes:hover { background: rgba(200,70,70,0.12); color: rgba(180,50,50,1); }
+.del-no { color: rgba(40,30,80,0.55); }
+.del-no:hover { color: rgba(40,30,80,0.85); }
+
+/* 多页提示 */
+.page-hint {
+  position: fixed; right: 28px; top: 50%; z-index: 100;
+  pointer-events: none; opacity: 0;
+  font-size: 12px; letter-spacing: .12em; color: rgba(40,30,80,0.55);
+  background: rgba(255,252,250,0.78);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(80,112,168,0.20);
+  padding: 8px 14px; border-radius: 18px;
+  transform: translateY(-50%);
+  transition: opacity .40s, right .40s;
+  animation: hintBob 2.6s ease-in-out infinite;
+}
+.page-hint.show { opacity: 1; }
+@keyframes hintBob { 0%,100% { transform: translateY(-50%) translateX(0); } 50% { transform: translateY(-50%) translateX(-8px); } }
+
+/* 输入面板字数提示 */
+.input-count.warn { color: rgba(220,140,60,0.85); }
+.input-count.danger { color: rgba(200,80,80,0.92); }
+.input-clear {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; color: rgba(80,112,168,0.62);
+  padding: 4px 8px; margin-left: 6px;
+  letter-spacing: .08em; display: none;
+}
+.input-clear.show { display: inline-block; }
+.input-clear:hover { color: rgba(40,30,80,0.85); }
+
+/* 空状态 */
+.empty-hint {
+  position: fixed; left: 50%; top: 54%; transform: translate(-50%,-50%);
+  z-index: 100; pointer-events: none;
+  font-size: 14px; color: rgba(40,30,80,0.50);
+  letter-spacing: .16em; text-align: center;
+  animation: breathe 4s ease-in-out infinite;
+}
+.empty-hint .small { display: block; margin-top: 8px; font-size: 11px; letter-spacing: .20em; opacity: .65; }
+.empty-hint .small .hint-ic { width: 14px; height: 14px; vertical-align: -3px; margin: 0 1px; }
+
+/* UI chrome */
+.hint {
+  position:fixed; bottom:88px; left:50%; transform:translateX(-50%); z-index:100;
+  font-size:11px; color:rgba(40,30,80,0.32); letter-spacing:.10em;
+  white-space:nowrap; pointer-events:none; transition: opacity .3s;
+}
+.btn-add {
+  position:fixed; bottom:38px; right:44px; z-index:110;
+  background:transparent; border:1px solid rgba(80,112,168,0.48);
+  color:rgba(40,30,80,0.72); width:54px; height:54px; border-radius:50%;
+  font-size:20px; cursor:pointer; line-height:52px; text-align:center;
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  box-shadow:0 8px 28px rgba(50,40,100,0.14);
+  transition:background .2s, box-shadow .2s, transform .2s;
+}
+.btn-add:hover { background:rgba(80,112,168,0.10); transform:translateY(-1px); }
+.btn-add.pulse { animation: pulseBtn 2.6s ease-in-out infinite; }
+
+/* ── 云星卡片（强玻璃感：低透 + 强模糊 + 顶光） ── */
+.intro-card {
+  position: fixed;
+  top: clamp(28px, 4vh, 52px);
+  left: clamp(24px, 3.5vw, 48px);
+  z-index: 100;
+  width: min(360px, 31vw);
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(120, 130, 200, 0.32);
+  background: rgba(245, 240, 252, 0.38);
+  color: rgba(40, 30, 80, 0.92);
+  box-shadow:
+    0 22px 64px rgba(80, 100, 160, 0.20),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  transition: padding 0.38s cubic-bezier(0.4,0,0.2,1);
+  animation: introCardDrop 1.0s cubic-bezier(0.34, 1.56, 0.64, 1) 2.6s backwards;
+}
+
+@keyframes introCardDrop {
+  from { transform: translateY(-140%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.intro-card .planet-orb {
+  width: 88%;
+  margin: 0 auto 14px;
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.intro-card .planet-orb img {
+  width: 100%; height: 100%; object-fit: contain;
+}
+.card-fold {
+  overflow: hidden;
+  max-height: 600px;
+  opacity: 1;
+  transition: max-height 0.42s cubic-bezier(0.4,0,0.2,1), opacity 0.30s cubic-bezier(0.4,0,0.2,1);
+}
+.intro-card.collapsed .card-fold { max-height: 0; opacity: 0; }
+.intro-card.collapsed { cursor: pointer; padding: 14px 22px 16px; }
+.intro-card .p-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  margin-bottom: 8px;
+  opacity: 0.45;
+  transition: margin-bottom 0.35s;
+}
+.intro-card.collapsed .p-eyebrow { margin-bottom: 4px; }
+.intro-card .p-name {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  color: rgba(40, 30, 80, 0.95);
+  transition: font-size 0.35s, margin-bottom 0.35s;
+}
+.intro-card.collapsed .p-name { font-size: 19px; margin-bottom: 0; }
+.intro-card .p-story {
+  font-size: 13px;
+  line-height: 2.0;
+  letter-spacing: 0.04em;
+  font-weight: 300;
+  margin-bottom: 18px;
+  opacity: 0.72;
+}
+.intro-card .hint-row {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; letter-spacing: 0.14em;
+  opacity: 0.52;
+  cursor: pointer; user-select: none;
+}
+.intro-card .hint-row:hover { opacity: 0.72; }
+.intro-card .icon-button {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  color: inherit;
+  pointer-events: none;
+}
+</style>
+<script>
+// Visibility pause: 父页面切 tab 时停掉本 iframe 的 RAF/setInterval，避免后台烧 CPU
+(function(){
+  let _raf = window.requestAnimationFrame.bind(window);
+  let _caf = window.cancelAnimationFrame.bind(window);
+  let _setInt = window.setInterval.bind(window);
+  let _clrInt = window.clearInterval.bind(window);
+  let active = true;
+  let pendingRafs = [];      // {cb, id}
+  let liveIntervals = new Map();
+  let nextId = 1;
+  window.requestAnimationFrame = function(cb){
+    if (active) return _raf(cb);
+    const id = nextId++;
+    pendingRafs.push({cb, id});
+    return id;
+  };
+  window.cancelAnimationFrame = function(id){
+    pendingRafs = pendingRafs.filter(x => x.id !== id);
+    return _caf(id);
+  };
+  window.setInterval = function(cb, ms){
+    const id = _setInt(function(){ if (active) cb(); }, ms);
+    liveIntervals.set(id, true);
+    return id;
+  };
+  window.clearInterval = function(id){
+    liveIntervals.delete(id);
+    return _clrInt(id);
+  };
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.type !== "memory-sparks:visibility") return;
+    const wasActive = active;
+    active = !!e.data.visible;
+    if (!wasActive && active && pendingRafs.length){
+      const q = pendingRafs; pendingRafs = [];
+      q.forEach(({cb}) => _raf(cb));
+    }
+  });
+})();
+</script>
+<!-- MS shared -->
+<link rel="stylesheet" href="../_shared/ms-shared.css?v=20260602f">
+<link rel="stylesheet" href="../_shared/ms-composer.css?v=20260531d">
+<script src="../_shared/ms-config.js?v=20260606x"></script>
+<script src="../_shared/ms-sound.js?v=20260604i"></script>
+<script>window.MS_SOUND && MS_SOUND.init('cloud');</script>
+<script src="../_shared/ms-icons.js?v=20260602f"></script>
+<script src="../_shared/ms-feedback.js?v=20260530m"></script>
+<script src="../_shared/ms-mount.js?v=20260602f"></script>
+<script src="../_shared/ms-list-bridge.js?v=20260530m"></script>
+<script src="../_shared/ms-media-vault.js?v=20260605s"></script>
+<script src="../_shared/ms-media-store.js?v=20260606c"></script>
+<script src="../_shared/ms-composer.js?v=20260605l" defer></script>
+</head>
+<body>
+
+<!-- 装饰云：偏柔和模糊 -->
+<svg class="layer" id="lyr-decor" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <filter id="fd-decor" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"/>
+  </filter>
+  <filter id="fds-decor" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 14 -5"/>
+  </filter>
+</defs>
+<g id="decor-clouds"></g>
+</svg>
+
+<!-- 记录云：清晰饱满 -->
+<svg class="layer" id="lyr-record" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <filter id="fd-rec" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b"/>
+    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"/>
+  </filter>
+  <filter id="fds-rec" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+    <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 14 -5"/>
+  </filter>
+</defs>
+<g id="record-clouds"></g>
+</svg>
+
+<div class="rcard" id="rcard">
+  <button class="rcard-x" id="rcard-x">×</button>
+  <div class="rcard-inner" id="rcard-inner"></div>
+</div>
+
+<!-- 添加界面：交给 ms-composer 统一渲染（保留 #input-mask 兼容 list-bridge moveOut 选择器，但留空） -->
+<div class="input-mask" id="input-mask"></div>
+
+<div class="del-confirm" id="del-confirm">
+  <span class="del-confirm-txt">让这朵云飘走？</span>
+  <button class="del-yes" id="del-yes">删除</button>
+  <button class="del-no" id="del-no">取消</button>
+</div>
+
+<div class="empty-hint" id="empty-hint" style="display:none;">
+  
+  <span class="small">点右上角 <svg class="hint-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 C4.5 17 3 15.5 3 13 C3 10.8 4.8 9 7 9 C7.4 6.5 9.5 5 12 5 C14.8 5 17 7 17.3 9.8 C19.5 10 21 11.5 21 13.6 C21 15.8 19.3 17 17.3 17 Z"/></svg> 开始</span>
+</div>
+
+<div class="page-hint" id="page-hint">→ 还有 <span id="page-hint-count">0</span> 朵</div>
+
+<aside class="intro-card">
+  <div class="card-fold">
+    <div class="planet-orb" aria-hidden="true">
+      <img src="../../assets/planets/cloud.png" alt="">
+    </div>
+  </div>
+  <p class="p-eyebrow">KEYWORD PLANET · ORBIT 07</p>
+  <h1 class="p-name">云星</h1>
+  <div class="card-fold">
+    <p class="p-story">云星上的重力很轻，人不会被大地束缚，可以在空中任意来去。这里的云也很特别，它们不会化成雨落下来，反而成了云星人珍藏宝物的地方。他们把自己最珍贵的东西都藏进云里，云朵便载着这些珍宝，跟着主人自由自在地四处漂泊。</p>
+    <div class="hint-row">
+      <button class="icon-button" type="button" aria-hidden="true" tabindex="-1">↺</button>
+      <span>挑一样珍贵的，藏进云里</span>
+    </div>
+  </div>
+</aside>
+<div class="hint" id="hint">拖拽探索云海 · 点击查看 · 长按删除</div>
+<button class="btn-add" id="btn-add" title="挑一样珍贵的，藏进云里">✦</button>
+
+<script>
+const W = window.innerWidth, H = window.innerHeight;
+const NS = 'http://www.w3.org/2000/svg';
+const BUMP_LIFT = 0.75;
+
+// ── 装饰云形库（10 朵）──
+const DECOR_SHAPES = [
+  { base:{w:110, h:12}, bumps:[[25,22],[60,30],[95,24]] },
+  { base:{w:130, h:12}, bumps:[[35,32],[95,30]] },
+  { base:{w:120, h:12}, bumps:[[25,18],[85,40]] },
+  { base:{w:160, h:12}, bumps:[[25,22],[65,26],[100,26],[140,22]] },
+  { base:{w:170, h:12}, bumps:[[30,32],[75,28],[120,22],[155,16]] },
+  { base:{w:180, h:12}, bumps:[[25,22],[60,28],[95,32],[130,28],[165,22]] },
+  { base:{w:220, h:10}, bumps:[[25,18],[60,22],[95,22],[130,22],[165,22],[200,18]] },
+  { base:{w:170, h:12}, bumps:[[35,24],[75,40],[115,24],[150,20]] },
+  { base:{w:160, h:12}, bumps:[[30,20],[70,26],[120,40]] },
+  { base:{w:130, h:12}, bumps:[[40,32],[65,36],[95,32]] },
+];
+
+// ── 记录云形库（15 朵）──
+const RECORD_SHAPES = [
+  { base:{w:100, h:14}, bumps:[[50,48]] },
+  { base:{w:120, h:14}, bumps:[[30,28],[80,50]] },
+  { base:{w:110, h:14}, bumps:[[35,42],[80,42]] },
+  { base:{w:130, h:14}, bumps:[[35,32],[90,48]] },
+  { base:{w:140, h:14}, bumps:[[30,32],[70,48],[110,32]] },
+  { base:{w:170, h:14}, bumps:[[45,34],[90,50],[140,34]] },
+  { base:{w:150, h:16}, bumps:[[35,40],[75,42],[120,40]] },
+  { base:{w:150, h:14}, bumps:[[30,28],[75,38],[120,48]] },
+  { base:{w:140, h:14}, bumps:[[40,46],[75,40],[110,46]] },
+  { base:{w:160, h:14}, bumps:[[30,24],[65,28],[110,48],[150,28]] },
+  { base:{w:140, h:14}, bumps:[[40,52],[90,40],[125,26]] },
+  { base:{w:160, h:14}, bumps:[[30,32],[65,40],[105,40],[140,32]] },
+  { base:{w:200, h:16}, bumps:[[40,34],[85,42],[135,42],[180,34]] },
+  { base:{w:200, h:16}, bumps:[[40,30],[85,48],[135,42],[185,30]] },
+  { base:{w:180, h:16}, bumps:[[45,40],[95,50],[145,40]] },
+];
+
+// ── 初始数据：从 localStorage 读，没有就空 ──
+const STORAGE_KEY = 'memory-sparks:cloud-records';
+// ── U盘真文件存储（与治愈星 / 繁星同方案，统一走公共件 MS.mediaStore）──
+const CLOUD_PLANET_KEY = 'cloud';
+const CLOUD_MEDIA_FIELDS = ['src', 'image']; // 云无视频音频；images 数组由公共件自动处理
+function msStore() { return window.MS && window.MS.mediaStore; }
+function msHasBackend() { const s = msStore(); return !!(s && s.hasBackend && s.hasBackend()); }
+// 启动迁移旧 key
+(function() {
+  try {
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      const old = localStorage.getItem('cloud-star-records');
+      if (old) localStorage.setItem(STORAGE_KEY, old);
+    }
+  } catch (_) {}
+})();
+const DEMO_MODE = document.body.dataset.demo === 'true';
+let _recIdSeed = 0;
+function ensureRecId(rec) {
+  // ms-composer 存的记录用 rec.id，云星内部用 rec._id。两者对齐，优先复用已有 id。
+  if (!rec._id) rec._id = rec.id || `r${++_recIdSeed}`;
+  return rec._id;
+}
+
+let RECORDS = (() => {
+  if (DEMO_MODE) return window.__DEMO_RECORDS || [];
+  try {
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(stored) ? stored : [];
+  } catch { return []; }
+})();
+// 修复 _id 冲突：扫描已有 _id / id 的数字后缀，把 seed 推进到 max
+RECORDS.forEach(r => {
+  const raw = r._id || r.id || '';
+  if (raw) {
+    const n = parseInt(String(raw).replace(/\D/g, ''), 10);
+    if (!isNaN(n) && n > _recIdSeed) _recIdSeed = n;
+  }
+});
+RECORDS.forEach(ensureRecId);
+
+// STORE-008 定稿：天空最多同时显示「最新 160 朵云」（其余仍在日志页 / U盘存档，不丢）。
+// RECORDS 是新→旧，所以取前 N 即最新。
+const CLOUD_DISPLAY_MAX = 160;
+function shownRecords() { return RECORDS.slice(0, CLOUD_DISPLAY_MAX); }
+
+// U盘建库（STORE-006）：同步进 cloud/records.json + 总索引 / 插盘恢复 / 通知父级。
+function cloudSyncFile() {
+  const s = msStore();
+  if (s && s.syncRecordsFromStorage) {
+    s.syncRecordsFromStorage(CLOUD_PLANET_KEY, STORAGE_KEY, {
+      meta: { name: '云星', keyword: '自由' }, mediaFields: CLOUD_MEDIA_FIELDS,
+    }).catch(() => {});
+  }
+}
+function cloudRestoreFile() {
+  const s = msStore();
+  if (!s || !s.restoreToStorage) return Promise.resolve(false);
+  return s.restoreToStorage(CLOUD_PLANET_KEY, STORAGE_KEY).then(restored => {
+    if (restored) {
+      try { window.parent && window.parent.postMessage({ type: 'memory-sparks:storage-changed', key: STORAGE_KEY }, '*'); } catch (_) {}
+    }
+    return restored;
+  });
+}
+
+function saveRecords() {
+  if (DEMO_MODE) return;
+  try {
+    // 保留所有字段（text/date/_id/_pageIdx/_zoneIdx + ms-composer 写入的 image/type 等）
+    // 只剔除运行时计算的临时字段（_shapeIdx/_float/_fDur/_fDel/pos/_scale/_isNew）
+    const RUNTIME_KEYS = new Set(['_shapeIdx','_float','_fDur','_fDel','pos','_scale','_isNew','_pageIdx','_zoneIdx']);
+    // STORE-008：剔除「铺满预览」临时假云（_id 以 demo- 开头），绝不写进存档
+    const toSave = RECORDS.filter(r => !(r._id && String(r._id).startsWith('demo-'))).map(r => {
+      const out = {};
+      for (const k of Object.keys(r)) {
+        if (!RUNTIME_KEYS.has(k)) out[k] = r[k];
+      }
+      return out;
+    });
+    // 防数据丢失：有盘时内存里媒体字段是 blob: URL，写 localStorage 前必须按 _fsaRefs
+    // 还原成持久的 'fsa:' 引用，否则刷新即丢图。无盘时为 no-op，行为与改造前一致。
+    const s = msStore();
+    const safe = (s && s.serializeForStorage)
+      ? s.serializeForStorage(toSave, { mediaFields: CLOUD_MEDIA_FIELDS })
+      : toSave;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
+    cloudSyncFile(); // U盘建库（STORE-006）
+  } catch (e) {}
+}
+
+// 从 localStorage 重读 RECORDS（原地替换），有盘时先水合 fsa: 引用，然后重渲。
+// 无盘时不做任何 await/水合，保持同步老路径逐像素一致（用 resolved Promise 包裹，调用方统一 .then）。
+function reloadRecords() {
+  let arr;
+  try { arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch (e) { console.warn('[cloud] reload failed:', e); arr = []; }
+  if (!Array.isArray(arr)) arr = [];
+  const apply = (list) => {
+    RECORDS.length = 0;
+    list.forEach(r => { ensureRecId(r); RECORDS.push(r); });
+    renderRecords();
+  };
+  const s = msStore();
+  if (s && s.hasBackend && s.hasBackend() && s.hydrateRecords) {
+    return s.hydrateRecords(arr, { mediaFields: CLOUD_MEDIA_FIELDS })
+      .then(() => { apply(arr); })
+      .catch(err => { console.warn('[cloud] hydrate 失败，降级直接渲染：', err); apply(arr); });
+  }
+  apply(arr);
+  return Promise.resolve();
+}
+
+// ── 工具函数 ──
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function rnd(a,b){ return a + Math.random()*(b-a); }
+function svgEl(tag,attrs={}){
+  const e=document.createElementNS(NS,tag);
+  for(const[k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  return e;
+}
+function hash(str){ let h=0; for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))|0; return h; }
+function seededRnd(seed){ const x=Math.sin(seed)*10000; return x-Math.floor(x); }
+
+// ── 状态 ──
+const drag={on:false,lx:0,ly:0}, off={x:0,y:0}, ine={x:0,y:0};
+// 拖拽范围根据当前记录页数动态计算
+// 1 页（≤8 朵记录）：不能水平拖
+// N 页：可往左拖到第 N 页，不能右拖
+function computeMaxDrag() {
+  // docx 反馈：不要强行分页（之前 6 朵云一页能放下却拆成 2 页）
+  // 允许少量左右滑动（云朵可能露出在边缘），但不再按 maxPage 强制拆页
+  let maxPage = 0;
+  shownRecords().forEach(r => {
+    if (typeof r._pageIdx === 'number' && r._pageIdx > maxPage) maxPage = r._pageIdx;
+  });
+  // 给左右各 W*0.3 缓冲让边缘云朵能完整看见，再加 maxPage 的扩展（如果真的多页）
+  return {
+    xMin: -W * maxPage - W * 0.3,
+    xMax: W * 0.3,
+    y: H * 0.26,
+  };
+}
+let MAX = computeMaxDrag();
+const lyrDecor  = document.getElementById('lyr-decor');
+const lyrRecord = document.getElementById('lyr-record');
+const decorG    = document.getElementById('decor-clouds');
+const recordG   = document.getElementById('record-clouds');
+let activeEl = null;
+let suppressDrag = false;
+
+const FLOATS = ['float1','float2','float3','float4'];
+
+// ── 装饰云：18 个实例铺满天空，3 个深度层 ──
+// [shapeIdx, scale, alpha, leftX, topY, driftDur, driftDelay, floatIdx, floatDur, floatDelay]
+// 装饰云：洗牌池保证 10 个形状全用上，4 层铺满天空，避让记录 zone
+function generateDecorInstances() {
+  let seed = 7349;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  const rng = (a, b) => a + rnd() * (b - a);
+  const xMin = -0.40, xMax = 2.20;
+
+  // 洗牌池：每用完 10 个 shape 就重新洗牌，确保全部 10 朵都被用，且不连续重复
+  let shapeQueue = [];
+  function pickShape() {
+    if (shapeQueue.length === 0) {
+      shapeQueue = [0,1,2,3,4,5,6,7,8,9];
+      for (let i = shapeQueue.length - 1; i > 0; i--) {
+        const j = Math.floor(rnd() * (i + 1));
+        [shapeQueue[i], shapeQueue[j]] = [shapeQueue[j], shapeQueue[i]];
+      }
+    }
+    return shapeQueue.shift();
+  }
+
+  // 跳过记录 zone（避免叠在一起），margin = 0.05
+  const REC_ZONE_BOUNDS = [
+    [0.36, 0.64, 0.44, 0.58], [0.05, 0.22, 0.28, 0.42], [0.78, 0.95, 0.28, 0.42],
+    [0.05, 0.22, 0.55, 0.68], [0.78, 0.95, 0.55, 0.68], [0.35, 0.55, 0.22, 0.32],
+    [0.55, 0.75, 0.62, 0.72], [0.20, 0.40, 0.62, 0.72],
+  ];
+  function inRecordZone(xN, yN) {
+    const pageIdx = Math.floor(xN);
+    const x = xN - pageIdx;
+    for (const [zXmin, zXmax, zYmin, zYmax] of REC_ZONE_BOUNDS) {
+      // 外扩 0.02：装饰云中心稍离记录 zone 边界，避免视觉干扰
+      // 装饰云在记录附近时会被 z-index 2 的记录盖住一部分，不会真冲突
+      if (x >= zXmin - 0.02 && x <= zXmax + 0.02 &&
+          yN >= zYmin - 0.02 && yN <= zYmax + 0.02) return true;
+    }
+    return false;
+  }
+
+  // [yMin, yMax, sMin, sMax, aMin, aMax, count, minDx, minDy]
+  // min_dy 全部大于云高，inRecordZone margin 0.10，中间层稀疏 5 朵
+  // 装饰云数量减半（原 76 朵 → 36 朵），避免 SVG blur 滤镜过多导致卡顿
+  const layers = [
+    [0.07, 0.20, 0.55, 0.68, 0.45, 0.60,  5, 0.18, 0.14],   // 顶
+    [0.22, 0.42, 0.55, 0.68, 0.42, 0.55,  5, 0.18, 0.14],   // 上中
+    [0.52, 0.74, 0.55, 0.68, 0.45, 0.58,  5, 0.18, 0.14],   // 下中
+    [0.78, 0.92, 0.62, 0.75, 0.58, 0.72,  5, 0.20, 0.14],   // 底
+  ];
+
+  // 跨层全局碰撞检查：避免不同层间的云堆叠
+  const allPlaced = [];
+  layers.forEach(([yMin, yMax, sMin, sMax, aMin, aMax, count, mdx, mdy]) => {
+    let placedInLayer = 0;
+    let tries = 0;
+    while (placedInLayer < count && tries < 1500) {
+      tries++;
+      const xN = rng(xMin, xMax);
+      const yN = rng(yMin, yMax);
+      // 不再躲记录 zone：靠 z-index 2 的记录云自然盖住底下的装饰云
+      // 空状态下装饰云充满中间，满状态下被记录云遮挡（自然层次）
+      // 跨层检查 + max 间距（按要求更严格那一方）
+      let clash = false;
+      for (const p of allPlaced) {
+        const checkX = Math.max(p.mdx, mdx);
+        const checkY = Math.max(p.mdy, mdy);
+        if (Math.abs(p.xN - xN) < checkX && Math.abs(p.yN - yN) < checkY) { clash = true; break; }
+      }
+      if (clash) continue;
+      allPlaced.push({
+        xN, yN, mdx, mdy,
+        si: pickShape(),
+        sc: rng(sMin, sMax),
+        al: rng(aMin, aMax),
+        dd: rng(220, 290),
+        ddel: -rnd() * 200,
+        fi: Math.floor(rnd() * 4),
+        fd: rng(8, 13),
+        fdel: -rnd() * 6,
+      });
+      placedInLayer++;
+    }
+  });
+  return allPlaced.map(p => [p.si, p.sc, p.al, p.xN * W, p.yN * H, p.dd, p.ddel, p.fi, p.fd, p.fdel]);
+}
+const DECOR_INSTANCES = generateDecorInstances();
+
+// ── 渲染装饰云 ──
+DECOR_INSTANCES.forEach(([si, scale, alpha, lx, ty, dur, del, fi, fdur, fdel]) => {
+  const sh = DECOR_SHAPES[si];
+  const sw = sh.base.w * scale;
+  const baseH = sh.base.h * scale;
+
+  // 漂移外层
+  const driftG = svgEl('g');
+  driftG.style.cssText = `animation:drift ${dur}s linear ${del}s infinite;`;
+
+  // 浮动中层
+  const floatG = svgEl('g');
+  floatG.style.cssText = `animation:${FLOATS[fi]} ${fdur}s ease-in-out ${fdel}s infinite;`;
+
+  // 位置层
+  const posG = svgEl('g', { transform:`translate(${lx},${ty})` });
+
+  // 装饰云不用 SVG gooey filter（feGaussianBlur 每帧 38×2=76 次重算，直接吃掉 8ms/帧）
+  // 背景氛围云只需形状 + opacity，不需要融合效果；record 云才需要 gooey
+  // 阴影：直接低 opacity ellipse，无 filter
+  const shadowG = svgEl('g', { opacity: String(alpha * 0.25) });
+  shadowG.appendChild(svgEl('ellipse', {
+    cx: sw/2, cy: baseH/2 + 6,
+    rx: sw*0.38, ry: 4,
+    fill: 'rgba(140,110,180,1)',
+  }));
+  posG.appendChild(shadowG);
+
+  // 云体：直接低 opacity group，无 gooey filter
+  // 鼓包和底座会有缝隙（因为没有融合），但 opacity 低、size 小，视觉上看不出来
+  const bodyG = svgEl('g', { opacity: String(alpha) });
+  const fill = 'rgba(255,251,244,1)';
+  bodyG.appendChild(svgEl('rect', {
+    x: 0, y: -baseH/2,
+    width: sw, height: baseH,
+    rx: baseH/2, ry: baseH/2,
+    fill,
+  }));
+  sh.bumps.forEach(([x, r]) => {
+    bodyG.appendChild(svgEl('circle', {
+      cx: x*scale, cy: -baseH/2 - r*scale*BUMP_LIFT,
+      r: r*scale, fill,
+    }));
+  });
+  posG.appendChild(bodyG);
+
+  floatG.appendChild(posG);
+  driftG.appendChild(floatG);
+  decorG.appendChild(driftG);
+});
+
+// ── 记录云排列：2 行 × 4 列固定网格，8 朵/页，超出翻到下一页（往右）
+// 规则（用户 2026-06 确认）：
+//   · 位置完全由记录在 RECORDS 里的次序决定（RECORDS[0] = 最新 = 左上 zone 0）
+//   · 新记录录入 → 数组头插 → 所有旧记录次序 +1 → 自动向右挪一格（满一行换下一行，满一页翻页）
+//   · zone 之间互不相交 → 云朵不重叠；坐标带边距 → 不裁切
+// 每个 zone 是一个小矩形抖动框，记录在框内按 hash 取固定位置（锁定区域内微动）
+const PAGE_ZONES = [
+  // [xMin, xMax, yMin, yMax, baseScale]   4 列 x 中心约 0.17/0.39/0.61/0.83，左右各留 ~7% 边距
+  // 上排（y 0.30-0.40）
+  [0.12, 0.22, 0.30, 0.40, 1.00],  // 0 左上（最新）
+  [0.34, 0.44, 0.30, 0.40, 1.00],  // 1 中左上
+  [0.56, 0.66, 0.30, 0.40, 1.00],  // 2 中右上
+  [0.78, 0.88, 0.30, 0.40, 1.00],  // 3 右上
+  // 下排（y 0.54-0.64）
+  [0.12, 0.22, 0.54, 0.64, 1.00],  // 4 左下
+  [0.34, 0.44, 0.54, 0.64, 1.00],  // 5 中左下
+  [0.56, 0.66, 0.54, 0.64, 1.00],  // 6 中右下
+  [0.78, 0.88, 0.54, 0.64, 1.00],  // 7 右下（最旧）
+];
+
+function layoutRecords() {
+  shownRecords().forEach((rec, idx) => {
+    // 次序即位置：第 idx 条 → 第 (idx/8) 页、页内第 (idx%8) 个 zone
+    rec._pageIdx = Math.floor(idx / PAGE_ZONES.length);
+    rec._zoneIdx = idx % PAGE_ZONES.length;
+
+    const s = hash(rec.text + rec.date);
+    rec._shapeIdx = Math.abs(s) % RECORD_SHAPES.length;
+    rec._float    = FLOATS[Math.abs(s) % 4];
+    rec._fDur     = 7 + seededRnd(s+1) * 4;
+    rec._fDel     = -seededRnd(s+2) * 6;
+
+    const zone = PAGE_ZONES[rec._zoneIdx];
+    const fx = seededRnd(s + 3);
+    const fy = seededRnd(s + 4);
+    const xN = zone[0] + fx * (zone[1] - zone[0]) + rec._pageIdx;
+    const yN = zone[2] + fy * (zone[3] - zone[2]);
+
+    rec.pos = { x: xN * W, y: yN * H };
+    rec._scale = zone[4];  // 网格统一尺寸，不再按页缩小
+  });
+}
+
+function renderRecords() {
+  layoutRecords();
+  MAX = computeMaxDrag();  // 记录数变了 → 重算拖拽范围
+
+  // 收集现有 cloud 元素（按 rec._id 索引）
+  const existing = new Map();
+  recordG.querySelectorAll('g[data-rec-id]').forEach(el => {
+    if (!el.classList.contains('dying')) existing.set(el.dataset.recId, el);
+  });
+
+  // 删除掉不在「显示集」里的旧云（超过上限的也会被移出画面，但仍在存档/日志页）
+  const shown = shownRecords();
+  const liveIds = new Set(shown.map(r => r._id));
+  existing.forEach((el, id) => {
+    if (!liveIds.has(id)) {
+      flyAwayAndRemove(el);
+    }
+  });
+
+  // 渲染：existing → 位置变了则淡出→瞬移→淡入（不滑动、不缩放）；new → 创建
+  shown.forEach((rec, i) => {
+    let el = existing.get(rec._id);
+    if (el) {
+      const newT = `translate(${rec.pos.x}px, ${rec.pos.y}px)`;
+      if (el.style.transform !== newT) {
+        // 位置变化：淡出 → 在不可见时瞬移到新格 → 淡入（用户要求：淡入淡出，不要滑动/缩放）
+        el.style.transition = 'opacity .30s ease';
+        el.style.opacity = '0';
+        setTimeout(() => {
+          el.style.transition = 'none';
+          el.style.transform = newT;
+          requestAnimationFrame(() => {
+            el.style.transition = 'opacity .36s ease';
+            el.style.opacity = '1';
+          });
+        }, 300);
+      }
+      el._scale = rec._scale;
+    } else {
+      el = buildRecordCloud(rec, i, i === 0 && rec._isNew);
+      recordG.appendChild(el);
+    }
+  });
+
+  RECORDS.forEach(r => delete r._isNew);
+  updateEmptyState();
+  updatePageHint();
+}
+
+// B6.1：删除时云朵真的飘出画面（不用渐变），方向随当前位置靠近的边
+// 云-6 修订（2026-06-05）：方向/起点都用"此刻真实渲染位置"，不再读可能滞后的初始内联坐标
+//   —— 修复：版面重排后云挪了位置，删除却按一开始出现的坐标判断方向（用户反馈）
+function flyAwayAndRemove(el) {
+  if (el.classList.contains('dying')) return;
+  el.classList.add('dying');
+
+  // 1) 当前真实场景坐标：优先读 computed matrix（反映此刻渲染值），回退到内联 translate
+  let x = 0, y = 0;
+  const cs = getComputedStyle(el).transform;
+  const mm = cs && cs !== 'none' && cs.match(/matrix\(([^)]+)\)/);
+  if (mm) {
+    const p = mm[1].split(',').map(parseFloat);
+    x = p[4]; y = p[5];
+  } else {
+    const m2 = (el.style.transform || '').match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+    if (m2) { x = parseFloat(m2[1]); y = parseFloat(m2[2]); }
+  }
+
+  const svg = el.ownerSVGElement;
+  const vbW = svg?.viewBox.baseVal.width || 1600;
+
+  // 2) 方向：按"屏幕上"真实靠近的边判断（兼容版面重排 / 拖动 / 分页偏移）
+  const rect = el.getBoundingClientRect();
+  const vw = (el.ownerDocument.defaultView || window).innerWidth || vbW;
+  const screenCx = rect.left + rect.width / 2;
+  const nearestIsLeft = screenCx < vw / 2;
+  // 云-5：删除只往左/右飘走，绝不上下消失；最近边 70%，30% 走另一边避免总一个方向
+  const goLeft = nearestIsLeft ? (Math.random() < 0.7) : (Math.random() < 0.3);
+
+  // 3) 从"当前场景坐标"往该方向推出 ~1.6 个画面宽，保证彻底飞出（多页/已拖动也成立）
+  const push = vbW * 1.6 + Math.random() * 200;
+  const toX = goLeft ? (x - push) : (x + push);
+  const toY = y + (Math.random() - 0.5) * 80;   // 仅轻微上下抖动，主体水平飞出
+  el.style.transition = 'transform 1.2s cubic-bezier(.4,0,.7,1), opacity 1.1s ease-in';
+  el.style.transform  = `translate(${toX}px, ${toY}px)`;
+  el.style.opacity    = '0';
+  setTimeout(() => el.remove(), 1300);
+}
+
+function buildRecordCloud(rec, i, isNew) {
+  // 新云飘入那一刻（写下念头）→ 一记极轻的羽毛软音；加载已有的不响
+  if (isNew && window.MS_SOUND && MS_SOUND.play) MS_SOUND.play('drift');
+  const sh = RECORD_SHAPES[rec._shapeIdx];
+  const scale = rec._scale;
+  const sw = sh.base.w * scale;
+  const baseH = sh.base.h * scale;
+
+  // 外层：位置移动（CSS transition）
+  // 云-4 修订（2026-05-31）：新云从屏幕左外慢慢飘到目的地，让"位置"可见
+  const moveWrap = svgEl('g');
+  moveWrap.dataset.recId = rec._id;
+  if (isNew) {
+    // 起始：左侧屏幕外 + 目标 y 高一些
+    const startX = -600;
+    const startY = rec.pos.y - 30;
+    moveWrap.style.transform = `translate(${startX}px, ${startY}px)`;
+    moveWrap.style.transition = 'transform 2.4s cubic-bezier(.22,.85,.3,1)';
+    // 下一帧切到目标位置，触发"慢慢飘"
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      moveWrap.style.transform = `translate(${rec.pos.x}px, ${rec.pos.y}px)`;
+      // 飘动完成后切回 0.55s 跟随版面调整
+      setTimeout(() => { moveWrap.style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)'; }, 2500);
+    }));
+  } else {
+    moveWrap.style.transform = `translate(${rec.pos.x}px, ${rec.pos.y}px)`;
+    moveWrap.style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)';
+  }
+  moveWrap._scale = scale;
+
+  // 浮动动画层
+  const floatWrap = svgEl('g');
+  floatWrap.classList.add('cr');
+  if (isNew) floatWrap.classList.add('appearing');
+  floatWrap.style.cssText = `animation:${rec._float} ${rec._fDur}s ease-in-out ${rec._fDel}s infinite;`;
+
+  // 抖动子层（删除模式用）
+  const wobble = svgEl('g');
+  wobble.classList.add('wobble-g');
+
+  // 阴影
+  const shadowG = svgEl('g', { filter:'url(#fds-rec)' });
+  shadowG.appendChild(svgEl('ellipse', {
+    cx: sw/2, cy: baseH/2 + 10,
+    rx: sw*0.38, ry: 6,
+    fill: 'rgba(100,70,180,0.22)',
+  }));
+  wobble.appendChild(shadowG);
+
+  // 云体（饱满白 + 锐利）
+  // gooey 用 SVG attribute，drop-shadow 在外层 .cr 的 CSS filter，两者分开不互相覆盖
+  const bodyG = svgEl('g', { filter: 'url(#fd-rec)' });
+  bodyG.classList.add('cloud-body');
+  const FILL = 'rgba(255,255,255,0.97)';
+  bodyG.appendChild(svgEl('rect', {
+    x: 0, y: -baseH/2,
+    width: sw, height: baseH,
+    rx: baseH/2, ry: baseH/2,
+    fill: FILL,
+  }));
+  sh.bumps.forEach(([x, r]) => {
+    bodyG.appendChild(svgEl('circle', {
+      cx: x*scale, cy: -baseH/2 - r*scale*BUMP_LIFT,
+      r: r*scale, fill: FILL,
+    }));
+  });
+  wobble.appendChild(bodyG);
+
+  floatWrap.appendChild(wobble);
+  moveWrap.appendChild(floatWrap);
+
+  attachInteraction(floatWrap, rec);
+  return moveWrap;
+}
+
+// ── 交互（点击 vs 长按）──
+const LONG_MS = 580;
+function attachInteraction(el, rec) {
+  let pressTimer = null, pressX = 0, pressY = 0, longFired = false;
+
+  const start = (x, y) => {
+    longFired = false; pressX = x; pressY = y;
+    pressTimer = setTimeout(() => {
+      longFired = true; pressTimer = null;
+      enterDeleteMode(el, rec);
+    }, LONG_MS);
+  };
+  const moveCancel = (x, y) => {
+    if (!pressTimer) return;
+    if (Math.abs(x-pressX) > 6 || Math.abs(y-pressY) > 6) {
+      clearTimeout(pressTimer); pressTimer = null;
+    }
+  };
+  const endCancel = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+
+  el.addEventListener('mousedown', e => { if (suppressDrag) return; start(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', e => moveCancel(e.clientX, e.clientY));
+  window.addEventListener('mouseup', endCancel);
+  el.addEventListener('touchstart', e => { const t = e.touches[0]; start(t.clientX, t.clientY); }, {passive:true});
+  window.addEventListener('touchmove', e => { const t = e.touches[0]; if (t) moveCancel(t.clientX, t.clientY); }, {passive:true});
+  window.addEventListener('touchend', endCancel);
+
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    if (longFired) { longFired = false; return; }
+    if (el.classList.contains('del-mode')) return;
+    if (activeEl && activeEl !== el) activeEl.classList.remove('active');
+    activeEl = el;
+    el.classList.add('active');
+    openCard(rec, el);
+  });
+}
+
+// ── 阅读卡片（5 种图文版式） ──
+const rcard = document.getElementById('rcard');
+const rcInner = document.getElementById('rcard-inner');
+
+let _currentCardRec = null;
+let _currentCardEl = null;
+
+function escHtml(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function recImages(rec){ return (rec.images && rec.images.length) ? rec.images : (rec.image ? [rec.image] : []); }
+// 云星日期显示成「2026年6月」：标准 ISO 转换，旧的中文格式原样保留
+function cloudDate(raw){
+  if (!raw) return '';
+  if (/年/.test(raw)) return raw;            // 旧数据已是「年月」
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return `${d.getFullYear()}年${d.getMonth() + 1}月`;
+}
+
+// 根据「有无文字 / 有无图 / 图横竖」拼出对应版式
+function buildCard(rec, imgs, hasText, vertical) {
+  const dateStr = escHtml(cloudDate(rec.date));
+  const textStr = escHtml(rec.text || '');
+  const n = imgs.length;
+  const badge = n > 1 ? `<span class="rc-badge">共 ${n} 张</span>` : '';
+  const foot = `<div class="rc-foot"><span class="rc-date">${dateStr}</span><button class="rc-edit" type="button">改</button></div>`;
+  const body = `<div class="rc-body"><div class="rc-text">${textStr}</div></div>`;
+  const mediaIn  = (o) => `<div class="rc-media ${o}"><img src="${imgs[0]}" alt="">${badge}</div>`;          // 图+文：图无压字
+  const mediaOnly = (o) => `<div class="rc-media ${o}"><img src="${imgs[0]}" alt=""><div class="grad"></div><span class="rc-on-date">${dateStr}</span><button class="rc-on-edit" type="button">改</button>${badge}</div>`;
+
+  let cls, html;
+  if (n && hasText && vertical) {           // ⑤ 文+竖图：图在左、文在右
+    cls = 'rc--text-img-v';
+    html = mediaIn('v') + `<div class="rc-right">${body}${foot}</div>`;
+  } else if (n && hasText) {                 // ④ 文+横图：图在上、文在下
+    cls = 'rc--text-img-h';
+    html = mediaIn('h') + body + foot;
+  } else if (n && vertical) {                // ③ 竖图
+    cls = 'rc--img-v';
+    html = mediaOnly('v');
+  } else if (n) {                            // ② 横图
+    cls = 'rc--img-h';
+    html = mediaOnly('h');
+  } else {                                   // ① 纯文
+    cls = 'rc--text';
+    html = body + foot;
+  }
+  rcard.className = 'rcard ' + cls;
+  rcInner.innerHTML = html;
+}
+
+function positionCard(srcEl) {
+  rcard.style.left = '-9999px';
+  rcard.style.top  = '-9999px';
+  rcard.classList.add('show');
+  requestAnimationFrame(() => {
+    const cw = rcard.offsetWidth, ch = rcard.offsetHeight;
+    // 直接读云朵在屏幕上的真实位置（含拖拽偏移和浮动动画），不再用布局坐标反推
+    const r = srcEl.getBoundingClientRect();
+    let left = r.left + r.width / 2 - cw / 2;
+    let top  = r.top - ch - 10;            // 优先放云上方
+    if (top < 12) top = r.bottom + 12;     // 上方放不下就放下方
+    rcard.style.left = clamp(left, 12, W-cw-12) + 'px';
+    rcard.style.top  = clamp(top,  12, H-ch-12) + 'px';
+  });
+}
+
+function openCard(rec, srcEl) {
+  // 始终按 _id 取最新数据：云朵画面会被复用，闭包里的 rec 可能是编辑前的旧对象
+  rec = RECORDS.find(r => r._id === rec._id || (rec.id && r.id === rec.id)) || rec;
+  _currentCardRec = rec;
+  _currentCardEl = srcEl;
+  const imgs = recImages(rec);
+  const hasText = (rec.text || '').trim().length > 0;
+  if (imgs.length) {
+    // 需要先知道首图横竖才能定版式 → 探测一次（结果缓存到 rec 上，避免重复加载）
+    const finish = (vertical) => { buildCard(rec, imgs, hasText, vertical); positionCard(srcEl); };
+    if (typeof rec._imgVertical === 'boolean') { finish(rec._imgVertical); return; }
+    const probe = new Image();
+    probe.onload = () => { rec._imgVertical = probe.naturalHeight > probe.naturalWidth * 1.05; finish(rec._imgVertical); };
+    probe.onerror = () => finish(false);
+    probe.src = imgs[0];
+  } else {
+    buildCard(rec, [], hasText, false);
+    positionCard(srcEl);
+  }
+}
+function closeCard() {
+  rcard.classList.remove('show');
+  _currentCardRec = null;
+  _currentCardEl = null;
+  if (activeEl) { activeEl.classList.remove('active'); activeEl = null; }
+}
+document.getElementById('rcard-x').addEventListener('click', closeCard);
+// 卡片内「改」按钮（文字版/图上版都走这里）
+rcard.addEventListener('click', e => {
+  if (!e.target.closest('.rc-edit, .rc-on-edit')) return;
+  e.stopPropagation();
+  if (!_currentCardRec) return;
+  const rec = _currentCardRec;
+  closeCard();
+  const idx = RECORDS.findIndex(r => r._id === rec._id || (rec.id && r.id === rec.id));
+  if (window.MS && MS.composer) MS.composer.open(idx >= 0 ? idx : -1);
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.cr,.rcard,.btn-add,.input-panel,.input-mask,.del-confirm')) {
+    closeCard(); closeDelete();
+  }
+});
+
+// ── 删除模式 ──
+let pendingDelete = null;
+const delConfirm = document.getElementById('del-confirm');
+
+function enterDeleteMode(el, rec) {
+  closeCard();
+  if (pendingDelete) pendingDelete.el.classList.remove('del-mode');
+  pendingDelete = { el, rec };
+  el.classList.add('del-mode');
+  suppressDrag = true;
+
+  delConfirm.style.left = '-9999px';
+  delConfirm.style.top  = '-9999px';
+  delConfirm.classList.add('show');
+  requestAnimationFrame(() => {
+    const cw = delConfirm.offsetWidth, ch = delConfirm.offsetHeight;
+    // 同样直接读云朵真实屏幕位置
+    const r = el.getBoundingClientRect();
+    let left = r.left + r.width / 2 - cw / 2;
+    let top  = r.top - ch - 8;            // 优先放云上方
+    if (top < 12) top = r.bottom + 10;   // 上方不够就放下方
+    delConfirm.style.left = clamp(left, 12, W-cw-12) + 'px';
+    delConfirm.style.top  = clamp(top,  12, H-ch-12) + 'px';
+  });
+}
+function closeDelete() {
+  if (pendingDelete) pendingDelete.el.classList.remove('del-mode');
+  pendingDelete = null;
+  delConfirm.classList.remove('show');
+  suppressDrag = false;
+}
+document.getElementById('del-yes').addEventListener('click', () => {
+  if (!pendingDelete) return;
+  const { el, rec } = pendingDelete;
+  el.classList.add('dying');
+  el.classList.remove('del-mode');
+  delConfirm.classList.remove('show');
+  setTimeout(() => {
+    // 按 _id 匹配（不能用对象引用：画面复用后闭包里的 rec 可能是旧对象，indexOf 会找不到）
+    const idx = RECORDS.findIndex(r => r._id === rec._id || (rec.id && r.id === rec.id));
+    if (idx >= 0) {
+      // 有盘时把这朵云涉及的真文件挪进回收站（无盘为 no-op）
+      const s = msStore();
+      if (s && s.trashRecordMedia) {
+        try { s.trashRecordMedia(RECORDS[idx], { mediaFields: CLOUD_MEDIA_FIELDS, planetKey: CLOUD_PLANET_KEY }); }
+        catch (err) { console.warn('[cloud] 删除时 trash 失败：', err); }
+      }
+      if (s && s.trashRecord) { try { s.trashRecord(CLOUD_PLANET_KEY, RECORDS[idx]); } catch (_) {} } // 整条进回收站（STORE-006d）
+      RECORDS.splice(idx, 1);
+    }
+    pendingDelete = null;
+    suppressDrag = false;
+    saveRecords();
+    renderRecords();
+  }, 420);
+});
+document.getElementById('del-no').addEventListener('click', closeDelete);
+
+// ── 录入：交给 ms-composer 统一渲染 ──
+const inputMask = document.getElementById('input-mask');  // 保留空 mask 兼容 list-bridge moveOut 选择器
+function _bootCloudComposer() {
+  if (!window.MS || !MS.composer) { setTimeout(_bootCloudComposer, 60); return; }
+  MS.composer.init({
+    planet: 'cloud',
+    storageKey: STORAGE_KEY,
+    capabilities: { image: true, video: false, audio: false },
+    textareaPlaceholder: '想藏进云里的，是什么珍贵的东西……',
+    textareaMaxLength: 500,
+    onOpened: () => {
+      try { closeCard(); } catch(_){}
+      try { closeDelete(); } catch(_){}
+      suppressDrag = true;
+      document.body.classList.add('no-drag', 'input-open');
+      // 停 RAF：composer 打开时完全不跑 tick，节省全部 JS + CSS 合成开销
+      _tickRunning = false;
+    },
+    onClosed: () => {
+      suppressDrag = false;
+      document.body.classList.remove('no-drag', 'input-open');
+      // 重启 RAF
+      restartTick();
+    },
+    beforeSave: async (payload, editingIdx) => {
+      if (editingIdx == null) {
+        // 新建：补 _id / _isNew（日期沿用 composer 的标准 ISO，和其他星一致；弹窗显示时再转「年月」）
+        // 位置无需在此分配——记录头插入数组后，layoutRecords 按次序自动算出 zone（最新=左上）
+        ensureRecId(payload);
+        payload._isNew = true;
+      } else {
+        // 编辑：从 storage 里取回 _id 合并进 payload，确保身份不丢（位置由次序决定，无需保留）
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const original = stored[editingIdx];
+        if (original && original._id) payload._id = original._id;
+      }
+
+      // ── 媒体走真文件存储（仅在有盘时；无盘保持 base64 老行为）──
+      // 云只有图片：优先取本次新选的原 File（imageFiles[0]，原画质），否则用 base64。
+      const baseSrc = payload.image || (payload.images && payload.images[0]) || '';
+      const s = msStore();
+      if (baseSrc && s && s.hasBackend && s.hasBackend()) {
+        const hasNewImageFile = payload.imageFiles && payload.imageFiles[0];
+        const source = hasNewImageFile ? payload.imageFiles[0] : baseSrc;
+        try {
+          const { ref, wroteFile } = await s.putMedia({
+            planetKey: CLOUD_PLANET_KEY,
+            id: payload.id || payload._id,
+            kind: 'image',
+            dateStr: payload.date || '',
+            source,
+          });
+          if (wroteFile) {
+            // 真写了文件：媒体字段换成 fsa: 引用，避免大 base64 写进 localStorage。
+            payload.image = ref;
+            payload.images = [ref];
+            payload.src = ref;
+          }
+          // 非 wroteFile（写盘失败兜底）：保持原 base64，不动其它字段
+        } catch (err) {
+          console.warn('[cloud] putMedia 失败，保留 base64：', err);
+        }
+      }
+
+      // 临时字段：原 File 数组不可 JSON 化，绝不能进 localStorage
+      delete payload.imageFiles;
+      return payload;
+    },
+    beforeDelete: async (removedRecord) => {
+      // 共用 ms-composer 删除入口（V2 列表里编辑删除）：把真文件挪进回收站。
+      // 无盘 / base64 时为 no-op。
+      const s = msStore();
+      if (s && s.trashRecordMedia) {
+        await s.trashRecordMedia(removedRecord, {
+          mediaFields: CLOUD_MEDIA_FIELDS,
+          planetKey: CLOUD_PLANET_KEY,
+        });
+      }
+    },
+    onSaved: (savedPayload, editingIdx) => {
+      const afterReload = () => {
+        // 如果 rcard 正在展示被编辑的那条，立刻整卡重建（文字/图片/版式都跟着变），不需要切走再回来
+        if (_currentCardRec) {
+          const updatedId = savedPayload?.id || savedPayload?._id;
+          if (updatedId && (_currentCardRec.id === updatedId || _currentCardRec._id === updatedId)) {
+            const updated = RECORDS.find(r => r._id === updatedId || r.id === updatedId);
+            // 重渲后云朵 DOM 可能已重建，按 _id 取回当前元素用于定位
+            const el = recordG.querySelector(`g[data-rec-id="${updated && updated._id}"]`);
+            if (updated && el) { delete updated._imgVertical; openCard(updated, el); }
+            else closeCard();
+          }
+        }
+      };
+      // 无盘：同步老路径，行为完全不变。有盘：先水合 fsa: 引用再渲染。
+      reloadRecords().then(afterReload).catch(() => {});
+      cloudSyncFile(); // 录入主路径建库：composer 已写好 localStorage（STORE-006）
+      // 视野回中（保留原体验）
+      const t0 = performance.now();
+      const sx = off.x, sy = off.y;
+      const dur = 420;
+      function anim(t){
+        const k = clamp((t-t0)/dur, 0, 1);
+        const e = 1 - Math.pow(1-k, 3);
+        off.x = sx * (1-e); off.y = sy * (1-e);
+        if (k < 1) requestAnimationFrame(anim);
+      }
+      requestAnimationFrame(anim);
+    },
+  });
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _bootCloudComposer);
+else _bootCloudComposer();
+
+// 父 App 列表点 +/编辑触发
+window.__msOpenComposer = function(editIdx) {
+  if (!window.MS || !MS.composer) { setTimeout(() => window.__msOpenComposer(editIdx), 80); return; }
+  MS.composer.open(typeof editIdx === 'number' && editIdx >= 0 ? editIdx : -1);
+};
+
+// 父 App 列表删除/编辑后同步：从 storage 重读 RECORDS + 重渲（有盘先水合 fsa: 引用）
+window.__msReloadAll = function() {
+  cloudSyncFile(); // 父级删除/编辑后同步 records.json（STORE-006）
+  reloadRecords().catch(() => {});
+};
+
+document.getElementById('btn-add').addEventListener('click', () => {
+  if (window.MS && MS.composer) MS.composer.open();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (pendingDelete) closeDelete();
+    else closeCard();
+  }
+});
+
+// ── 空状态 ──
+const emptyHint = document.getElementById('empty-hint');
+const btnAdd = document.getElementById('btn-add');
+const hint = document.getElementById('hint');
+function updateEmptyState() {
+  const empty = RECORDS.length === 0;
+  emptyHint.style.display = empty ? 'block' : 'none';
+  btnAdd.classList.toggle('pulse', empty);
+  hint.style.opacity = empty ? '0' : '1';
+}
+
+// ── 多页导航提示 ──
+const pageHintEl = document.getElementById('page-hint');
+const pageHintCount = document.getElementById('page-hint-count');
+function updatePageHint() {
+  // 在 page 1 之外（_pageIdx > 0）的记录数量
+  const overflow = RECORDS.filter(r => (r._pageIdx || 0) > 0).length;
+  const atFirstPage = off.x > -W * 0.15;
+  if (overflow > 0 && atFirstPage) {
+    pageHintCount.textContent = overflow;
+    pageHintEl.classList.add('show');
+  } else {
+    pageHintEl.classList.remove('show');
+  }
+}
+
+// ── 拖拽 ──
+window.addEventListener('mousedown', e => {
+  if (suppressDrag) return;
+  if (e.target.closest('.btn-add,.rcard,.input-panel,.input-mask,.del-confirm,.cr')) return;
+  drag.on=true; drag.lx=e.clientX; drag.ly=e.clientY;
+  ine.x=ine.y=0; document.body.classList.add('drag'); closeCard();
+});
+window.addEventListener('mousemove', e => {
+  if (!drag.on) return;
+  const dx=e.clientX-drag.lx, dy=e.clientY-drag.ly;
+  drag.lx=e.clientX; drag.ly=e.clientY;
+  ine.x=dx; ine.y=dy;
+  off.x=clamp(off.x+dx,MAX.xMin,MAX.xMax);
+  off.y=clamp(off.y+dy,-MAX.y,MAX.y);
+});
+window.addEventListener('mouseup', ()=>{ drag.on=false; document.body.classList.remove('drag'); });
+
+window.addEventListener('touchstart', e=>{
+  if (suppressDrag) return;
+  if (e.target.closest('.btn-add,.rcard,.input-panel,.input-mask,.del-confirm,.cr')) return;
+  const t=e.touches[0]; drag.on=true; drag.lx=t.clientX; drag.ly=t.clientY; ine.x=ine.y=0;
+},{passive:true});
+window.addEventListener('touchmove', e=>{
+  if(!drag.on) return;
+  e.preventDefault();
+  const t=e.touches[0], dx=t.clientX-drag.lx, dy=t.clientY-drag.ly;
+  drag.lx=t.clientX; drag.ly=t.clientY; ine.x=dx; ine.y=dy;
+  off.x=clamp(off.x+dx,MAX.xMin,MAX.xMax); off.y=clamp(off.y+dy,-MAX.y,MAX.y);
+},{passive:false});
+window.addEventListener('touchend',()=>{ drag.on=false; });
+
+// ── 主循环 ──
+// composer 打开（body.input-open）时完全停 RAF，不调 requestAnimationFrame
+// 避免每帧 querySelector + style 写入，节省 composer 期间全部 JS/CSS 合成开销
+// onClosed 里调 restartTick() 重启
+let _tick = 0;
+let _tickRunning = false;
+let _lastOffX = null, _lastOffY = null;
+
+function runTick(){
+  if (!_tickRunning) return; // composer 打开时 onOpened 设 false，loop 真正停止
+  _tick++;
+
+  // 惯性衰减
+  if (!drag.on){
+    off.x=clamp(off.x+ine.x,MAX.xMin,MAX.xMax);
+    off.y=clamp(off.y+ine.y,-MAX.y,MAX.y);
+    ine.x*=0.88; ine.y*=0.88;
+  }
+
+  // 闲置节流：无拖拽 + 惯性已衰减 + 位置没变 → 每 3 帧渲染 1 帧
+  const moving = drag.on
+    || Math.abs(ine.x) > 0.3 || Math.abs(ine.y) > 0.3
+    || off.x !== _lastOffX || off.y !== _lastOffY;
+
+  if (!moving && (_tick % 3) !== 0) { requestAnimationFrame(runTick); return; }
+
+  _lastOffX = off.x; _lastOffY = off.y;
+  lyrDecor.style.transform  = `translate(${off.x*0.32}px,${off.y*0.14}px)`;
+  lyrRecord.style.transform = `translate(${off.x}px,${off.y*0.38}px)`;
+  updatePageHint();
+  requestAnimationFrame(runTick);
+}
+
+function restartTick(){
+  if (_tickRunning) return;
+  _tickRunning = true;
+  requestAnimationFrame(runTick);
+}
+restartTick();
+
+// 启动
+// 初始化分叉：
+//   无盘（开发期默认）：同步 render，行为与改造前逐像素一致，零新增 await/渲染。
+//   有盘：先就地水合 RECORDS 里的 fsa: 引用再 render；水合失败降级直接渲染。
+if (msHasBackend()) {
+  const s = msStore();
+  s.hydrateRecords(RECORDS, { mediaFields: CLOUD_MEDIA_FIELDS })
+    .then(() => renderRecords())
+    .catch(err => { console.warn('[cloud] 初始水合失败，降级直接渲染：', err); renderRecords(); });
+} else {
+  renderRecords();
+}
+
+// 监听 U盘目录句柄：父级打开 iframe 时通过 postMessage 传来。
+// 收到后从 storage 重读 + 重新水合 fsa: 引用 + 重渲（句柄可能在启动之后才到）。
+(function installFsaHandleListener() {
+  const s = msStore();
+  if (s && s.installHandleListener) {
+    s.installHandleListener(() => {
+      cloudRestoreFile().then(() => reloadRecords()).catch(() => {});
+    });
+  }
+})();
+
+// 统一：hint-row 折叠
+document.querySelectorAll('.hint-row').forEach(row => {
+  row.addEventListener('click', e => {
+    e.stopPropagation();
+    row.closest('.intro-card')?.classList.add('collapsed');
+  });
+});
+document.querySelectorAll('.intro-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (card.classList.contains('collapsed')) card.classList.remove('collapsed');
+  });
+});
+</script>
+
+<script>
+  // ── Memory Sparks · 统一组件挂载（介绍卡 + 添加按钮） ──
+  // 在 DOM ready 后挂载，避免被原有 init 顺序覆盖
+  (function bootMSShared() {
+    function go() { if (window.MS && window.MS.bootstrap) MS.bootstrap('cloud'); else setTimeout(go, 60); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+  })();
+</script>
+
+<!-- 云-2 修订（2026-05-31）：左右拖拽看屏幕外的云 -->
+<style>
+  .layer { transition: transform 280ms cubic-bezier(0.22, 0.85, 0.3, 1); }
+  .layer.panning { transition: none; }
+  .cloud-pages {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    z-index: 90;
+    display: flex;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(255,255,255,0.42);
+    border-radius: 999px;
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    box-shadow: 0 6px 22px -10px rgba(80,60,140,0.32);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 240ms ease;
+  }
+  .cloud-pages.show { opacity: 1; pointer-events: auto; }
+  .cloud-pages button {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(100, 70, 180, 0.32);
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), background 200ms ease;
+  }
+  .cloud-pages button:hover { background: rgba(100, 70, 180, 0.55); transform: scale(1.2); }
+  .cloud-pages button.on { background: rgba(100, 70, 180, 0.92); transform: scale(1.4); }
+  .cloud-pan-hint {
+    position: fixed;
+    left: 50%; bottom: 70px;
+    transform: translateX(-50%);
+    z-index: 90;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: rgba(60,40,120,0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 320ms ease;
+  }
+  .cloud-pan-hint.show { opacity: 1; }
+</style>
+<div class="cloud-pages" id="cloudPages"></div>
+<div class="cloud-pan-hint" id="cloudPanHint">← 左右拖动看更多 →</div>
+<script>
+(function () {
+  const decor = document.getElementById('lyr-decor');
+  const record = document.getElementById('lyr-record');
+  const pagesEl = document.getElementById('cloudPages');
+  const hintEl = document.getElementById('cloudPanHint');
+  if (!decor || !record) return;
+  let panX = 0, dragging = false, startX = 0, startPan = 0;
+  const PAGE_W = () => window.innerWidth;
+  function maxPages() {
+    if (!window.RECORDS) return 1;
+    return Math.max(1, (Math.max(0, ...window.RECORDS.map(r => r._pageIdx || 0))) + 1);
+  }
+  function currentPage() { return Math.max(0, Math.min(maxPages() - 1, Math.round(-panX / PAGE_W()))); }
+  function setPan(p, animate = true) {
+    const maxLeft = -((maxPages() - 1) * PAGE_W());
+    panX = Math.max(maxLeft, Math.min(0, p));
+    decor.classList.toggle('panning', !animate);
+    record.classList.toggle('panning', !animate);
+    const t = `translateX(${panX}px)`;
+    decor.style.transform = t; record.style.transform = t;
+    renderPages();
+  }
+  function goToPage(idx) { setPan(-idx * PAGE_W(), true); }
+  function renderPages() {
+    const n = maxPages();
+    if (n <= 1) { pagesEl.classList.remove('show'); hintEl.classList.remove('show'); return; }
+    pagesEl.classList.add('show');
+    if (pagesEl.children.length !== n) {
+      pagesEl.innerHTML = '';
+      for (let i = 0; i < n; i++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.addEventListener('click', () => goToPage(i));
+        pagesEl.appendChild(b);
+      }
+    }
+    const cur = currentPage();
+    [...pagesEl.children].forEach((b, i) => b.classList.toggle('on', i === cur));
+  }
+  new MutationObserver(() => renderPages()).observe(record, { childList: true, subtree: true });
+  let hintShown = false;
+  setInterval(() => {
+    if (hintShown) return;
+    if (maxPages() > 1) {
+      hintShown = true;
+      hintEl.classList.add('show');
+      setTimeout(() => hintEl.classList.remove('show'), 4000);
+    }
+  }, 1500);
+  function onDown(e) {
+    if (document.querySelector('.composer.open, .ms-list-context')) return;
+    const t = e.touches ? e.touches[0] : e;
+    dragging = true; startX = t.clientX; startPan = panX;
+    document.body.style.userSelect = 'none';
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    const t = e.touches ? e.touches[0] : e;
+    setPan(startPan + (t.clientX - startX), false);
+  }
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    goToPage(currentPage());
+  }
+  [record, document.body].forEach(el => {
+    el.addEventListener('mousedown', onDown);
+    el.addEventListener('touchstart', onDown, { passive: true });
+  });
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchend', onUp);
+  window.addEventListener('resize', () => goToPage(currentPage()));
+  window.__cloudGoToPage = goToPage;
+  window.__cloudPanX = () => panX;
+})();
+</script>
+
+</body>
+</html>

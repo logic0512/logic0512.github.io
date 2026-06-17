@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>树星 · 孤独星球原型</title>
+  <link rel="stylesheet" href="style.css?v=20260604a">
+<script>
+// Visibility pause: 父页面切 tab 时停掉本 iframe 的 RAF/setInterval，避免后台烧 CPU
+(function(){
+  let _raf = window.requestAnimationFrame.bind(window);
+  let _caf = window.cancelAnimationFrame.bind(window);
+  let _setInt = window.setInterval.bind(window);
+  let _clrInt = window.clearInterval.bind(window);
+  let active = true;
+  let pendingRafs = [];      // {cb, id}
+  let liveIntervals = new Map();
+  let nextId = 1;
+  window.requestAnimationFrame = function(cb){
+    if (active) return _raf(cb);
+    const id = nextId++;
+    pendingRafs.push({cb, id});
+    return id;
+  };
+  window.cancelAnimationFrame = function(id){
+    pendingRafs = pendingRafs.filter(x => x.id !== id);
+    return _caf(id);
+  };
+  window.setInterval = function(cb, ms){
+    const id = _setInt(function(){ if (active) cb(); }, ms);
+    liveIntervals.set(id, true);
+    return id;
+  };
+  window.clearInterval = function(id){
+    liveIntervals.delete(id);
+    return _clrInt(id);
+  };
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.type !== "memory-sparks:visibility") return;
+    const wasActive = active;
+    active = !!e.data.visible;
+    if (!wasActive && active && pendingRafs.length){
+      const q = pendingRafs; pendingRafs = [];
+      q.forEach(({cb}) => _raf(cb));
+    }
+  });
+})();
+</script>
+<!-- MS shared -->
+<link rel="stylesheet" href="../_shared/ms-shared.css?v=20260602f">
+<link rel="stylesheet" href="../_shared/ms-composer.css?v=20260531d">
+<script src="../_shared/ms-config.js?v=20260606x"></script>
+<script src="../_shared/ms-sound.js?v=20260604i"></script>
+<script>window.MS_SOUND && MS_SOUND.init('tree');</script>
+<script src="../_shared/ms-icons.js?v=20260602f"></script>
+<script src="../_shared/ms-feedback.js?v=20260530m"></script>
+<script src="../_shared/ms-mount.js?v=20260602f"></script>
+<script src="../_shared/ms-list-bridge.js?v=20260530m"></script>
+<script src="../_shared/ms-media-vault.js?v=20260605s"></script>
+<script src="../_shared/ms-media-store.js?v=20260606c"></script>
+<script src="../_shared/ms-composer.js?v=20260605l" defer></script>
+</head>
+<body>
+  <main class="tree-page" aria-label="树星交互原型">
+    <section class="tree-stage" aria-label="树星内部场景">
+
+      <!-- 背景层：极暗绿黑 + 顶部微光柱 -->
+      <div class="scene-background" aria-hidden="true"></div>
+      <div class="top-light-shaft" aria-hidden="true"></div>
+
+      <!-- 树底图（Lovart 生成的写实夜树，固定形态） -->
+      <img class="tree-image" src="assets/tree-scene.png" alt="" aria-hidden="true">
+
+      <!-- Canvas 粒子层：注入飞行的发光颗粒群、环境飘动萤火 -->
+      <canvas class="particle-canvas" id="particleCanvas" aria-hidden="true"></canvas>
+
+      <!-- SVG 叶子层：关键词文字叠在树冠区，原生可点击 -->
+      <svg class="leaf-svg" viewBox="0 0 2048 1152" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <defs>
+          <!-- 多层 cyan 光晕：让文字融入树底图自带的发光粒子风格 -->
+          <filter id="leafGlow" x="-100%" y="-100%" width="300%" height="300%">
+            <!-- 外层大光晕：偏青绿 -->
+            <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="bigBlur"/>
+            <feFlood flood-color="#5dd8b8" flood-opacity="0.55"/>
+            <feComposite in2="bigBlur" operator="in" result="bigGlow"/>
+            <!-- 中层光晕：浅青色 -->
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="midBlur"/>
+            <feFlood flood-color="#a8f0d8" flood-opacity="0.8"/>
+            <feComposite in2="midBlur" operator="in" result="midGlow"/>
+            <!-- 合成：大光晕 + 中光晕 + 原文字 -->
+            <feMerge>
+              <feMergeNode in="bigGlow"/>
+              <feMergeNode in="midGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <!-- 退化叶（faded）专用：纯发光圆点效果，无字形 -->
+          <filter id="leafDot" x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="dotBlur"/>
+            <feFlood flood-color="#7adbb8" flood-opacity="0.9"/>
+            <feComposite in2="dotBlur" operator="in" result="dotGlow"/>
+            <feMerge>
+              <feMergeNode in="dotGlow"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <!-- ⚡ v8 grain 文字滤镜：大幅强化参数对齐 emptiness 海报
+               核心：displacement scale 12 + 水平 blur 5 + 噪声细密  -->
+          <filter id="grainText" x="-80%" y="-80%" width="260%" height="260%">
+            <!-- 1. 生成分形噪声 → 字像素扰动 -->
+            <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="3" result="bigNoise"/>
+            <feDisplacementMap in="SourceGraphic" in2="bigNoise" scale="12" xChannelSelector="R" yChannelSelector="G" result="distorted"/>
+            <!-- 2. 水平方向强烈高斯模糊，制造海报那种"拖影/像被风吹"感 -->
+            <feGaussianBlur in="distorted" stdDeviation="2 5" result="blurry"/>
+            <!-- 3. 细密噪声 → 与字 alpha 合成，让字内部布满颗粒 -->
+            <feTurbulence type="fractalNoise" baseFrequency="3.2" numOctaves="2" seed="11" result="grain"/>
+            <feComposite in="grain" in2="blurry" operator="in" result="grainOnText"/>
+            <feColorMatrix in="grainOnText" type="matrix" values="
+              0 0 0 0 0.85
+              0 0 0 0 1.0
+              0 0 0 0 0.92
+              0 0 0 1.2 0" result="grainTinted"/>
+            <!-- 4. 外层 cyan 光晕 -->
+            <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="haloBlur"/>
+            <feFlood flood-color="#7dd8b8" flood-opacity="0.4"/>
+            <feComposite in2="haloBlur" operator="in" result="halo"/>
+            <!-- 合成：光晕底 + 模糊拖影字本体 + 细密颗粒纹理顶层 -->
+            <feMerge>
+              <feMergeNode in="halo"/>
+              <feMergeNode in="blurry"/>
+              <feMergeNode in="grainTinted"/>
+            </feMerge>
+          </filter>
+        </defs>
+        <g class="leaf-layer" id="leafLayer"></g>
+      </svg>
+
+      <!-- 左上：星球介绍卡片 -->
+      <aside class="intro-card" aria-label="树星介绍">
+        <div class="card-fold">
+          <div class="planet-orb" aria-hidden="true">
+            <img src="../../assets/planets/tree.png" alt="">
+          </div>
+        </div>
+        <p class="p-eyebrow">KEYWORD PLANET · ORBIT 08</p>
+        <h1 class="p-name">树星</h1>
+        <div class="card-fold">
+          <p class="p-story">
+            树星是离其他行星最远的星球。星球上只有一棵巨大的树，它不仅从荒凉贫瘠的土地里获取养分，还会把太空中路过的各种气息吸收转化成自己的能量。在这棵树身上，我们看到的不只是孤独，还有它想尽办法开枝散叶的那股生命力。
+          </p>
+          <div class="hint-row">
+            <button class="icon-button" type="button" aria-hidden="true" tabindex="-1">↺</button>
+            <span>把这段独处写进树里</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 右下：浮动「＋」按钮 -->
+      <button id="addTrigger" class="float-add" type="button" aria-label="写下一段独处">
+        <span class="plus-icon" aria-hidden="true">＋</span>
+      </button>
+
+      <!-- 添加界面：交给 ms-composer 统一渲染 -->
+
+      <!-- 记录详情卡（点叶后弹出） -->
+      <article id="leafCard" class="leaf-card" aria-live="polite">
+        <button id="closeLeafCard" class="card-close" type="button" aria-label="关闭">×</button>
+        <div class="card-body">
+          <p id="leafDate" class="leaf-date"></p>
+          <p id="leafText" class="leaf-text"></p>
+          <div id="leafKeywords" class="leaf-keywords"></div>
+        </div>
+      </article>
+
+    </section>
+  </main>
+
+  <!-- GSAP 3.13.0：Webflow 收购后所有插件免费，含 DrawSVG -->
+  <script src="/assets/vendor/gsap/gsap.min.js"></script>
+  <script src="/assets/vendor/gsap/MotionPathPlugin.min.js"></script>
+  <script src="/assets/vendor/gsap/DrawSVGPlugin.min.js"></script>
+  <script src="main.js?v=20260606b"></script>
+
+<script>
+  // ── Memory Sparks · 统一组件挂载（介绍卡 + 添加按钮） ──
+  // 在 DOM ready 后挂载，避免被原有 init 顺序覆盖
+  (function bootMSShared() {
+    function go() { if (window.MS && window.MS.bootstrap) MS.bootstrap('tree'); else setTimeout(go, 60); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+  })();
+</script>
+
+
+</body>
+</html>

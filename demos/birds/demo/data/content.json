@@ -1,0 +1,664 @@
+{
+  "meta": {
+    "version": "v1.2-frozen",
+    "date": "2026-04-22",
+    "source": "docs/content/content-freeze.json",
+    "status": "冻结。所有 title/body 1:1 抄录自 content-freeze.json，不得改写。",
+    "counts": {
+      "popup_small": 22,
+      "modal": 4,
+      "modal_chapters_total": 31
+    },
+    "notes": "title_latin 字段在上游真源（content-freeze.json / content-map.md）未定义，统一置空字符串，保留字段位置供后续补充。modals 结构已按 handoff §4.5 / §6.5 补回 pages 分组（每个 modal 2 页，对应 modal-tabs 双页切换）。"
+  },
+  "popups_small": [
+    {
+      "id": "A1-skull",
+      "kind": "bone",
+      "title_zh": "头骨",
+      "title_latin": "",
+      "body": "鸟类演化掉牙齿、代以角质喙鞘；头骨薄而通气，极轻。",
+      "image": "assets/popup-small/A1-skull.png",
+      "more_ref": "modal.M1-skull"
+    },
+    {
+      "id": "A1-furcula",
+      "kind": "bone",
+      "title_zh": "锁骨（叉骨）",
+      "title_latin": "",
+      "body": "左右锁骨愈合成 V 形叉骨，扇翅时像弹簧储能释放。",
+      "image": "assets/popup-small/A1-furcula.png",
+      "more_ref": null
+    },
+    {
+      "id": "A1-wing-bone",
+      "kind": "bone",
+      "title_zh": "翼骨",
+      "title_latin": "",
+      "body": "前肢高度特化，腕掌骨愈合、仅余 3 指，专为扇翅而生。",
+      "image": "assets/popup-small/A1-wing-bone.png",
+      "more_ref": null
+    },
+    {
+      "id": "A1-feather-wing",
+      "kind": "bone",
+      "title_zh": "羽翼",
+      "title_latin": "",
+      "body": "飞羽与覆羽层叠成翼面，翼型决定飞行方式。",
+      "image": "assets/popup-small/A1-feather-wing.png",
+      "more_ref": null
+    },
+    {
+      "id": "A1-foot",
+      "kind": "bone",
+      "title_zh": "足部",
+      "title_latin": "",
+      "body": "四趾为典型；锁止结构让鸟睡眠中也能稳抓树枝。",
+      "image": "assets/popup-small/A1-foot.png",
+      "more_ref": null
+    },
+    {
+      "id": "A2-airsac",
+      "kind": "organ",
+      "title_zh": "蓝色区 · 气囊",
+      "title_latin": "",
+      "body": "9 个气囊配合肺形成双重呼吸，单向气流高效供氧。",
+      "image": "assets/popup-small/A2-airsac.png",
+      "more_ref": null
+    },
+    {
+      "id": "A2-heart",
+      "kind": "organ",
+      "title_zh": "红色区 · 心脏",
+      "title_latin": "",
+      "body": "四室心脏高速泵血，飞行时心率可达每分钟 1000 次。",
+      "image": "assets/popup-small/A2-heart.png",
+      "more_ref": null
+    },
+    {
+      "id": "A2-syrinx",
+      "kind": "organ",
+      "title_zh": "黄色区 · 鸣管",
+      "title_latin": "",
+      "body": "气管分叉处的鸣管，鸣肌控制膜张力奏出复杂歌声。",
+      "image": "assets/popup-small/A2-syrinx.png",
+      "more_ref": null
+    },
+    {
+      "id": "A2-egg",
+      "kind": "organ",
+      "title_zh": "灰色区 · 鸟卵",
+      "title_latin": "",
+      "body": "蛋在输卵管成形：蛋黄先裹蛋白，再覆壳膜与钙壳，最后染色。",
+      "image": "assets/popup-small/A2-egg.png",
+      "more_ref": null
+    },
+    {
+      "id": "A3-plumage",
+      "kind": "plumage",
+      "title_zh": "羽毛与色彩",
+      "title_latin": "",
+      "body": "羽毛只长在\"羽区\"；颜色 = 色素色 + 结构色叠加成就金属光泽。",
+      "image": "assets/popup-small/A3-plumage.png",
+      "more_ref": null
+    },
+    {
+      "id": "B-climb-woodpecker",
+      "kind": "bird",
+      "title_zh": "攀禽-大斑啄木鸟",
+      "title_latin": "",
+      "body": "对趾型足稳攀树干，舌骨极长可伸出数厘米钩取深藏幼虫。",
+      "image": "assets/popup-small/B-climb-woodpecker.png",
+      "more_ref": null
+    },
+    {
+      "id": "B-wader-heron",
+      "kind": "bird",
+      "title_zh": "涉禽-苍鹭",
+      "title_latin": "",
+      "body": "嘴长颈长脚长的大型涉禽，常单脚伫立浅水，伺机弹射啄击鱼虾。",
+      "image": "assets/popup-small/B-wader-heron.png",
+      "more_ref": "modal.M2-wader"
+    },
+    {
+      "id": "B-song-bulbul",
+      "kind": "bird",
+      "title_zh": "鸣禽-红耳鹎",
+      "title_latin": "",
+      "body": "雀形目鸣禽，头顶黑冠、耳后朱红，鸣管发达歌声婉转多变。",
+      "image": "assets/popup-small/B-song-bulbul.png",
+      "more_ref": null
+    },
+    {
+      "id": "B-waterfowl-pelican",
+      "kind": "bird",
+      "title_zh": "游禽-鹈鹕",
+      "title_latin": "",
+      "body": "下颌标志性大喉囊可伸缩成捞鱼网，群体合作驱鱼捞捕。",
+      "image": "assets/popup-small/B-waterfowl-pelican.png",
+      "more_ref": "modal.M4-water"
+    },
+    {
+      "id": "B-waterfowl-swan",
+      "kind": "bird",
+      "title_zh": "游禽-天鹅",
+      "title_latin": "",
+      "body": "长颈游禽，气管盘曲胸骨内形成共鸣腔，叫声低沉深远。",
+      "image": "assets/popup-small/B-waterfowl-swan.png",
+      "more_ref": "modal.M4-water"
+    },
+    {
+      "id": "B-raptor-falcon",
+      "kind": "bird",
+      "title_zh": "猛禽-游隼",
+      "title_latin": "",
+      "body": "飞行最快的鸟，俯冲时速可达 300 km/h，专猎空中飞鸟。",
+      "image": "assets/popup-small/B-raptor-falcon.png",
+      "more_ref": "modal.M3-raptor"
+    },
+    {
+      "id": "B-climb-parakeet",
+      "kind": "bird",
+      "title_zh": "攀禽-虎皮鹦鹉",
+      "title_latin": "",
+      "body": "原产澳洲的小型鹦鹉，对趾型足；善模仿，羽色因选育万千。",
+      "image": "assets/popup-small/B-climb-parakeet.png",
+      "more_ref": null
+    },
+    {
+      "id": "B-wader-egret",
+      "kind": "bird",
+      "title_zh": "涉禽-大白鹭",
+      "title_latin": "",
+      "body": "通体洁白的大型涉禽，繁殖期背生蕾丝饰羽，飞行时颈收成 S 形。",
+      "image": "assets/popup-small/B-wader-egret.png",
+      "more_ref": "modal.M2-wader"
+    },
+    {
+      "id": "B-waterfowl-mandarin",
+      "kind": "bird",
+      "title_zh": "游禽-鸳鸯",
+      "title_latin": "",
+      "body": "雄鸟羽色极华丽，繁殖期有帆状饰羽，中国传统爱情符号。",
+      "image": "assets/popup-small/B-waterfowl-mandarin.png",
+      "more_ref": "modal.M4-water"
+    },
+    {
+      "id": "B-waterfowl-mallard",
+      "kind": "bird",
+      "title_zh": "游禽-绿头鸭",
+      "title_latin": "",
+      "body": "雄鸟头部绿色金属光泽；扁嘴蹼足，羽毛富含油脂浮水觅食。",
+      "image": "assets/popup-small/B-waterfowl-mallard.png",
+      "more_ref": "modal.M4-water"
+    },
+    {
+      "id": "B-raptor-eagle",
+      "kind": "bird",
+      "title_zh": "猛禽-金雕",
+      "title_latin": "",
+      "body": "食物链顶端的掠食者，视力是人类 7 倍，可发现 1.5km 外猎物。",
+      "image": "assets/popup-small/B-raptor-eagle.png",
+      "more_ref": "modal.M3-raptor"
+    },
+    {
+      "id": "B-land-pheasant",
+      "kind": "bird",
+      "title_zh": "陆禽-红腹锦鸡",
+      "title_latin": "",
+      "body": "雄鸟羽色金红交织、尾羽特长；双足强健擅奔走，短距爆发飞行。",
+      "image": "assets/popup-small/B-land-pheasant.png",
+      "more_ref": null
+    }
+  ],
+  "modals": [
+    {
+      "id": "M1-skull",
+      "title_zh": "头骨",
+      "title_sub": "头骨的不同作用 · 感官中心",
+      "pages": [
+        {
+          "index": 1,
+          "heading": "头骨的不同作用",
+          "chapters": [
+            {
+              "index": 1,
+              "heading": "1-1 · 舍弃牙齿 · 把重量让给天空",
+              "body": "鸟类祖先和恐龙一样嘴里满是牙齿，但演化最终把它们全部舍弃，代之以轻薄的角质喙鞘。牙齿很重、咀嚼更费能量，而飞行对重量极为敏感——每减轻一克都是飞得更高更远的筹码。头骨随之变薄、充满气腔、以梁架结构撑开，像一座为升空而重新设计的建筑。今天所有鸟嘴里空无一齿，却能啄种、撕肉、凿树，靠的全是这一块被极度优化过的角质。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M1-skull-1-1.jpg",
+                  "caption": "Archaeopteryx 化石·有牙的鸟祖先",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "heading": "1-2 · 一个可以脱臼的上颌",
+              "body": "哺乳动物的上颌牢牢长在颅骨上，只有下颌能动；鸟却相反，上颌也能向上抬起。秘密在于一根叫方骨的小骨——它像铰链撑起整个上颚，翼骨与颧骨如杠杆传力，整个颚部在一瞬间同步张开。结果是苍鹭能整吞半斤重的鱼、蛇雕能连皮咽下一条蛇、黄胸鹀能一口吞下带壳的种子，许多鸟的食物体积远大于它们闭嘴时的宽度——这在哺乳动物身上几乎不可能。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M1-skull-1-2.jpg",
+                  "caption": "兽脚类上颌演化·可动方骨",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "heading": "1-3 · 一把喙 · 一种生态位",
+              "body": "看一只陌生的鸟，不必查图鉴也能大致猜出它吃什么：嘴短而厚的是啃种子的，嘴细长向下的是在泥中探虫的，嘴尖利带钩的是撕肉的猛禽，嘴扁阔如铲的是在水里滤食的。达尔文在加拉帕戈斯群岛记录了十几种雀，每座小岛上的喙形都略有不同、对应着当地的食物——这后来成了他写下《物种起源》的关键线索之一。喙，是鸟把自己写进生态系统的那一笔签名。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M1-skull-1-3.png",
+                  "caption": "喙形与生态位对比",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 4,
+              "heading": "1-4 · 打破规则的啄木鸟",
+              "body": "啄木鸟把鸟类头骨推向了极致。它的舌骨并不止于口腔，而是绕过整个头顶延伸到鼻孔，舌头能瞬间弹出数厘米，像一把可伸缩的鱼叉钩取深藏在木头里的幼虫。更夸张的是它每天啄击树干上万次却不会脑震荡——头骨像海绵状缓冲层、舌骨的缠绕结构顺便减振、上下喙错位让冲击力不直接传入颅腔。工程师至今仍在研究它的构造，希望把原理用在头盔和汽车保险杠上。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M1-skull-1-4.jpg",
+                  "caption": "啄木鸟头部特写",
+                  "layout": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "heading": "感官中心",
+          "chapters": [
+            {
+              "index": 5,
+              "heading": "2-1 · 被眼睛撑满的颅腔",
+              "body": "打开一个鸟类头骨，第一眼看到的会是反常——眼球大得夸张，几乎占满颅腔，大脑被挤到后方只剩薄薄一层。这不是设计失误，而是演化的清晰权衡：对一个时速几十公里贴地飞行的动物来说，能否在 0.1 秒内识别出猎物、障碍、同伴，比抽象思考要命得多。视觉成了它们最贵的器官。所以鸟脑虽小却专精——它们不需要写诗，它们需要在风里看见针尖大小的老鼠。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M1-skull-2-1.jpg",
+                  "caption": "鸟类解剖古籍·眼眶占颅腔半",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 6,
+              "heading": "2-2 · 视网膜 · 清晰度的秘密",
+              "body": "人类视网膜的感光细胞密度已经很高，每平方毫米约 20 万个；但隼能达到 150 万，是我们的 7 倍多。这意味着我们眼里一个模糊的远景团块，在它眼里是清晰的轮廓、步频、逃跑方向。鸟的视网膜还有两个高密度视觉区域——一个对准前方、一个对准侧方，而人类只有一个。它们因此可以同时盯住远处猎物和脚下地形，几乎不需要转头；视野之辽阔、画面之锐利，是我们无法共情的世界。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M1-skull-2-2.png",
+                  "caption": "眼球结构示意",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 7,
+              "heading": "2-3 · 第三眼睑 · 瞬膜",
+              "body": "除了上下眼睑，鸟还拥有一片第三眼睑——瞬膜。它半透明，平时收在眼角，需要时水平扫过眼球，像雨刷清理角膜；俯冲、钻林、潜水时又能瞬间合拢保护眼睛，同时不完全挡住视线。游禽和潜鸟甚至把瞬膜当作水下泳镜，让它们能睁眼捕鱼。啄木鸟在每次啄击的瞬间都会自动合上瞬膜，避免木屑飞入和视网膜因冲击位移——这片薄薄的膜，是鸟眼长时间高速工作却几乎不受伤的关键。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M1-skull-2-3.jpg",
+                  "caption": "林鸳鸯瞬膜特写",
+                  "layout": "full"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "M2-wader",
+      "title_zh": "涉禽 · 湿地的站立者",
+      "title_sub": "涉禽的特点 · 5 种常见涉禽",
+      "pages": [
+        {
+          "index": 1,
+          "heading": "涉禽的特点",
+          "chapters": [
+            {
+              "index": 1,
+              "heading": "1-1 · 边界之上的生存者",
+              "body": "滩涂、浅水、沼泽这些介于陆地与水域之间的过渡带，是地球上食物密度最高的地方之一：鱼虾、贝类、昆虫、蛙类全都聚集于此。但这里也最难进入——会游泳的鸭下不到浅滩，会奔跑的陆鸟踩不稳泥地，只有涉禽正好站在这条边界上。它们不下水、不上岸，就在水陆之间完成一切：站立、觅食、繁殖、迁徙。全球大部分湿地保护区的核心关照对象，都是这群「边界上的生存者」。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M2-wader-1-1.jpg",
+                  "caption": "滨鸟群（湿地过渡带）",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "heading": "1-2 · 三长 · 互锁的方案",
+              "body": "涉禽的身体是一套彼此咬合的方程：腿必须足够长，才能把身体抬离水面而不被浸湿；颈必须足够长，才能让喙够到水底的鱼虾；喙也必须足够长，负责最后那一击的捕捉。任何一项变短，另外两项都要同步放大才行。鹤、鹳、鹭三大家族在不同大陆独立演化，却都指向同一个答案——因为这是浅水猎食唯一可行的几何。就像工程师反复算后得到同一组参数，演化也只能给出这一套。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M2-wader-1-2.jpg",
+                  "caption": "鞍嘴鹳·长腿+长颈+长喙一体",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "heading": "1-3 · 一只脚的智慧",
+              "body": "看到涉禽单脚站在水里，人们常以为它在休息。其实那是一种节能策略：冷水从脚掌带走热量的速度比空气快得多，把一条腿收进腹部羽毛里，等于把身体一半的散热面积藏起来。它们还能让两条腿交替工作，一条放松、一条支撑，可以数小时一动不动。等鱼游到脚边再出击——省力、隐蔽、致命。冬天的湿地里，一排单脚伫立的苍鹭其实正在用最小的代价熬过最冷的几个小时。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M2-wader-1-3.jpg",
+                  "caption": "苍鹭单脚立湿地",
+                  "layout": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "heading": "5 种常见涉禽",
+          "chapters": [
+            {
+              "index": 4,
+              "heading": "2-1 · 苍鹭",
+              "body": "苍鹭是中国最常见的大型涉禽，身高接近 1 米，通体灰蓝，翼展展开可达 1.8 米。它最标志性的姿态是单脚伫立浅水，一站就是几十分钟，几乎与芦苇融为一体。一旦鱼游进攻击范围，S 形折叠的长颈瞬间弹射，喙像长矛直插水面，命中率极高。它广泛分布在中国的江河、湖泊、稻田边，是最容易被城市居民遇到的「野生大鸟」之一——只要你住得离水不远，就有机会看见它在暮色里一动不动的剪影。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M2-wader-2-1.jpg",
+                  "caption": "苍鹭河岸捕猎",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 5,
+              "heading": "2-2 · 大白鹭",
+              "body": "大白鹭通体雪白，是体型最大的白色涉禽之一。繁殖期背部会长出蓬松如蕾丝的饰羽——这种羽毛在 19 世纪末被欧美贵妇用作帽饰，一度让大白鹭濒临灭绝，也间接推动了现代野生动物保护运动的诞生。飞行时它不像鹤那样脖子伸直，而是把颈折成紧凑的 S 形、双脚向后拉平，从远处看像一支白色的箭划过天空。识别涉禽是否在飞行中「缩颈」，是野外辨认鹭科与鹳科最常用的线索之一。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M2-wader-2-2.jpg",
+                  "caption": "大白鹭飞行·S颈脚后伸",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 6,
+              "heading": "2-3 · 朱鹮",
+              "body": "朱鹮被誉为「东方宝石」，曾经广泛分布于东亚，却在 20 世纪几乎灭绝。1981 年陕西洋县发现最后 7 只野生个体，此后中国从这 7 只开始人工繁育，种群数量才逐步恢复到数千只。它的羽毛粉白，翼下与尾部带有淡淡的朱红色；脸与长喙鲜红，有一种瓷器般的质感。它对栖息地要求极高——稻田、溪流、老树缺一不可，因此常被视为环境健康的指示种。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M2-wader-2-3.jpg",
+                  "caption": "两只朱鹮·陕西洋县",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 7,
+              "heading": "2-4 · 黑脸琵鹭",
+              "body": "黑脸琵鹭是全球濒危的涉禽，目前全世界仅剩约 6000 只，几乎全部在东亚迁徙。它最醒目的特征是那把扁平如调羹的喙。觅食方式也与众不同——不靠视觉而靠触觉：把喙半张伸入水中左右扫动，遇到小鱼小虾就迅速闭合捕住，动作像有人在水里慢慢拉一把琵琶。浑水、暗光，它都能正常捕食，这让它在其它涉禽放弃的时段仍能进食。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M2-wader-2-4.jpg",
+                  "caption": "黑脸琵鹭冲绳越冬",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 8,
+              "heading": "2-5 · 火烈鸟",
+              "body": "火烈鸟刚出生时羽色灰白，那一身招牌的粉红其实是吃出来的——它们以富含 β-胡萝卜素的蓝绿藻和卤虫为食，色素沉积进羽毛就变成了粉色。如果食物改变，颜色也会淡去。它的进食姿势更反常识：把头倒过来插进水中，喙上下颠倒朝天使用，下颌像筛子、上颌像漏斗，靠舌头快速抽水过滤出微小生物。整只鸟的解剖学都是为这一个动作重新改写的。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M2-wader-2-5.jpg",
+                  "caption": "大红鹳群",
+                  "layout": "full"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "M3-raptor",
+      "title_zh": "猛禽 · 天空的掠食者",
+      "title_sub": "猛禽的特点 · 5 种常见猛禽",
+      "pages": [
+        {
+          "index": 1,
+          "heading": "猛禽的特点",
+          "chapters": [
+            {
+              "index": 1,
+              "heading": "1-1 · 顶端掠食者的稀少",
+              "body": "任何生态系统里，顶端掠食者都必然稀少——因为能量每上一个营养级就要损耗九成。一只金雕一年所需的猎物相当于数百只兔子，这意味着它背后必须有足够大的健康生态作支撑。所以它们的每一次出击都不能浪费：猛禽的飞行、视觉、爪力都为「高效」而优化。也正因为位于食物链顶端，它们的数量变化最能反映整个生态系统是否出了问题。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M3-raptor-1-1.jpg",
+                  "caption": "翱翔中的雕",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "heading": "1-2 · 眼睛 · 高密度传感器",
+              "body": "隼的视网膜每平方毫米有 150 万感光细胞，是人类的 7 倍多；而且它拥有两个「中央凹」——一个对准前方、一个对准侧下方，可以同时锁定远处猎物和脚下地形。这让它在时速 200 公里的俯冲中依然能看清目标。它们还能看到近紫外光，田鼠留下的尿液轨迹在它们眼里是发光的路径，猎物的行踪因此无所遁形。顶级猎手的眼睛，本身就是一套为杀戮校准过的光学系统。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M3-raptor-1-2.png",
+                  "caption": "猛禽视觉示意",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "heading": "1-3 · 钩嘴与利爪 · 武器专业化",
+              "body": "人们常以为猛禽靠喙杀戮，其实那只是用餐工具——真正致命的是脚。猛禽的四趾肌肉极为强壮，还演化出「对抗四趾」结构：三趾向前、一趾向后像老虎钳般合拢，锁止机制一旦扣上，就算它昏迷也不会松开。爪子本身像弯刀，插入后通过收缩动脉放血。金雕单爪握力可超过 400 磅，足以当场贯穿一只狐狸的要害；喙短厚前端钩曲，只是最后用来撕肉的工具。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M3-raptor-1-3.png",
+                  "caption": "猛禽利爪解剖版",
+                  "layout": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "heading": "5 种常见猛禽",
+          "chapters": [
+            {
+              "index": 4,
+              "heading": "2-1 · 金雕",
+              "body": "金雕是北半球最大的雕之一，翼展可达 2 米。它在高空缓慢盘旋，耐心等待猎物出现，一旦锁定就以俯冲贯穿——强大的爪力让它能捕杀狐狸、野兔甚至幼羚羊。在蒙古和中亚，牧民自古训练金雕猎狼，这一传统延续至今。美国国徽上的鹰原型、中国北方「天之骄子」的意象，都来自它——人类把这种独行于高空的猛禽，写进了自己的文化里。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M3-raptor-2-1.jpg",
+                  "caption": "金雕飞行·瑞士野生",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 5,
+              "heading": "2-2 · 游隼",
+              "body": "游隼是动物界飞行最快的生物——俯冲时速可达 300 公里以上，超过高铁巡航速度。为了在这种气流下不窒息，它的鼻孔里演化出一个锥形骨突，像喷气发动机的进气锥一样分流高速气流。它的猎物是空中飞鸟：锁定目标后以几乎垂直的角度砸下，用握拳的脚直接撞击，常常一击就让鸽子当场瘫痪。20 世纪 DDT 农药曾让它几近灭绝，后经全球保护才回到正常种群。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M3-raptor-2-2.jpg",
+                  "caption": "游隼英格兰飞行",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 6,
+              "heading": "2-3 · 白尾海雕",
+              "body": "白尾海雕是欧亚大陆最大的猛禽之一，翼展可达 2.5 米。它专门猎食水域——鱼、水鸟、腐肉都在菜单上，低空贴水飞行，用强壮的爪一把抓起猎物。尾羽纯白是最显眼的标志，远远看就像展开的一面旗。它还是著名的「空中海盗」，经常从其它猛禽或渔民手中抢食。中国北方和日本北海道都有繁殖种群，是生态系统健康的顶端指示物种。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M3-raptor-2-3.jpg",
+                  "caption": "白尾海雕方裁特写",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 7,
+              "heading": "2-4 · 普通鵟",
+              "body": "普通鵟是中国最常见的中型猛禽，体长约半米，翼下有明显白斑，城市上空常常能看到它在高处缓慢盘旋。它主要捕食老鼠、蛇、小型鸟类，也吃腐肉——站在食物链中层，对农业生态意义巨大：有研究测算，一对普通鵟一年能消灭上千只啮齿动物。它适应力强、数量稳定，是人们最容易亲眼目睹「一只野生猛禽从头顶飞过」的物种。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M3-raptor-2-4.jpg",
+                  "caption": "普通鵟新加坡",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 8,
+              "heading": "2-5 · 雕鸮",
+              "body": "雕鸮是世界上最大的猫头鹰之一，翼展近 1.8 米，头顶两簇耳羽像一对弯角。它的双眼极大且朝前，定位精准到可以在完全黑暗中锁定猎物；双耳高度不对称，用毫秒级时间差精确推算声源方位。羽毛前缘绒毛化，飞行几乎无声，让地面的老鼠、野兔、甚至狐狸都来不及反应。它几乎通吃整个夜晚，是夜间生态系统的顶端捕食者。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M3-raptor-2-5.jpg",
+                  "caption": "西伯利亚雕鸮",
+                  "layout": "full"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "M4-water",
+      "title_zh": "游禽 · 水面的漂浮者",
+      "title_sub": "游禽的特点 · 5 种常见游禽",
+      "pages": [
+        {
+          "index": 1,
+          "heading": "游禽的特点",
+          "chapters": [
+            {
+              "index": 1,
+              "heading": "1-1 · 活在水上的三个难题",
+              "body": "想长时间浮在水面上生活，鸟要同时解决三件事：不下沉、不湿透、不冻僵。游禽给出的答案是对身体三个部位的同步改造——脚变成划水的桨、羽毛变成完全防水的外壳、尾脂腺分泌油脂日复一日涂布全身。三者缺一，都会让它们在水里支撑不过几小时。绿头鸭、天鹅、鸳鸯看起来优雅从容，背后是一整套精密工程：每一次下水前的抖翅、每一次上岸后的梳羽，都是这套工程在做日常维护。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M4-water-1-1.jpg",
+                  "caption": "洪水中的鸭群",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 2,
+              "heading": "1-2 · 脚 · 水里的桨",
+              "body": "游禽的脚是一套被彻底优化过的桨：脚短、位置极靠后，趾间带蹼。划水时蹼完全展开，把水推到身后产生最大推力；收回时蹼自动并拢、像收起的扇子减少阻力，效率接近人工桨叶。代价是——脚太靠后，上岸走路时重心前倾、左右摇晃，于是鸭子在地面显得摇摇晃晃、甚至有点滑稽。换言之，它们不是不会走路，而是把所有预算都投给了水里的推进力。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M4-water-1-2.jpg",
+                  "caption": "Laysan 鸭脚特写·蹼足",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 3,
+              "heading": "1-3 · 羽毛 · 不让水靠近皮肤",
+              "body": "游禽的羽毛是一套双层防水系统。外层正羽紧密重叠如瓦片，水珠只能在表面滚落；内层绒羽疏松蓬松，锁住大量空气形成保温层。更关键的是尾部那个不起眼的尾脂腺，它每天分泌蜡质油脂，鸟用喙反复梳理、把油涂布到全身——这就是我们常看到水鸟「整理羽毛」的动作。没有这一步，防水层很快会失效，下水一两天就可能失温而死。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M4-water-1-3.jpg",
+                  "caption": "疣鼻天鹅梳羽",
+                  "layout": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": 2,
+          "heading": "5 种常见游禽",
+          "chapters": [
+            {
+              "index": 4,
+              "heading": "2-1 · 绿头鸭",
+              "body": "绿头鸭几乎是「游禽」一词的代言人——雄鸟头部带着绿色金属光泽、颈上一圈白环、扁嘴蹼足，雌鸟则是朴素的褐斑伪装色。它适应力极强，从农田、公园湖到污染不严重的城市河道都能生存，每年迁徙路线几乎覆盖整个北半球。全世界大多数的家鸭都由它驯化而来，算下来，你餐桌上的北京烤鸭、咸水鸭、樟茶鸭，血统全都通向这种灰绿色的野鸟。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M4-water-2-1.jpg",
+                  "caption": "绿头鸭雄鸟水中",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 5,
+              "heading": "2-2 · 天鹅",
+              "body": "天鹅是游禽里身形最优雅的成员，长颈占去身体近一半。解剖它会发现一件奇怪的事——气管不是直接连向肺部，而是先在胸骨里绕一圈、形成共鸣腔，这让它的叫声极其低沉深远，能传数公里。天鹅大多一生一配偶，失去伴侣的个体有时会守候数年，这让它成为世界各地爱情与忠贞的文化符号。大天鹅甚至被记录飞越喜马拉雅山脉，是飞得最高的鸟类之一。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M4-water-2-2.jpg",
+                  "caption": "小天鹅水面",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 6,
+              "heading": "2-3 · 鹈鹕",
+              "body": "鹈鹕最标志性的结构就是那个巨大可伸缩的喉囊——由下颌骨和皮肤组成，能装下比它胃大几倍的水和鱼。捕鱼时它并不像渔夫撒网那样随意，而是组织化合作：十几只排成半圆同步扇翅拍水，把鱼群驱赶到浅水，然后一齐低头张喙，像十几张同步收拢的捞网。这种集体协调在鸟类里并不常见，是它们捕鱼效率远超独行渔者的关键。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M4-water-2-3.jpg",
+                  "caption": "黄石鹈鹕群",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 7,
+              "heading": "2-4 · 鸳鸯",
+              "body": "鸳鸯是中国文化里最有负重的游禽——雄鸟繁殖期羽色极其华丽，背部长出两枚橙色的帆状饰羽立起如旗；雌鸟则朴素灰褐。传统把它写进婚俗，当作一生一世的象征。但生物学研究推翻了这个想象：鸳鸯其实每年都会换配偶，雄鸟还常离群另觅新欢。它们真正的忠诚属于栖息地——那些有老树、有缓流溪水的林间水塘，是它们世代回归的坐标。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M4-water-2-4.jpg",
+                  "caption": "鸳鸯站立侧面",
+                  "layout": "full"
+                }
+              ]
+            },
+            {
+              "index": 8,
+              "heading": "2-5 · 鸬鹚",
+              "body": "鸬鹚是游禽里的异类——它的羽毛故意不防水。别的水鸟尽一切办法让羽毛不湿，鸬鹚却反其道而行：让羽毛浸水可以减少浮力，让它更容易下潜追鱼。代价是上岸后必须张开双翅晒干，才能重新保温飞行，这也成了它最标志性的「晾翅」姿态。中国渔民自唐代起就驯化鸬鹚捕鱼，用细绳松系它的脖子让它捕到鱼后吞不下去；桂林漓江、日本长良川的鸬鹚渔至今仍在上演。",
+              "figures": [
+                {
+                  "src": "assets/modal-cover/M4-water-2-5.jpg",
+                  "caption": "鸬鹚水面",
+                  "layout": "full"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

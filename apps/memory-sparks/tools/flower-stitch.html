@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>花星 · 柔草拼接台</title>
+<style>
+  :root{--bg:#0e1119;--panel:#171c27;--line:rgba(255,255,255,0.1);--txt:#e8eef6;--mut:#8aa0b8;--accent:#e08aba;}
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;font:15px/1.6 -apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--txt);padding:28px;}
+  .wrap{max-width:640px;margin:0 auto;}
+  h1{font-size:19px;margin:0 0 4px;}
+  .sub{color:var(--mut);font-size:13px;margin:0 0 18px;}
+  h2{font-size:13px;color:var(--accent);letter-spacing:.04em;margin:18px 0 8px;}
+  .palette{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px;}
+  .chip b{font-size:13px;}
+  button{border:1px solid var(--line);border-radius:8px;background:#202a39;color:var(--txt);font-size:13px;padding:6px 10px;cursor:pointer;}
+  button:hover{border-color:var(--accent);}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#1a0c14;font-weight:700;}
+  button.mini{padding:3px 8px;font-size:12px;}
+  .seq{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;min-height:60px;}
+  .seq .empty{color:var(--mut);font-size:13px;text-align:center;padding:16px;}
+  .item{display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;margin:6px 0;background:#1b2230;}
+  .item .idx{color:var(--mut);width:20px;font-variant-numeric:tabular-nums;}
+  .item .nm{flex:1;font-size:13px;}
+  .item .rev{font-size:12px;color:var(--mut);}
+  .item .rev.on{color:var(--accent);}
+  .row{display:flex;align-items:center;gap:10px;margin:10px 0;}
+  .row label{width:120px;color:var(--mut);font-size:13px;}
+  input[type=range]{flex:1;accent-color:var(--accent);}
+  .v{width:64px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--accent);}
+  .btns{display:flex;gap:10px;margin:14px 0;}
+  pre{background:#0a0e16;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;white-space:pre-wrap;word-break:break-all;display:none;}
+  .hint{color:var(--mut);font-size:12px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>花星 · 柔草拼接台</h1>
+  <p class="sub">把几段柔草素材按你想要的顺序拼起来（可正放/反放），循环试听。满意后「导出」发我，我烘成最终背景。</p>
+
+  <h2>① 素材（点「加正放 / 加反放」加进下面的序列；「试听」单独听）</h2>
+  <div class="palette" id="palette"></div>
+
+  <h2>② 拼接序列（从上到下循环播放，相邻之间交叉淡化）</h2>
+  <div class="seq" id="seq"><div class="empty">还没加素材。点上面的「加正放」开始拼。</div></div>
+  <p class="hint">小技巧：同一段「正放 + 反放」交替，循环起来最不容易听出重复。</p>
+
+  <div class="row"><label>交叉淡化(秒)</label><input type="range" id="xf" min="0.3" max="3" step="0.1" value="1.2"><span class="v" id="xfV">1.2</span></div>
+  <div class="row"><label>总音量</label><input type="range" id="vol" min="0" max="1" step="0.01" value="0.7"><span class="v" id="volV">0.70</span></div>
+
+  <div class="btns">
+    <button class="primary" id="play">▶ 循环播放</button>
+    <button id="stop">■ 停止</button>
+    <button id="clear">清空序列</button>
+  </div>
+  <div class="btns">
+    <button class="primary" id="exportBtn">导出</button>
+    <button id="copyBtn">复制</button>
+  </div>
+  <pre id="out"></pre>
+</div>
+
+<script>
+const CLIPS = [
+  { key:'soft',  name:'柔草微风 (B)', url:'/assets/sounds/flower-clip-soft.mp3' },
+  { key:'grass', name:'草叶轻响',     url:'/assets/sounds/flower-clip-grass.mp3' },
+  { key:'tall',  name:'高草',         url:'/assets/sounds/flower-clip-tall.mp3' },
+];
+const D = id => document.getElementById(id);
+let ctx, master, buffers={}, revBuffers={}, seq=[], playing=false, timer=null, sched=null, previewSrc=null;
+
+async function ensure(){
+  if(ctx) return;
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  master = ctx.createGain(); master.connect(ctx.destination);
+  await Promise.all(CLIPS.map(async c=>{
+    const ab = await fetch(c.url).then(r=>r.arrayBuffer());
+    buffers[c.key] = await ctx.decodeAudioData(ab);
+  }));
+}
+function reversed(key){
+  if(revBuffers[key]) return revBuffers[key];
+  const b = buffers[key];
+  const r = ctx.createBuffer(b.numberOfChannels, b.length, b.sampleRate);
+  for(let ch=0;ch<b.numberOfChannels;ch++){
+    const src=b.getChannelData(ch), dst=r.getChannelData(ch), n=b.length;
+    for(let i=0;i<n;i++) dst[i]=src[n-1-i];
+  }
+  revBuffers[key]=r; return r;
+}
+function effBuf(it){ return it.rev ? reversed(it.key) : buffers[it.key]; }
+
+// ── 调色板 ──
+CLIPS.forEach(c=>{
+  const el=document.createElement('div'); el.className='chip';
+  el.innerHTML=`<b>${c.name}</b>
+    <button class="mini" data-prev="${c.key}">试听</button>
+    <button class="mini" data-add="${c.key}" data-rev="0">加正放</button>
+    <button class="mini" data-add="${c.key}" data-rev="1">加反放</button>`;
+  D('palette').appendChild(el);
+});
+
+D('palette').addEventListener('click', async e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  await ensure(); if(ctx.state==='suspended') await ctx.resume();
+  if(b.dataset.prev){
+    if(previewSrc){try{previewSrc.stop()}catch(_){}}
+    const s=ctx.createBufferSource(); s.buffer=buffers[b.dataset.prev]; s.connect(master); s.start(); previewSrc=s;
+  } else if(b.dataset.add){
+    seq.push({key:b.dataset.add, rev:b.dataset.rev==='1'}); renderSeq();
+  }
+});
+
+function renderSeq(){
+  const box=D('seq');
+  if(!seq.length){ box.innerHTML='<div class="empty">还没加素材。点上面的「加正放」开始拼。</div>'; return; }
+  box.innerHTML='';
+  seq.forEach((it,i)=>{
+    const c=CLIPS.find(x=>x.key===it.key);
+    const el=document.createElement('div'); el.className='item';
+    el.innerHTML=`<span class="idx">${i+1}</span>
+      <span class="nm">${c.name}</span>
+      <span class="rev ${it.rev?'on':''}">${it.rev?'反放':'正放'}</span>
+      <button class="mini" data-up="${i}">↑</button>
+      <button class="mini" data-down="${i}">↓</button>
+      <button class="mini" data-togglerev="${i}">正/反</button>
+      <button class="mini" data-del="${i}">✕</button>`;
+    box.appendChild(el);
+  });
+  save();
+}
+D('seq').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.del!=null) seq.splice(+b.dataset.del,1);
+  else if(b.dataset.togglerev!=null) seq[+b.dataset.togglerev].rev=!seq[+b.dataset.togglerev].rev;
+  else if(b.dataset.up!=null){ const i=+b.dataset.up; if(i>0){ [seq[i-1],seq[i]]=[seq[i],seq[i-1]]; } }
+  else if(b.dataset.down!=null){ const i=+b.dataset.down; if(i<seq.length-1){ [seq[i+1],seq[i]]=[seq[i],seq[i+1]]; } }
+  renderSeq();
+});
+
+// ── 循环播放：序列首尾相连，相邻交叉淡化 ──
+function startPlay(){
+  if(!seq.length || playing) return;
+  playing=true; D('play').textContent='♪ 播放中';
+  const xf=parseFloat(D('xf').value);
+  const items=seq.map(it=>({buf:effBuf(it)}));
+  const durs=items.map(it=>it.buf.duration);
+  const N=items.length;
+  // 每个 item 起点（在一个循环内）：sum(前面 d - xf)
+  const starts=[]; let acc=0;
+  for(let i=0;i<N;i++){ starts.push(acc); acc += durs[i]-xf; }
+  const period = acc + durs[N-1] - (durs[N-1]) ; // = sum(d)-N*xf 见下
+  // period = sum(d_i) - N*xf （含首尾这个 junction）
+  const period2 = durs.reduce((a,b)=>a+b,0) - N*xf;
+  let cycleBase = ctx.currentTime + 0.08;
+  function scheduleCycle(base){
+    for(let i=0;i<N;i++){
+      const t=base+starts[i], d=durs[i];
+      const s=ctx.createBufferSource(); s.buffer=items[i].buf;
+      const g=ctx.createGain(); s.connect(g); g.connect(master);
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.linearRampToValueAtTime(1, t+xf);
+      g.gain.setValueAtTime(1, t+d-xf);
+      g.gain.linearRampToValueAtTime(0.0001, t+d);
+      try{s.start(t);}catch(_){}
+      try{s.stop(t+d+0.05);}catch(_){}
+      s.onended=()=>{try{s.disconnect();g.disconnect();}catch(_){}};
+    }
+  }
+  // lookahead：排满未来 ~ period*2
+  let nextBase=cycleBase;
+  function tick(){
+    if(!playing) return;
+    const horizon=ctx.currentTime + period2*1.5 + 1;
+    while(nextBase < horizon){ scheduleCycle(nextBase); nextBase += period2; }
+  }
+  master.gain.setTargetAtTime(parseFloat(D('vol').value), ctx.currentTime, 0.05);
+  tick(); timer=setInterval(tick, 300);
+}
+async function play(){ await ensure(); if(ctx.state==='suspended') await ctx.resume(); startPlay(); }
+function stop(){ playing=false; if(timer){clearInterval(timer);timer=null;} if(ctx){ master.gain.setTargetAtTime(0.0001,ctx.currentTime,0.1); setTimeout(()=>{ try{ctx.close();}catch(_){} ctx=null;master=null;buffers={};revBuffers={}; },300);} D('play').textContent='▶ 循环播放'; }
+
+D('play').addEventListener('click', play);
+D('stop').addEventListener('click', stop);
+D('clear').addEventListener('click', ()=>{ seq=[]; renderSeq(); });
+D('xf').addEventListener('input', e=>{ D('xfV').textContent=(+e.target.value).toFixed(1); save(); });
+D('vol').addEventListener('input', e=>{ D('volV').textContent=(+e.target.value).toFixed(2); if(master) master.gain.setTargetAtTime(+e.target.value,ctx.currentTime,0.05); save(); });
+
+function exp(){ return { planet:'flower', sequence:seq.map(it=>({clip:it.key,reverse:it.rev})), crossfade:+D('xf').value, volume:+D('vol').value }; }
+D('exportBtn').addEventListener('click', ()=>{ const o=D('out'); o.style.display='block'; o.textContent=JSON.stringify(exp(),null,2); });
+D('copyBtn').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(JSON.stringify(exp(),null,2)); D('copyBtn').textContent='已复制✓'; setTimeout(()=>D('copyBtn').textContent='复制',1500);}catch(_){ D('exportBtn').click(); } });
+
+function save(){ try{ localStorage.setItem('ms-flower-stitch', JSON.stringify(exp())); }catch(_){} }
+try{ const s=JSON.parse(localStorage.getItem('ms-flower-stitch')||'null'); if(s){ if(s.sequence) seq=s.sequence.map(x=>({key:x.clip,rev:x.reverse})); if(s.crossfade){D('xf').value=s.crossfade;D('xfV').textContent=(+s.crossfade).toFixed(1);} if(s.volume!=null){D('vol').value=s.volume;D('volV').textContent=(+s.volume).toFixed(2);} renderSeq(); } }catch(_){}
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+/* ==========================================================================
+   module-b.css · 万类霜天 · 生态长卷 + 12 鸟定位
+   参考：mockups/index.html V7 · handoff §4.8
+   坐标清单见：docs/specs/coordinates-1920x1080.md
+   ========================================================================== */
+
+#module-b { background: #3A4530; }  /* 视频/底图加载前的兜底色 */
+
+/* ---------- 生态全景底图 --------------------------------------------- */
+.pano-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: var(--z-canvas);
+}
+.pano-bg img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+/* 模块 B 入场视频 · 盖在 pano-bg + 鸟之上循环播放，点击淡出露出交互 */
+#module-b-intro {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  background: #1a1f17;       /* 视频帧未就绪时的兜底色，避免透出 pano-bg */
+  z-index: 9;                /* 高于鸟(z-ui=5) / page-title，低于 Tab(z-pin=10) */
+  opacity: 1;
+  cursor: pointer;
+  transition: opacity 600ms var(--ease-out);
+}
+#module-b.is-intro-dismissed #module-b-intro {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- 12 鸟基类 ----------------------------------------------- */
+/* 坐标通过 HTML inline style 或 JS 设置，CSS 只负责外观 + 交互反馈 */
+.bird {
+  position: absolute;
+  z-index: var(--z-ui);      /* 高于 pano-bg 与入场视频的 z-canvas，避免被视频黑底遮蔽 */
+  padding: 0; border: 0; background: transparent;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.22));
+  transform-origin: center center;
+  transition: transform 250ms var(--ease-out),
+              opacity 300ms var(--ease-out);
+  opacity: 0;
+}
+.bird.is-revealed {
+  opacity: 1;
+  will-change: transform;
+}
+.bird:hover { transform: translateY(-4px) scale(1.02); }
+.bird img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* 小弹窗打开时其他鸟减弱（handoff §6.3：1 → 0.55，duration 180ms） */
+.is-dimmed .bird:not(.is-focus) { opacity: 0.55; }

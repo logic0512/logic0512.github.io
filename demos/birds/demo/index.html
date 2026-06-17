@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>鸟类百科交互 Demo</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;1,400;1,500&family=Noto+Serif+SC:wght@400;500;600&display=swap" />
+
+  <link rel="stylesheet" href="styles/base.css" />
+  <link rel="stylesheet" href="styles/module-a.css" />
+  <link rel="stylesheet" href="styles/module-b.css" />
+  <link rel="stylesheet" href="styles/modal.css" />
+</head>
+<body>
+
+  <!-- 1920×1080 画布 -->
+  <div id="stage">
+
+    <!-- 顶部 Tab -->
+    <nav class="tab-nav" role="tablist" aria-label="模块切换">
+      <button class="tab-nav__btn is-active" data-tab="module-a" role="tab" aria-selected="true">特征实验室</button>
+      <button class="tab-nav__btn" data-tab="module-b" role="tab" aria-selected="false">万类霜天</button>
+    </nav>
+
+    <!-- 模块 A · 特征实验室 -->
+    <section id="module-a" class="module is-active" role="tabpanel" aria-label="特征实验室" data-active-layer="skeleton">
+      <header class="page-title">
+        <span class="page-title__zh">特征实验室</span>
+        <span class="page-title__la">Anatomy Lab · Module A</span>
+      </header>
+
+      <!-- 层切换 · 骨架层（默认）/ 透视层 / 完整形态（后两个拼完才出现） -->
+      <nav class="layer-switch" role="tablist" aria-label="层切换">
+        <button class="layer-switch__btn is-active" data-layer="skeleton" role="tab">骨 架 层</button>
+        <button class="layer-switch__btn is-hidden" data-layer="xray"     role="tab" aria-hidden="true">透 视 层</button>
+        <button class="layer-switch__btn is-hidden" data-layer="plumage"  role="tab" aria-hidden="true">完 整 形 态</button>
+      </nav>
+
+      <!-- 三层主画面 -->
+      <div class="layer layer--skeleton">
+        <img class="layer__img" src="assets/module-a/layer-skeleton.svg" alt="骨架轮廓" />
+      </div>
+      <div class="layer layer--xray" aria-hidden="true">
+        <img class="layer__img" src="assets/module-a/layer-xray.svg" alt="内部结构示意" />
+      </div>
+      <div class="layer layer--plumage" aria-hidden="true">
+        <img class="layer__img" src="assets/module-a/layer-plumage.svg" alt="完整形态" />
+      </div>
+
+      <!-- 装备栏 · 5 块散件（拖拽逻辑由 UI-009 接入） -->
+      <div class="gear-bar">
+        <div class="gear-slot" data-id="A1-skull"        draggable="true"><img src="assets/module-a/A1-skull.svg"        alt="" /><span class="gear-slot__name">头骨</span></div>
+        <div class="gear-slot" data-id="A1-furcula"      draggable="true"><img src="assets/module-a/A1-furcula.svg"      alt="" /><span class="gear-slot__name">锁骨</span></div>
+        <div class="gear-slot" data-id="A1-wing-bone"    draggable="true"><img src="assets/module-a/A1-wing-bone.svg"    alt="" /><span class="gear-slot__name">翼骨</span></div>
+        <div class="gear-slot" data-id="A1-feather-wing" draggable="true"><img src="assets/module-a/A1-feather-wing.svg" alt="" /><span class="gear-slot__name">羽翼</span></div>
+        <div class="gear-slot" data-id="A1-foot"         draggable="true"><img src="assets/module-a/A1-foot.svg"         alt="" /><span class="gear-slot__name">足部</span></div>
+      </div>
+
+      <!-- 透视层 4 热点（canvas 绝对坐标；由 data-active-layer=xray 驱动显隐） -->
+      <button class="organ-hotspot organ-hotspot--airsac is-active" data-id="A2-airsac" style="top:490px;left:600px">
+        <span class="organ-hotspot__dot" aria-hidden="true"></span><span>气 囊</span>
+      </button>
+      <button class="organ-hotspot organ-hotspot--heart"  data-id="A2-heart"  style="top:525px;left:770px">
+        <span class="organ-hotspot__dot" aria-hidden="true"></span><span>心 脏</span>
+      </button>
+      <button class="organ-hotspot organ-hotspot--syrinx" data-id="A2-syrinx" style="top:355px;left:560px">
+        <span class="organ-hotspot__dot" aria-hidden="true"></span><span>鸣 管</span>
+      </button>
+      <button class="organ-hotspot organ-hotspot--egg"    data-id="A2-egg"    style="top:590px;left:965px">
+        <span class="organ-hotspot__dot" aria-hidden="true"></span><span>鸟 卵</span>
+      </button>
+
+      <!-- 完整形态 1 热点（羽毛） -->
+      <button class="plumage-hotspot" data-id="A3-plumage" style="top:460px;left:960px">
+        <span class="plumage-hotspot__dot" aria-hidden="true"></span><span>羽 毛</span>
+      </button>
+    </section>
+
+    <!-- 模块 B · 万类霜天 -->
+    <section id="module-b" class="module" role="tabpanel" aria-label="万类霜天">
+      <!-- 生态全景底图 -->
+      <div class="pano-bg" aria-hidden="true">
+        <img src="assets/module-b/pano-bg.jpg" alt="" />
+      </div>
+
+      <header class="page-title">
+        <span class="page-title__zh">万类霜天</span>
+        <span class="page-title__la">Module B · Wader</span>
+      </header>
+
+      <!-- 12 鸟 · Figma node 7:28 精确坐标（见 docs/specs/coordinates-1920x1080.md） -->
+      <button class="bird" data-id="B-climb-woodpecker"   style="left:117px;top:215px;width:171px;height:171px"><img src="assets/module-b/B-climb-woodpecker.svg"   alt="大斑啄木鸟" /></button>
+      <button class="bird" data-id="B-wader-heron"        style="left:203px;top:514px;width:367px;height:498px"><img src="assets/module-b/B-wader-heron.svg"        alt="苍鹭" /></button>
+      <button class="bird" data-id="B-song-bulbul"        style="left:531px;top:228px;width:144px;height:144px"><img src="assets/module-b/B-song-bulbul.svg"        alt="红耳鹎" /></button>
+      <button class="bird" data-id="B-waterfowl-pelican"  style="left:547px;top:657px;width:222px;height:222px"><img src="assets/module-b/B-waterfowl-pelican.svg"  alt="鹈鹕" /></button>
+      <button class="bird" data-id="B-waterfowl-swan"     style="left:842px;top:673px;width:118px;height:118px"><img src="assets/module-b/B-waterfowl-swan.svg"     alt="天鹅" /></button>
+      <button class="bird" data-id="B-raptor-falcon"      style="left:820px;top:180px;width:106px;height:106px"><img src="assets/module-b/B-raptor-falcon.svg"      alt="游隼" /></button>
+      <button class="bird" data-id="B-climb-parakeet"     style="left:1022px;top:461px;width:106px;height:106px"><img src="assets/module-b/B-climb-parakeet.svg"     alt="虎皮鹦鹉" /></button>
+      <button class="bird" data-id="B-wader-egret"        style="left:1157px;top:588px;width:202px;height:202px"><img src="assets/module-b/B-wader-egret.svg"        alt="大白鹭" /></button>
+      <button class="bird" data-id="B-waterfowl-mandarin" style="left:1157px;top:673px;width:80px;height:80px"><img src="assets/module-b/B-waterfowl-mandarin.svg" alt="鸳鸯" /></button>
+      <button class="bird" data-id="B-waterfowl-mallard"  style="left:1267px;top:754px;width:250px;height:250px"><img src="assets/module-b/B-waterfowl-mallard.svg"  alt="绿头鸭" /></button>
+      <button class="bird" data-id="B-raptor-eagle"       style="left:1359px;top:70px;width:413px;height:381px"><img src="assets/module-b/B-raptor-eagle.svg"       alt="雕" /></button>
+      <button class="bird" data-id="B-land-pheasant"      style="left:1669px;top:763px;width:122px;height:122px"><img src="assets/module-b/B-land-pheasant.svg"      alt="红腹锦鸡" /></button>
+
+      <!-- 动态背景视频（模块 B 打开时循环播放，静音，鸟叠在其上） -->
+      <video id="module-b-intro"
+             src="assets/module-b/intro.mp4"
+             playsinline muted loop preload="metadata"
+             aria-hidden="true"></video>
+    </section>
+
+  </div>
+
+  <!-- 视口过小时的降级页 -->
+  <div class="fallback" role="alert">
+    <div class="fallback__inner">
+      <div class="fallback__title">建议桌面端访问</div>
+      <div class="fallback__desc">本 Demo 为 1920×1080 展示稿，建议使用 ≥ 1280×720 桌面浏览器查看。</div>
+    </div>
+  </div>
+
+  <script src="scripts/audio.js" defer></script>
+  <script src="scripts/main.js" defer></script>
+  <script src="scripts/module-a.js" defer></script>
+  <script src="scripts/modal.js" defer></script>
+  <script src="scripts/_tuner.js" defer></script>
+</body>
+</html>

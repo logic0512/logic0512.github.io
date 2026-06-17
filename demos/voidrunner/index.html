@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Voidrunner Interactive Demo</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="app" data-scene="menu">
+    <section class="stage" aria-label="Interactive sci-fi demo">
+      <div class="scene scene-menu is-active" data-scene-panel="menu">
+        <video class="scene-media" src="./assets/seedance-shots/00-menu-idle/menu-idle.mp4" autoplay muted loop playsinline></video>
+        <div class="menu-shell">
+          <div class="brand-block">
+            <div class="brand-mark">NOX INDUSTRIES</div>
+            <h1>VOIDRUNNER</h1>
+            <div class="brand-sub">TACTICAL SIMULATION</div>
+          </div>
+          <nav class="main-menu" aria-label="Main menu">
+            <button class="menu-item is-selected" data-action="go-customize">START NEW RUN</button>
+            <button class="menu-item" data-action="go-customize">CUSTOMIZATION</button>
+            <button class="menu-item" disabled>LOAD GAME</button>
+            <button class="menu-item" disabled>SETTINGS</button>
+            <button class="menu-item" disabled>EXIT</button>
+          </nav>
+        </div>
+        <div class="footer-hint">
+          <span>PLAYER_01</span>
+          <span>ESC BACK</span>
+        </div>
+      </div>
+
+      <section class="scene scene-customize" data-scene-panel="customize" aria-label="Customization">
+        <div class="topbar">
+          <div class="wordmark">VOIDRUNNER</div>
+          <nav>
+            <button class="tab is-active">CUSTOMIZATION</button>
+            <button class="tab">INVENTORY</button>
+            <button class="tab">TECH TREE</button>
+            <button class="tab">SHOP</button>
+          </nav>
+          <div class="top-actions">
+            <div class="player-chip">PLAYER_01</div>
+          </div>
+        </div>
+
+        <div class="custom-grid">
+          <aside class="category-rail">
+            <button>OVERVIEW</button>
+            <button>FRAME</button>
+            <button>HEAD</button>
+            <button class="is-active">ARMS</button>
+            <button>HANDS</button>
+            <button>LEGS</button>
+            <button>BACK</button>
+            <button>APPEARANCE</button>
+          </aside>
+
+          <section class="equipment-panel" aria-label="Weapon list">
+            <div class="panel-title">
+              <h2>ARMS</h2>
+              <p>SELECT FOREARM WEAPON</p>
+            </div>
+            <div class="weapon-list">
+              <button class="weapon-card is-active" data-weapon="default">
+                <img class="weapon-thumb" src="./assets/ui/weapon-parts/default-cannon.png" alt="">
+                <span>
+                  <strong>KINETIC CANNON</strong>
+                  <em>BALANCED</em>
+                </span>
+                <i>•••••</i>
+              </button>
+              <button class="weapon-card" data-weapon="rail">
+                <img class="weapon-thumb" src="./assets/ui/weapon-parts/rail-lance.png" alt="">
+                <span>
+                  <strong>RAIL LANCE</strong>
+                  <em>PRECISION</em>
+                </span>
+                <i>•••••</i>
+              </button>
+              <button class="weapon-card" data-weapon="plasma">
+                <img class="weapon-thumb" src="./assets/ui/weapon-parts/plasma-caster.png" alt="">
+                <span>
+                  <strong>PLASMA CASTER</strong>
+                  <em>BURST</em>
+                </span>
+                <i>•••••</i>
+              </button>
+              <button class="weapon-card" data-weapon="arc">
+                <img class="weapon-thumb" src="./assets/ui/weapon-parts/arc-claw.png" alt="">
+                <span>
+                  <strong>ARC CLAW</strong>
+                  <em>MELEE</em>
+                </span>
+                <i>•••••</i>
+              </button>
+            </div>
+          </section>
+
+          <section class="detail-panel" aria-label="Weapon detail">
+            <div>
+              <div class="detail-kicker">FOREARM MODULE</div>
+              <h2 id="weaponName">KINETIC CANNON</h2>
+            </div>
+            <figure class="weapon-preview">
+              <img id="weaponPreview" src="./assets/ui/weapon-parts/default-cannon.png" alt="">
+            </figure>
+            <div class="stat-stack">
+              <label>DAMAGE <span id="statDamage">72</span></label>
+              <div class="stat"><span style="--value: 72%"></span></div>
+              <label>RANGE <span id="statRange">64</span></label>
+              <div class="stat"><span style="--value: 64%"></span></div>
+              <label>FIRE RATE <span id="statRate">58</span></label>
+              <div class="stat"><span style="--value: 58%"></span></div>
+              <label>STABILITY <span id="statStability">69</span></label>
+              <div class="stat"><span style="--value: 69%"></span></div>
+            </div>
+            <button class="equip-button" id="equipButton">EQUIPPED</button>
+          </section>
+
+          <div class="character-bay" aria-label="Character preview">
+            <img id="characterStill" src="./assets/concept/customization-hero.png" alt="">
+            <video id="weaponVideo" muted playsinline></video>
+            <div class="arm-scan" id="armScan"></div>
+          </div>
+          <button class="match-hotspot" data-action="start-match" onmousedown="window.startMatchDemo && window.startMatchDemo()" onclick="window.startMatchDemo && window.startMatchDemo()">START MATCH</button>
+        </div>
+
+        <div class="bottom-controls">
+          <button class="ghost-button" data-action="go-menu">ESC BACK</button>
+          <button class="ghost-button">ROTATE</button>
+          <button class="primary-button" data-action="start-match" onmousedown="window.startMatchDemo && window.startMatchDemo()" onclick="window.startMatchDemo && window.startMatchDemo()">START MATCH</button>
+        </div>
+      </section>
+
+      <section class="scene scene-match" data-scene-panel="match" aria-label="Match start">
+        <img id="matchStateStill" class="match-state-still" src="./assets/concept/customization-hero.png" alt="">
+        <video id="matchVideo" class="scene-media" src="./assets/seedance-shots/05-match-dissolve/match-dissolve.mp4" muted playsinline></video>
+        <div class="match-label">MATCH INITIALIZING</div>
+      </section>
+
+      <section class="scene scene-gameplay" data-scene-panel="gameplay" aria-label="Gameplay">
+        <img id="gameplayStill" class="scene-media" src="./assets/ui/match-end-stills/default.png" alt="">
+        <button class="back-loadout" data-action="go-customize" onpointerdown="window.goCustomizeDemo && window.goCustomizeDemo()" onclick="window.goCustomizeDemo && window.goCustomizeDemo()">BACK TO LOADOUT</button>
+        <div class="hud hud-left">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="reticle"></div>
+        <div class="hud hud-bottom">
+          <div class="ammo-block">R-17 <strong>040</strong></div>
+          <div class="ammo-block">AUX <strong>012</strong></div>
+        </div>
+        <button class="game-next" data-action="go-product">SYSTEM DEMO</button>
+      </section>
+
+      <section class="scene scene-product" data-scene-panel="product" aria-label="Product demo">
+        <img class="scene-media product-bg" src="./assets/concept/city-environment.png" alt="">
+        <button class="back-loadout" data-action="go-customize" onpointerdown="window.goCustomizeDemo && window.goCustomizeDemo()" onclick="window.goCustomizeDemo && window.goCustomizeDemo()">BACK TO LOADOUT</button>
+        <div class="product-overlay">
+          <div class="product-kicker">AIGC WORKFLOW</div>
+          <h2>VIZFLOW</h2>
+          <p>PDF TO MOTION</p>
+          <button class="primary-button" data-action="go-menu">RESTART</button>
+        </div>
+      </section>
+
+      <button class="sound-toggle global-sound" id="soundToggle">AUDIO OFF</button>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>介绍卡掉落动效 · 3 种程度对比</title>
+<style>
+  :root {
+    --bg: #1a1620;
+    --surface: #261e2e;
+    --line: rgba(255, 240, 200, 0.08);
+    --text: #ece2d4;
+    --mute: rgba(220, 200, 175, 0.65);
+    --accent: #f5dca8;
+    --type-mono: "SF Mono", "Menlo", monospace;
+    --type-sans: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--type-sans); font-weight: 300; }
+  body { padding: 32px 28px 60px; min-height: 100vh; }
+
+  .header {
+    max-width: 1280px;
+    margin: 0 auto 24px;
+    padding: 24px 28px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .header h1 { margin: 0 0 6px; font-size: 18px; font-weight: 500; letter-spacing: 0.08em; color: var(--accent); }
+  .header p { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--mute); }
+  .header code { background: rgba(255,238,200,0.10); padding: 1px 6px; border-radius: 3px; font-family: var(--type-mono); font-size: 11.5px; color: var(--accent); }
+
+  .toolbar {
+    max-width: 1280px;
+    margin: 0 auto 18px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+  .toolbar button {
+    background: rgba(245, 220, 168, 0.12);
+    color: var(--accent);
+    border: 1px solid rgba(245, 220, 168, 0.32);
+    padding: 7px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+  }
+  .toolbar button:hover { background: rgba(245, 220, 168, 0.22); }
+
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .col {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .col-head {
+    padding: 14px 20px;
+    background: rgba(28, 22, 32, 0.6);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .col-head .tag {
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    padding: 2px 8px;
+    background: rgba(245, 220, 168, 0.12);
+    color: var(--accent);
+    border-radius: 99px;
+  }
+  .col-head h2 { margin: 0; font-size: 14px; font-weight: 500; letter-spacing: 0.08em; color: var(--accent); }
+
+  .stage {
+    height: 600px;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 30%, rgba(120, 100, 140, 0.32), transparent 60%),
+      linear-gradient(180deg, #1c1622 0%, #2a2030 100%);
+  }
+
+  /* 模拟介绍卡 */
+  .intro-card {
+    position: absolute;
+    top: 40px;
+    left: 28px;
+    right: 28px;
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(248, 240, 230, 0.82);
+    color: rgb(96, 70, 56);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+    will-change: transform;
+  }
+  .intro-card .orb {
+    width: 100%;
+    aspect-ratio: 1;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: radial-gradient(circle at 35% 30%, #fef0d8 0%, #dfb8a8 38%, #af6c54 75%, #4a2018 100%);
+    overflow: hidden;
+  }
+  .intro-card .eyebrow {
+    font-size: 9px; letter-spacing: 0.30em;
+    color: rgba(96, 70, 56, 0.55);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .intro-card .name {
+    font-size: 18px; font-weight: 400;
+    letter-spacing: 0.05em;
+    margin: 0 0 9px;
+    line-height: 1.2;
+    color: rgb(80, 56, 42);
+  }
+  .intro-card .story {
+    font-size: 11px;
+    line-height: 1.85;
+    color: rgb(96, 70, 56);
+    margin: 0 0 10px;
+    opacity: 0.88;
+  }
+  .intro-card .hint {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 11px;
+    border-radius: 99px;
+    background: rgba(140, 90, 60, 0.10);
+    color: rgba(96, 70, 56, 0.78);
+    font-size: 10px;
+  }
+  .intro-card .hint .ic {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(120, 90, 70, 0.28);
+    font-size: 10px;
+  }
+
+  .col-foot {
+    padding: 14px 20px;
+    border-top: 1px solid var(--line);
+    background: rgba(28, 22, 32, 0.6);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .col-foot code {
+    font-family: var(--type-mono);
+    font-size: 11.5px;
+    color: var(--accent);
+    background: rgba(245, 220, 168, 0.10);
+    padding: 4px 9px;
+    border-radius: 4px;
+    flex: 1;
+  }
+  .col-foot button {
+    background: rgba(143, 181, 216, 0.14);
+    color: #8fb5d8;
+    border: 1px solid rgba(143, 181, 216, 0.32);
+    padding: 6px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+  .col-foot button:hover { background: rgba(143, 181, 216, 0.26); }
+
+  .desc {
+    padding: 12px 20px;
+    font-size: 11.5px;
+    color: var(--mute);
+    line-height: 1.6;
+    border-top: 1px solid var(--line);
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <h1>介绍卡掉落动效 · 速度对比（缓动锁定 A · back.out(1.4)）</h1>
+  <p>反弹强度已选 A — 现在对比 3 种 <strong style="color:var(--accent)">duration（掉落时长）</strong>：从快到慢看哪个最合适。</p>
+  <p style="margin-top:6px">delay 统一 <code>0.2s</code>。看完告诉我 A / B / C。</p>
+</div>
+
+<div class="toolbar">
+  <button onclick="play('a')">单独播 A</button>
+  <button onclick="play('b')">单独播 B</button>
+  <button onclick="play('c')">单独播 C</button>
+  <button onclick="playAll()">全部同步播</button>
+</div>
+
+<div class="grid">
+
+  <div class="col">
+    <div class="col-head">
+      <span class="tag">A</span>
+      <h2>1.2s · 稍慢</h2>
+    </div>
+    <div class="stage">
+      <div class="intro-card" id="card-a">
+        <div class="orb"></div>
+        <div class="eyebrow">KEYWORD PLANET · ORBIT 03</div>
+        <h3 class="name">治愈星</h3>
+        <p class="story">治愈星像是一个被档案环绕的封闭星球，那些美好的时刻会自动变成微光。</p>
+        <div class="hint"><span class="ic">↺</span>放进来一个美好的时刻</div>
+      </div>
+    </div>
+    <div class="col-foot">
+      <code>duration: 1.2s</code>
+      <button onclick="play('a')">REPLAY</button>
+    </div>
+    <div class="desc">比原版 0.8s 慢一半，落地更从容。</div>
+  </div>
+
+  <div class="col">
+    <div class="col-head">
+      <span class="tag">B</span>
+      <h2>1.6s · 缓</h2>
+    </div>
+    <div class="stage">
+      <div class="intro-card" id="card-b">
+        <div class="orb"></div>
+        <div class="eyebrow">KEYWORD PLANET · ORBIT 03</div>
+        <h3 class="name">治愈星</h3>
+        <p class="story">治愈星像是一个被档案环绕的封闭星球，那些美好的时刻会自动变成微光。</p>
+        <div class="hint"><span class="ic">↺</span>放进来一个美好的时刻</div>
+      </div>
+    </div>
+    <div class="col-foot">
+      <code>duration: 1.6s</code>
+      <button onclick="play('b')">REPLAY</button>
+    </div>
+    <div class="desc">明显的缓慢掉落，看清楚每一帧。</div>
+  </div>
+
+  <div class="col">
+    <div class="col-head">
+      <span class="tag">C</span>
+      <h2>2.0s · 很缓</h2>
+    </div>
+    <div class="stage">
+      <div class="intro-card" id="card-c">
+        <div class="orb"></div>
+        <div class="eyebrow">KEYWORD PLANET · ORBIT 03</div>
+        <h3 class="name">治愈星</h3>
+        <p class="story">治愈星像是一个被档案环绕的封闭星球，那些美好的时刻会自动变成微光。</p>
+        <div class="hint"><span class="ic">↺</span>放进来一个美好的时刻</div>
+      </div>
+    </div>
+    <div class="col-foot">
+      <code>duration: 2.0s</code>
+      <button onclick="play('c')">REPLAY</button>
+    </div>
+    <div class="desc">最缓慢，几乎是"漂"下来的感觉。</div>
+  </div>
+
+</div>
+
+<script>
+  const DURATIONS = { a: 1.2, b: 1.6, c: 2.0 };
+  const EASE = 'back.out(1.4)'; // 缓动锁定 A
+
+  function getStartY(card) {
+    const stage = card.parentElement;
+    const stageRect = stage.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    return -(cardRect.bottom - stageRect.top) - 60;
+  }
+
+  function play(key) {
+    const card = document.getElementById('card-' + key);
+    gsap.killTweensOf(card);
+    gsap.set(card, { y: getStartY(card) });
+    gsap.to(card, {
+      y: 0,
+      duration: DURATIONS[key],
+      ease: EASE,
+      delay: 0.2
+    });
+  }
+
+  function playAll() {
+    ['a', 'b', 'c'].forEach(play);
+  }
+
+  // 进入页面后自动播放一次
+  window.addEventListener('load', () => {
+    setTimeout(playAll, 200);
+  });
+</script>
+
+</body>
+</html>

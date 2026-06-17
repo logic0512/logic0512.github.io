@@ -1,0 +1,168 @@
+{
+  "show_theme": "下午慢慢熬",
+  "arc_type": "情绪旅程",
+  "mood": "gentle, bittersweet, nostalgic",
+  "chat_message": "下午三点多最难熬，想躺着又睡不着，不如听点东西慢慢熬过去",
+  "capturedAt": 1781076557062,
+  "tracks": [
+    {
+      "song": {
+        "id": 5267808,
+        "name": "Always With Me",
+        "artist": "木村弓",
+        "album": "幸福的味道",
+        "cover": "covers/cover_5267808.jpg",
+        "picUrl": "https://p3.music.126.net/VLPzBp6tHFXe7DYCWJVqmw==/109951165164767650.jpg"
+      },
+      "songUrl": "songs/song_5267808.mp3",
+      "djIntroText": "呢首歌係宫崎骏《千与千寻》嘅片尾曲。木村弓本來唔想做电影音乐，係久石让三顧草廬先打動咗佢。佢寫完之後自己唱，發現把聲唔夠好，先至搵人幫佢配唱。但係最打動人嘅從來唔係技術，係嗰份單純。",
+      "djAudioUrl": "dj/tts_1781076603798_0302.mp3",
+      "midRollText": "有啲旋律一响起，你就好難解釋點解眼濕濕。",
+      "midRollAudioUrl": "dj/tts_1781076609517_0303.mp3",
+      "midRollAt": 65,
+      "segueText": "由木頭弓箭去到羽毛，中間經歷過咩，我哋唔知。但係有一樣野係共通嘅——陪伴。",
+      "segueAudioUrl": "dj/tts_1781076611704_0304.mp3",
+      "songBackground": "宫崎骏动画电影《千与千寻》的片尾主题曲，由日本歌手木村弓创作演唱。歌曲以简洁的钢琴伴奏为主，旋律温柔而坚定，呼应少女千寻在异世界中寻找回家之路的冒险旅程。歌词中反复出现的「一直在我心里」主题，象征着对纯真自我的坚守与对成长的温柔守望，成为动画音乐史上经典之作。"
+    },
+    {
+      "song": {
+        "id": 2154850334,
+        "name": "BIRDS OF A FEATHER",
+        "artist": "Billie Eilish",
+        "album": "HIT ME HARD AND SOFT",
+        "cover": "covers/cover_2154850334.jpg",
+        "picUrl": "https://p3.music.126.net/NZOnDqpyTA45AWL8kGsqxg==/109951169679537837.jpg"
+      },
+      "songUrl": "songs/song_2154850334.mp3",
+      "djIntroText": "冇得揀，係佢一開口就唱嘅。但你邊度聽得出係承諾，係習慣。日日見面，見到最後，你根本分唔清邊個係自己邊個係對方。",
+      "djAudioUrl": "dj/tts_1781079077442_0325.mp3",
+      "midRollText": null,
+      "midRollAudioUrl": null,
+      "midRollAt": null,
+      "segueText": "永恆呢樣嘢，有時係溫柔，有時係甩唔開。",
+      "segueAudioUrl": "dj/tts_1781076618738_0306.mp3",
+      "songBackground": "2024年音乐奇幻电影《魔法坏女巫》的原声音乐，由Billie Eilish与哥哥Finneas O'Connell共同创作并演唱。歌曲以空灵梦幻的电子音色为基底，歌词以「同根之鸟」的意象，隐喻电影中两位女主角从相识到分离的深刻羁绊，探讨命运、选择与姐妹情谊的复杂主题，为影片情感高潮奠定基调。"
+    },
+    {
+      "song": {
+        "id": 441489378,
+        "name": "Redbone",
+        "artist": "Childish Gambino",
+        "album": "\"Awaken, My Love!\"",
+        "cover": "covers/cover_441489378.jpg",
+        "picUrl": "https://p3.music.126.net/AiLOdJoMQtBghx6iuPHFBA==/18502581673446504.jpg"
+      },
+      "songUrl": "songs/song_441489378.mp3",
+      "djIntroText": "好似搖籃曲，但歌詞淨係喺度叫你—別訓。聰明到過份。",
+      "djAudioUrl": "dj/tts_1781079381402_0334.mp3",
+      "midRollText": null,
+      "midRollAudioUrl": null,
+      "midRollAt": null,
+      "segueText": "有啲歌聽完之後，會突然想搵人傾偈。",
+      "segueAudioUrl": "dj/tts_1781076625396_0308.mp3",
+      "songBackground": "美国创作歌手Childish Gambino（唐纳德·格洛沃）2016年发行的单曲，同时作为其电视剧集《亚特兰大》的配乐。歌曲融合了放克、灵魂乐与R&B元素，以慵懒的合成器音色和低沉的贝斯线营造出迷幻氛围，歌词涉及警觉与背叛的主题，独特的音乐风格使其成为跨界流行与复古灵魂乐的标志性作品。"
+    },
+    {
+      "song": {
+        "id": 19194800,
+        "name": "I Thought I Saw Your Face Today",
+        "artist": "She & Him",
+        "album": "Volume One",
+        "cover": "covers/cover_19194800.jpg",
+        "picUrl": "https://p3.music.126.net/BmBzFMChCKXl_HKjoamzLA==/109951170044859913.jpg"
+      },
+      "songUrl": "songs/song_19194800.mp3",
+      "djIntroText": "男女聲疊唱，好似一個人喺反覆確認『係咪呢個』。下午嗰段時間，光綫諗呃你，聲音都會。",
+      "djAudioUrl": "dj/tts_1781079374220_0333.mp3",
+      "midRollText": "有些面孔，唔係因為記得先出現，而係因為出現咗你先記得。",
+      "midRollAudioUrl": "dj/tts_1781076684654_0310.mp3",
+      "midRollAt": 65,
+      "segueText": "呢種感覺就好似有人喺你嘅記憶入面突然間打開咗一盞燈，唔係好光，但係足夠睇到一啲你以為已經冇咗嘅嘢。",
+      "segueAudioUrl": "dj/tts_1781076686754_0311.mp3",
+      "songBackground": "She & Him是zooey deschanel与m. ward组成的民谣组合，以温暖复古的声线著称。这首歌收录于他们的专辑，旋律轻柔如午后阳光，歌词捕捉了记忆中模糊面容与现实交错的瞬间，呈现了一种似曾相识又难以捕捉的情感体验，民谣吉他与温暖和声营造出淡淡的怀旧氛围。"
+    },
+    {
+      "song": {
+        "id": 150561,
+        "name": "蝴蝶",
+        "artist": "陶喆",
+        "album": "黑色柳丁",
+        "cover": "covers/cover_150561.jpg",
+        "picUrl": "https://p3.music.126.net/FLIHPqpkfUBimQZB370agQ==/109951169237251638.jpg"
+      },
+      "songUrl": "songs/song_150561.mp3",
+      "djIntroText": "蝴蝶飛得遠，你就睇唔清翅膀嘅紋理。愛一個人，可能就系呢種矛盾——既想佢自由，又想睇透佢最脆弱嘅部分。",
+      "djAudioUrl": "dj/tts_1781079718719_0346.mp3",
+      "midRollText": null,
+      "midRollAudioUrl": null,
+      "midRollAt": null,
+      "segueText": "有啲歌你以為自己聽得明，但係再聽一次，先發現原來佢係問緊你一條你一直冇答過嘅問題。",
+      "segueAudioUrl": "dj/tts_1781076693999_0313.mp3",
+      "songBackground": "陶喆在这首歌中以蝴蝶为意象，探讨了爱与自由的微妙关系。编曲融合了灵魂乐与抒情摇滚元素，旋律流畅而富有层次，展现了创作者对生命脆弱与美丽的深刻感悟，歌曲中真假音的转换自然流畅，传递出对感情关系的细腻思考。"
+    },
+    {
+      "song": {
+        "id": 2025082445,
+        "name": "Moonlight",
+        "artist": "Kali Uchis",
+        "album": "Moonlight",
+        "cover": "covers/cover_2025082445.jpg",
+        "picUrl": "https://p4.music.126.net/Jpv8PCW1nYk4fWZqsRGt_A==/109951168402339293.jpg"
+      },
+      "songUrl": "songs/song_2025082445.mp3",
+      "djIntroText": "下午听Moonlight，光线还亮，但你已經預告夜晚。Kali Uchis 呢把聲就係咁——唔急唔躁，實實在在坐喺你身邊。冇激情，反而平靜得教人心疼。",
+      "djAudioUrl": "dj/tts_1781079920302_0347.mp3",
+      "midRollText": null,
+      "midRollAudioUrl": null,
+      "midRollAt": null,
+      "segueText": "有啲歌適合响好嘈嘅地方播，但係呢種，要自己一個先知佢幾正。",
+      "segueAudioUrl": "dj/tts_1781076701252_0315.mp3",
+      "songBackground": "Kali Uchis以其独特的声线和慵懒气质闻名，这首歌展现了她的音乐美学。曲调在R&B与灵魂乐之间游走，营造出神秘而沉静的夜晚氛围，旋律带有迷幻质感，配合她富有磁性的嗓音，塑造出一个沉浸式的月光世界，音乐编曲精致而富有层次感。"
+    },
+    {
+      "song": {
+        "id": 2141171632,
+        "name": "爱你不是两三天",
+        "artist": "焦迈奇",
+        "album": "青春蒙太奇",
+        "cover": "covers/cover_2141171632.jpg",
+        "picUrl": "https://p4.music.126.net/wNn8EISVb7Aa5FgEv_581g==/109951169458444213.jpg"
+      },
+      "songUrl": "songs/song_2141171632.mp3",
+      "djIntroText": "愛一個人係幾時知嘅？唔係表白嗰日，係你發現自己開始數住佢嘅日子。焦邁奇把聲有種少年感，乾乾淨淨，但唱嘅係已經上咗心咁先至會有嘅後悔——點解唔早啲錫你。",
+      "djAudioUrl": "dj/tts_1781076762187_0316.mp3",
+      "midRollText": "有時我哋記得一件事，唔係因為佢發生咗幾耐，而係因為嗰個感覺後來再冇出現過。",
+      "midRollAudioUrl": "dj/tts_1781076766487_0317.mp3",
+      "midRollAt": 65,
+      "segueText": "慢慢嚟咁愛一個人，其實係最唔忍心催佢走。",
+      "segueAudioUrl": "dj/tts_1781076768759_0318.mp3",
+      "songBackground": "这首歌以轻快的旋律捕捉了青春时期那份纯真的情感。词曲围绕'喜欢'这一主题展开，表达了一种自然而然的情感萌动。编曲风格清新明快，配合温暖的嗓音，将少年心事缓缓道来。作为一首校园风格的流行作品，它以简单的旋律和直白的情感引起共鸣，传递出属于青春的明媚与悸动。"
+    },
+    {
+      "song": {
+        "id": 154480,
+        "name": "月光爱人",
+        "artist": "李玟",
+        "album": "卧虎藏龙 电影原声带",
+        "cover": "covers/cover_154480.jpg",
+        "picUrl": "https://p4.music.126.net/EU7zMqnFfC4tgCYBfMdL5g==/109951167370022503.jpg"
+      },
+      "songUrl": "songs/song_154480.mp3",
+      "djIntroText": "有人唱嘅時候，你唔係聽歌詞，係聽佢點樣同呢個世界講話。李玟着紅旗袍，英文、中文、沉默——全部都係答案。",
+      "djAudioUrl": "dj/tts_1781080421537_0348.mp3",
+      "midRollText": null,
+      "midRollAudioUrl": null,
+      "midRollAt": null,
+      "segueText": null,
+      "segueAudioUrl": null,
+      "songBackground": "这首歌是为武侠电影创作的主题曲，将东方古典意境与现代流行音乐完美融合。李玟以标志性的甜美嗓音诠释了一段深沉而唯美的情感，歌词以月光为核心意象，勾勒出对爱情的执着与守候。编曲融入民族音乐元素，营造出空灵而大气的氛围，歌曲兼具流行性与艺术性，成为华语乐坛经典影视金曲。"
+    }
+  ],
+  "weather": {
+    "temp": 27,
+    "description": "阴，多云",
+    "icon": "04d",
+    "humidity": 82,
+    "city": "深圳"
+  }
+}

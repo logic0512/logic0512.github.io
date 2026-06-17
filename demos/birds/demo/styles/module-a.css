@@ -1,0 +1,326 @@
+/* ==========================================================================
+   module-a.css · 特征实验室 · 骨架层 / 透视层 / 完整形态层
+   参考：mockups/index.html V1-V4 · handoff §4
+   ========================================================================== */
+
+/* 画布内 · 羊皮纸中心光晕底（handoff §1.1 规定 stage 背景为 parchment-0，此处叠加径向提亮） */
+#module-a {
+  background-image: radial-gradient(
+    ellipse 1400px 900px at 50% 50%,
+    #F6EEDC 0%, var(--parchment-1) 62%, var(--parchment-2) 100%
+  );
+}
+
+/* ---------- 层切换（3 个 pill）--------------------------------------- */
+.layer-switch {
+  position: absolute;
+  top: 104px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 6px;
+  z-index: var(--z-ui);
+}
+.layer-switch__btn {
+  padding: 8px 22px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--ink-500);
+  background: rgba(244, 235, 216, 0.4);
+  border: 1px solid rgba(139, 118, 88, 0.4);
+  border-radius: 20px;
+  position: relative;
+  transition: color var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out);
+}
+.layer-switch__btn:hover { color: var(--ink-800); }
+.layer-switch__btn.is-active {
+  color: var(--parchment-0);
+  background: var(--ink-800);
+  border-color: var(--ink-800);
+}
+/* 未解锁：透视层 / 完整形态按钮初始隐藏，拼完骨架才入场 */
+.layer-switch__btn.is-hidden {
+  display: none;
+}
+.layer-switch__btn.is-revealing {
+  animation: pill-reveal 420ms var(--ease-out) both;
+}
+@keyframes pill-reveal {
+  0%   { opacity: 0; transform: translateY(-6px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.layer-switch__btn.is-active::after {
+  content: "";
+  position: absolute;
+  left: 50%; bottom: -8px;
+  transform: translateX(-50%);
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+}
+
+/* ---------- 三层画面共用容器（由 #module-a[data-active-layer] 驱动显隐）-- */
+.layer {
+  position: absolute;
+  top: 130px; left: 320px;
+  width: 1280px; height: 700px;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+#module-a[data-active-layer="skeleton"] .layer--skeleton,
+#module-a[data-active-layer="xray"]     .layer--xray,
+#module-a[data-active-layer="plumage"]  .layer--plumage {
+  opacity: 1; pointer-events: auto;
+}
+.layer__img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+.layer--skeleton .layer__img {
+  opacity: 0.18;   /* 拼装中为淡剪影参照 */
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+#module-a.is-bones-complete .layer--skeleton .layer__img { opacity: 1; }
+
+/* ---------- 骨架层 · 装备栏 ----------------------------------------- */
+.gear-bar {
+  position: absolute;
+  bottom: 60px;
+  left: 200px; right: 200px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: var(--z-ui);
+}
+.gear-bar::before {
+  content: "散 件 · 待 拖 入";
+  position: absolute;
+  top: -34px; left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  font-family: var(--font-han);
+  font-size: 12px;
+  letter-spacing: 6px;
+  color: var(--ink-700);
+  background: rgba(255, 250, 240, 0.94);
+  border: 1px solid rgba(200, 163, 90, 0.38);
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(31, 26, 20, 0.06);
+}
+.gear-slot {
+  width: 140px; height: 140px;
+  padding: 12px 8px 10px;
+  background: rgba(255, 250, 240, 0.94);
+  border: 1px solid rgba(139, 118, 88, 0.28);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 12px rgba(31, 26, 20, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  cursor: grab;
+  position: relative;
+  transition: transform var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out);
+}
+.gear-slot:active { cursor: grabbing; }
+.gear-slot:hover {
+  background: rgba(255, 250, 240, 0.98);
+  border-color: var(--accent-gold);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(31, 26, 20, 0.14);
+}
+.gear-slot img {
+  width: 108px; height: 82px;
+  object-fit: contain;
+  pointer-events: none;
+}
+.gear-slot__name {
+  font-family: var(--font-han);
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--ink-800);
+}
+.gear-slot.is-done {
+  opacity: 0.4;
+  cursor: default;
+  background: rgba(244, 235, 216, 0.55);
+}
+.gear-slot.is-done:hover { transform: none; box-shadow: 0 4px 12px rgba(31, 26, 20, 0.08); }
+.gear-slot.is-done::after {
+  content: "✓";
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 28px; font-weight: 700;
+  color: var(--accent-gold);
+}
+
+/* ---------- 热点（xray 层 4 个 + plumage 层 1 个）· 跟随 data-active-layer 显隐 -- */
+.organ-hotspot, .plumage-hotspot { display: none; }
+#module-a[data-active-layer="xray"]    .organ-hotspot   { display: flex; }
+#module-a[data-active-layer="plumage"] .plumage-hotspot { display: flex; }
+
+/* ---------- 透视层 · 四器官热点 ------------------------------------ */
+.organ-hotspot {
+  position: absolute;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 8px;
+  background: rgba(244, 235, 216, 0.95);
+  border: 2px solid;
+  border-radius: 32px;
+  box-shadow: 0 4px 12px rgba(31, 26, 20, 0.25);
+  cursor: pointer;
+  font-family: var(--font-han);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--ink-900);
+  white-space: nowrap;
+  transition: transform var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+.organ-hotspot__dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  flex: none;
+}
+.organ-hotspot--airsac { border-color: var(--organ-airsac); }
+.organ-hotspot--airsac .organ-hotspot__dot { background: var(--organ-airsac); }
+.organ-hotspot--heart  { border-color: var(--organ-heart); }
+.organ-hotspot--heart  .organ-hotspot__dot { background: var(--organ-heart); }
+.organ-hotspot--syrinx { border-color: var(--organ-syrinx); }
+.organ-hotspot--syrinx .organ-hotspot__dot { background: var(--organ-syrinx); }
+.organ-hotspot--egg    { border-color: var(--organ-egg); }
+.organ-hotspot--egg    .organ-hotspot__dot { background: var(--organ-egg); }
+.organ-hotspot.is-active {
+  background: var(--ink-900);
+  color: var(--parchment-0);
+  transform: scale(1.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(200, 163, 90, 0.3);
+}
+
+/* ---------- 完整形态层 · 羽毛热点（带呼吸动画）--------------------- */
+.plumage-hotspot {
+  position: absolute;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 8px;
+  background: rgba(244, 235, 216, 0.95);
+  border: 2px solid var(--accent-red);
+  border-radius: 32px;
+  box-shadow: 0 4px 12px rgba(31, 26, 20, 0.25);
+  cursor: pointer;
+  font-family: var(--font-han);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--ink-900);
+  white-space: nowrap;
+}
+.plumage-hotspot__dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  flex: none;
+  animation: hotspot-breath 2s ease-in-out infinite;
+}
+@keyframes hotspot-breath {
+  0%, 100% { transform: scale(1);   opacity: 0.9; }
+  50%      { transform: scale(1.4); opacity: 1; }
+}
+
+/* ---------- 骨件拖拽 · 跟手 ghost 与贴位态 ----------------------------- */
+/* 跟手 ghost：透明底 SVG 直接展示，不带任何卡片/边框。父层是 #module-a，画布坐标系。*/
+.bone-ghost {
+  position: absolute;
+  pointer-events: none;
+  z-index: 8;
+  user-select: none;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(31, 26, 20, 0.22));
+  opacity: 0.92;
+  cursor: grabbing;
+  transition: filter var(--duration-fast) var(--ease-out),
+              opacity var(--duration-fast) var(--ease-out);
+}
+.bone-ghost.is-near {
+  filter: drop-shadow(0 0 18px var(--accent-gold))
+          drop-shadow(0 4px 10px rgba(31, 26, 20, 0.18));
+  opacity: 1;
+}
+.bone-ghost.is-placed {
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 1;
+  z-index: 4;
+  animation: bone-snap 320ms var(--ease-out);
+  filter: drop-shadow(0 4px 10px rgba(31, 26, 20, 0.25));
+}
+.bone-ghost.is-returning {
+  opacity: 0;
+  transition: opacity 180ms var(--ease-out);
+}
+@keyframes bone-snap {
+  0%   { transform: scale(1.12); }
+  55%  { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+/* 拼完：5 个 ghost 骨件视觉淡出（完整骨架底图接管） */
+#module-a.is-bones-complete .bone-ghost.is-placed {
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-out) 200ms;
+  pointer-events: none;
+}
+
+/* ---------- 骨件吸附后 · 可见热点（引导点击，逐件出现） --------------- */
+.bone-hotspot {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 8px;
+  background: rgba(244, 235, 216, 0.95);
+  border: 2px solid var(--accent-gold);
+  border-radius: 32px;
+  box-shadow: 0 4px 12px rgba(31, 26, 20, 0.25);
+  cursor: pointer;
+  font-family: var(--font-han);
+  font-size: 13px;
+  letter-spacing: 2px;
+  color: var(--ink-900);
+  white-space: nowrap;
+  transform: translate(-50%, -50%) scale(0.8);
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out),
+              transform var(--duration-base) var(--ease-out),
+              background var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+  z-index: 6;
+}
+.bone-hotspot.is-revealed {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.bone-hotspot__dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  flex: none;
+  animation: hotspot-breath 2s ease-in-out infinite;
+}
+.bone-hotspot.is-revealed:hover {
+  background: var(--ink-900);
+  color: var(--parchment-0);
+  transform: translate(-50%, -50%) scale(1.06);
+}
+.bone-hotspot.is-active {
+  background: var(--ink-900);
+  color: var(--parchment-0);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(200, 163, 90, 0.3);
+}

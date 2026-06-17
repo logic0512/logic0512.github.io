@@ -1,0 +1,3329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>治愈星 · Memory Sparks</title>
+  <script src="/assets/vendor/gsap/gsap.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body {
+      font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #2b2440;
+      color: rgba(255, 246, 226, 0.92);
+    }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; border: 0; }
+    #stage {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      touch-action: none;
+    }
+    /* composer 的层选按钮：原 36px 圆形装不下中文 2 字，改胶囊矩形 */
+    .msc-backdrop[data-planet="healing"] .msc-tier-buttons button {
+      width: auto;
+      min-width: 60px;
+      height: 32px;
+      padding: 0 16px;
+      border-radius: 16px;
+      font-size: 12.5px;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+
+    /* 介绍卡 .ms-orb 走 ms-shared.css 的标准样式，跟其他 7 颗星一致（圆角矩形 + 深色底 + 透明 PNG 透出来） */
+
+    .hud {
+      display: none !important; /* 由 ms-intro-card 替代左上角介绍 */
+      position: fixed;
+      z-index: 5;
+      left: clamp(20px, 3vw, 42px);
+      top: clamp(20px, 3.5vh, 42px);
+      color: rgba(245, 220, 168, 0.78);
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+    .hud h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 300;
+      letter-spacing: 0.42em;
+      padding-left: 0.2em;
+    }
+    .hud .hint {
+      margin-top: 10px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: rgba(245, 220, 168, 0.42);
+      font-weight: 300;
+    }
+    .hud.soft { opacity: 0.36; }
+    .layer-title {
+      position: fixed;
+      z-index: 4;
+      top: clamp(78px, 11vh, 116px);
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: "SF Mono", "JetBrains Mono", "Menlo", "Courier New", monospace;
+      font-weight: 300;
+      font-size: 22px;
+      letter-spacing: 0.58em;
+      padding-left: 0.58em;
+      text-transform: uppercase;
+      color: rgba(80, 52, 38, 0.40);
+      pointer-events: none;
+      white-space: nowrap;
+      opacity: 1;
+      transition: opacity 0.45s ease;
+    }
+    .layer-title.fade-out { opacity: 0; }
+    .add {
+      /* 右下按钮隐藏，入口只保留右上 ms-shared FAB */
+      display: none !important;
+    }
+    .add-orig-style-unused {
+      position: fixed;
+      z-index: 6;
+      right: clamp(24px, 4vw, 48px);
+      bottom: clamp(24px, 4.5vh, 48px);
+      padding: 10px 18px 10px 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: transparent;
+      border: 0;
+      color: rgba(245, 220, 168, 0.72);
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      font-weight: 300;
+      transition: color 0.25s ease, transform 0.25s ease;
+    }
+    .add:hover {
+      color: rgba(255, 240, 200, 0.95);
+      transform: translateY(-1px);
+    }
+    .add .plus {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      line-height: 20px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 200;
+    }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 8;
+      opacity: 0;
+      pointer-events: none;
+      background: rgba(36, 26, 52, 0.22);
+      /* backdrop-filter 只在 .on 时启用，否则 opacity:0 也会残留虚化（CSS 标准行为，跟透明度无关） */
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      visibility: hidden;
+      transition: opacity 0.2s ease;
+      /* 性能：GPU 层预热，避免弹出瞬间合成卡 */
+      will-change: backdrop-filter, opacity;
+      contain: layout style;
+      isolation: isolate;
+      backface-visibility: hidden;
+    }
+    .overlay.on {
+      opacity: 1;
+      pointer-events: auto;
+      visibility: visible;
+      /* 不再做全屏 backdrop-filter blur — panel 自己已经 blur(7)，叠两次 GPU 合成会拖帧
+         overlay 只留半透微暗（rgba alpha 0.22），辨别上下文够了 */
+    }
+    /* L1 Gentle 默认；body[data-layer="..."] 切换变量
+       任务 3：CSS variable 跟 3D 卡片调色板 CARD_LAYER_PALETTE 完全对齐 → 弹窗 = 卡片的放大版 */
+    body {
+      /* 卡片底色（跟 CARD_LAYER_PALETTE[0].bg 一致） */
+      --rd-card-bg: rgba(223, 184, 168, 0.68);
+      --rd-card-border: rgba(255, 245, 235, 0.50);
+      --rd-card-highlight: rgba(255, 250, 245, 0.42);
+      --rd-card-bottom-dim: rgba(80, 50, 38, 0.10);
+      --rd-card-inset: rgba(255, 250, 238, 0.6);
+      --rd-card-shadow: 0 12px 40px rgba(180, 90, 60, 0.18), 0 0 60px rgba(255, 200, 175, 0.32);
+      --rd-text: #5b2f1f;
+      --rd-meta: rgba(91, 47, 31, 0.62);
+      --rd-line: rgba(91, 47, 31, 0.22);
+      --rd-accent: rgba(184, 90, 58, 0.72);
+    }
+    body[data-layer="companion"] {
+      --rd-card-bg: rgba(222, 194, 154, 0.68);
+      --rd-card-border: rgba(255, 248, 230, 0.52);
+      --rd-card-highlight: rgba(255, 252, 240, 0.42);
+      --rd-card-bottom-dim: rgba(80, 58, 28, 0.10);
+      --rd-card-inset: rgba(255, 250, 222, 0.6);
+      --rd-card-shadow: 0 12px 40px rgba(170, 110, 40, 0.16), 0 0 60px rgba(245, 200, 130, 0.30);
+      --rd-text: #5d3618;
+      --rd-meta: rgba(93, 54, 24, 0.62);
+      --rd-line: rgba(93, 54, 24, 0.22);
+      --rd-accent: rgba(184, 106, 42, 0.72);
+    }
+    body[data-layer="inspire"] {
+      --rd-card-bg: rgba(241, 229, 219, 0.80);
+      --rd-card-border: rgba(255, 252, 248, 0.55);
+      --rd-card-highlight: rgba(255, 254, 252, 0.48);
+      --rd-card-bottom-dim: rgba(74, 52, 38, 0.08);
+      --rd-card-inset: rgba(255, 250, 240, 0.6);
+      --rd-card-shadow: 0 12px 40px rgba(150, 100, 70, 0.14), 0 0 60px rgba(240, 215, 195, 0.28);
+      --rd-text: #533622;
+      --rd-meta: rgba(83, 54, 34, 0.62);
+      --rd-line: rgba(83, 54, 34, 0.22);
+      --rd-accent: rgba(160, 109, 58, 0.72);
+    }
+
+    .panel {
+      /* 任务 3：弹窗 = 3D 卡片的放大版
+         - 圆角 18px / 描边 1.8px（drawGlassEdge 同款）
+         - 多层 background 复刻 drawGlassBase：顶部高光 + 底部微暗 + 底色
+         - 动画：GSAP 接管 x/y/opacity，layout 永远不变 → 字体永远清晰
+         - GSAP 用 xPercent/yPercent -50 让 panel 始终居中（CSS 不设 translate） */
+      position: fixed;
+      z-index: 9;
+      left: 50%;
+      top: 50%;
+      width: min(460px, calc(100vw - 34px));
+      padding: 32px 32px 28px;
+      border: 1.8px solid var(--rd-card-border);
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, var(--rd-card-highlight) 0%, rgba(255,255,255,0.06) 35%, transparent 55%),
+        linear-gradient(180deg, transparent 70%, var(--rd-card-bottom-dim) 100%),
+        var(--rd-card-bg);
+      box-shadow: var(--rd-card-shadow), inset 0 1px 0 var(--rd-card-inset);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      color: var(--rd-text);
+      opacity: 0;
+      pointer-events: none;
+      /* GPU 合成层稳定：GSAP 频繁改 transform/opacity 时减少重排 */
+      will-change: opacity, transform;
+      contain: layout style;
+      isolation: isolate;
+      backface-visibility: hidden;
+    }
+    .panel.open {
+      pointer-events: auto;
+      /* shape-text 现在 460×575（面积比之前 420×320 翻倍），blur 12 持续合成会拖帧率
+         降到 7 saturate 1.04，视觉差异微小但合成成本大幅下降 */
+      backdrop-filter: blur(7px) saturate(1.04);
+      -webkit-backdrop-filter: blur(7px) saturate(1.04);
+    }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    .panel-title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: 0.32em;
+      color: var(--rd-meta);
+    }
+    /* close × 跟 ms-card-edit-btn / ms-card-del-btn 对齐：absolute top:10 size 28×28
+       三个按钮一行：close (left:10) | ... | edit (right:78) | del (right:44) */
+    .reader .close {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--rd-line);
+      background: transparent;
+      color: var(--rd-meta);
+      font-size: 14px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      z-index: 10;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+    .reader .close:hover {
+      color: var(--rd-text);
+      border-color: var(--rd-accent);
+    }
+    input[type="text"],
+    textarea {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid var(--rd-line);
+      background: transparent;
+      outline: none;
+      color: var(--rd-text);
+      transition: border-color 0.2s ease;
+    }
+    input[type="text"]:focus,
+    textarea:focus { border-bottom-color: var(--rd-accent); }
+    input[type="text"] {
+      height: 40px;
+      margin-bottom: 18px;
+      font-size: 16px;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+    textarea {
+      min-height: 120px;
+      padding: 10px 0;
+      resize: none;
+      line-height: 1.85;
+      font-size: 14px;
+      font-weight: 300;
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--rd-meta);
+      opacity: 0.55;
+      font-weight: 300;
+    }
+    .row {
+      margin-top: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--rd-meta);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+    }
+    .file {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      max-width: 240px;
+      padding: 0 2px 6px;
+      border: 0;
+      border-bottom: 1px solid var(--rd-line);
+      background: transparent;
+      color: var(--rd-meta);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+    .file:hover {
+      color: var(--rd-text);
+      border-bottom-color: var(--rd-accent);
+    }
+    .file input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .warmth { display: flex; gap: 8px; }
+    .warmth button {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 1px solid var(--rd-line);
+      background: transparent;
+      color: transparent;
+      font-size: 0;
+      padding: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .warmth button.active {
+      background: var(--rd-accent);
+      border-color: var(--rd-accent);
+      box-shadow: 0 0 14px var(--rd-accent);
+    }
+    .submit {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 26px;
+      border: 1px solid var(--rd-line);
+      border-radius: 2px;
+      background: transparent;
+      color: var(--rd-text);
+      font-size: 13px;
+      letter-spacing: 0.28em;
+      font-weight: 300;
+      transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+    }
+    .submit:hover {
+      background: var(--rd-card-inset);
+      color: var(--rd-text);
+      border-color: var(--rd-accent);
+    }
+    .reader-media {
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 220px;
+      margin-bottom: 22px;
+      background: rgba(255, 245, 230, 0.18);
+    }
+    .reader-media:empty { display: none; }
+    .reader-media img,
+    .reader-media video {
+      display: block;
+      width: 100%;
+      max-height: 340px;
+      object-fit: cover;
+    }
+    .reader h2 {
+      margin: 0 0 14px;
+      font-family: "Noto Serif SC", "Songti SC", serif;
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: var(--rd-text);
+    }
+    .reader p {
+      margin: 0;
+      font-family: "Noto Serif SC", "Songti SC", serif;
+      color: var(--rd-text);
+      opacity: 0.88;
+      line-height: 1.95;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    /* ============ composer · 朋友圈式 ============ */
+    .composer textarea { min-height: 120px; }
+    .composer-media {
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      background: rgba(255, 245, 230, 0.18);
+      max-height: 280px;
+    }
+    .composer-media:empty { display: none; }
+    .composer-media img { display: block; width: 100%; max-height: 280px; object-fit: cover; }
+    .composer-media video { display: block; width: 100%; max-height: 280px; }
+    .composer-media audio { display: block; width: 100%; margin: 14px 0; }
+    .big-file-note {
+      padding: 6px 12px;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: rgba(180, 100, 60, 0.78);
+      background: rgba(255, 220, 195, 0.32);
+      text-align: center;
+    }
+
+    .media-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--rd-line);
+    }
+    .media-pick {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--rd-line);
+      background: transparent;
+      color: var(--rd-meta);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+    .media-pick:hover {
+      color: var(--rd-text);
+      border-color: var(--rd-accent);
+      background: var(--rd-card-inset);
+    }
+    .media-pick svg { width: 18px; height: 18px; }
+    .media-pick.clear {
+      margin-left: auto;
+      color: rgba(180, 80, 60, 0.62);
+    }
+    .media-pick[hidden] { display: none; }
+
+    /* tag row · 3 标签替换情感重量 */
+    .tag-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 18px;
+      gap: 14px;
+    }
+    .tag-label {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: var(--rd-meta);
+    }
+    .tag-group {
+      display: flex;
+      gap: 8px;
+    }
+    .tag-group button {
+      padding: 6px 14px;
+      border: 1px solid var(--rd-line);
+      border-radius: 99px;
+      background: transparent;
+      color: var(--rd-meta);
+      font-family: "Noto Serif SC", "Songti SC", serif;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      padding-left: calc(14px + 0.18em);
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+    .tag-group button:hover {
+      color: var(--rd-text);
+      border-color: var(--rd-accent);
+    }
+    .tag-group button.active {
+      color: var(--rd-text);
+      border-color: var(--rd-accent);
+      background: var(--rd-card-inset);
+    }
+
+    /* ============ 形状 = 内容形状 · 6 套 ============ */
+    /* 默认所有 shape 都不显示日期，仅 shape-text 显示 */
+    .panel.reader .reader-date { display: none; }
+    /* shape-text：demo 版式放大版 — 4:5 竖版，顶部小日期 + 大正文
+       padding-top 加到 56 给三个按钮（close / edit / del top:10 size:28）让出空间 */
+    .panel.reader.shape-text {
+      width: min(460px, calc(100vw - 34px));
+      aspect-ratio: 4 / 5;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 56px 32px 28px;
+    }
+    .panel.reader.shape-text .reader-date {
+      display: block;
+      margin: 0 0 14px;
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: var(--rd-meta);
+    }
+    .panel.reader.shape-text .reader-media:empty { display: none; }
+    /* 文字卡正文：跟 3D 卡片同字体（PingFang），demo 字号行距，可内 scroll */
+    .panel.reader.shape-text #readerText {
+      flex: 1;
+      overflow-y: auto;
+      margin: 0;
+      font-family: "PingFang SC", -apple-system, sans-serif;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.85;
+      letter-spacing: 0.02em;
+      color: var(--rd-text);
+      opacity: 1;
+    }
+    .panel.reader.shape-audio {
+      width: min(440px, calc(100vw - 34px));
+      aspect-ratio: 1 / 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .panel.reader.shape-audio .reader-media { min-height: 0; margin-bottom: 18px; background: transparent; }
+
+    /* 图/视频：照片填满 panel，标题/正文 overlay 在底部 */
+    .panel.reader.shape-image-h,
+    .panel.reader.shape-image-v,
+    .panel.reader.shape-video-h,
+    .panel.reader.shape-video-v {
+      padding: 0;
+      overflow: hidden;
+      /* 照片/视频盖满 panel，背后模糊看不见还耗 GPU，关掉 */
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: rgba(0, 0, 0, 0.4);
+    }
+    .panel.reader.shape-image-h,
+    .panel.reader.shape-video-h { width: min(680px, calc(100vw - 34px)); }
+    .panel.reader.shape-image-v,
+    .panel.reader.shape-video-v { width: min(340px, calc(100vw - 34px)); }
+
+    .panel.reader[class*="shape-image"] .reader-media,
+    .panel.reader[class*="shape-video"] .reader-media {
+      margin: 0;
+      border-radius: 0;
+      min-height: 0;
+      background: transparent;
+    }
+    .panel.reader.shape-image-h .reader-media img,
+    .panel.reader.shape-image-h .reader-media video { width: 100%; height: auto; max-height: none; aspect-ratio: 16/10; object-fit: cover; }
+    .panel.reader.shape-image-v .reader-media img,
+    .panel.reader.shape-image-v .reader-media video { width: 100%; height: auto; max-height: none; aspect-ratio: 9/16; object-fit: cover; }
+    .panel.reader.shape-video-h .reader-media img,
+    .panel.reader.shape-video-h .reader-media video { width: 100%; height: auto; max-height: none; aspect-ratio: 16/9; object-fit: cover; }
+    .panel.reader.shape-video-v .reader-media img,
+    .panel.reader.shape-video-v .reader-media video { width: 100%; height: auto; max-height: none; aspect-ratio: 9/16; object-fit: cover; }
+
+    /* panel-head 在图/视频形态下绝对定位到右上 */
+    .panel.reader[class*="shape-image"] .panel-head,
+    .panel.reader[class*="shape-video"] .panel-head {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      left: auto;
+      margin: 0;
+      z-index: 3;
+    }
+    .panel.reader[class*="shape-image"] .panel-title,
+    .panel.reader[class*="shape-video"] .panel-title { display: none; }
+    .panel.reader[class*="shape-image"] .close,
+    .panel.reader[class*="shape-video"] .close {
+      background: rgba(0, 0, 0, 0.32);
+      border-color: rgba(255, 247, 232, 0.42);
+      color: rgba(255, 247, 232, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .panel.reader[class*="shape-image"] h2,
+    .panel.reader[class*="shape-video"] h2 {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 52px;
+      margin: 0;
+      color: #fff7e8;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+      z-index: 3;
+    }
+    .panel.reader[class*="shape-image"] p,
+    .panel.reader[class*="shape-video"] p {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 20px;
+      color: rgba(255, 247, 232, 0.88);
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      font-size: 13px;
+      z-index: 3;
+    }
+    /* 底部暗化让标题可读 */
+    .panel.reader[class*="shape-image"]::after,
+    .panel.reader[class*="shape-video"]::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 42%;
+      background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.55) 100%);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .empty {
+      position: fixed;
+      z-index: 4;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+      text-align: center;
+      pointer-events: none;
+    }
+    .empty.on { display: flex; }
+    .empty-line {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 0.32em;
+      color: rgba(255, 235, 200, 0.72);
+      padding-left: 0.32em;
+    }
+    .empty-add {
+      pointer-events: auto;
+      padding: 4px 0 8px;
+      border: 0;
+      border-bottom: 1px solid rgba(245, 200, 72, 0.5);
+      background: transparent;
+      color: rgba(245, 220, 168, 0.88);
+      font-size: 13px;
+      letter-spacing: 0.22em;
+      font-weight: 300;
+      transition: color 0.25s ease, border-color 0.25s ease;
+    }
+    .empty-add:hover {
+      color: rgba(255, 248, 230, 0.98);
+      border-bottom-color: rgba(255, 240, 200, 0.9);
+    }
+    .add.hidden { display: none; }
+    .fallback {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 30px;
+      background: linear-gradient(135deg, #f1cfa8, #806d98);
+      color: rgba(70, 45, 66, 0.82);
+      text-align: center;
+    }
+    .fallback.on { display: grid; }
+    @media (max-width: 760px) {
+      .hud { width: calc(100vw - 34px); left: 17px; top: 17px; }
+      .hud p { display: none; }
+      .orb { width: 52px; height: 52px; }
+      h1 { font-size: 24px; }
+    }
+
+    /* 任务 5：底部键位说明条（一小行淡字，居中，不挡卡片） */
+    .key-hint {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 6;
+      font-size: 13px;
+      font-weight: 300;
+      letter-spacing: 0.18em;
+      color: rgba(82, 50, 38, 0.48);
+      white-space: nowrap;
+      pointer-events: none;
+      user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    }
+    .key-hint kbd {
+      font-family: "SF Mono", "Menlo", monospace;
+      font-size: 12px;
+      padding: 2px 8px;
+      margin: 0 3px;
+      border: 1px solid rgba(82, 50, 38, 0.32);
+      border-radius: 4px;
+      color: rgba(82, 50, 38, 0.68);
+      letter-spacing: 0;
+      vertical-align: 1px;
+    }
+    /* 窄屏隐藏（手机上空间小，留给卡片） */
+    @media (max-width: 560px) {
+      .key-hint { display: none; }
+    }
+
+    /* 任务 4：治愈添加按钮（.ms-add-fab）本地强化
+       结构跟 hiking/被子星对齐 — 单道扩散光圈 2.8s 呼吸
+       颜色：暖棕（用 palette.fabIcon 系派生），跟治愈整体暖沙调匹配 */
+    .ms-add-fab {
+      animation: healingFabPulse 2.8s ease-in-out infinite;
+    }
+    .ms-add-fab:hover { animation-play-state: paused; }
+    /* composer 打开时把 fab 暂停 + 隐藏，省一份持续合成 + 避免被遮罩盖住时还在动 */
+    body.healing-composer-open .ms-add-fab {
+      animation-play-state: paused;
+      visibility: hidden;
+    }
+    @keyframes healingFabPulse {
+      0%, 100% {
+        box-shadow:
+          0 12px 36px rgba(112, 78, 66, 0.22),
+          0 0 0 0 rgba(180, 120, 90, 0.55),
+          inset 0 1px 0 rgba(255, 255, 255, 0.32);
+      }
+      50% {
+        box-shadow:
+          0 12px 36px rgba(112, 78, 66, 0.22),
+          0 0 0 16px rgba(180, 120, 90, 0),
+          inset 0 1px 0 rgba(255, 255, 255, 0.32);
+      }
+    }
+    /* SVG 尺寸略放大让猫看清楚（默认 24×24 太小） */
+    .ms-add-fab svg { width: 30px; height: 30px; }
+  </style>
+<script>
+// Visibility pause: 父页面切 tab 时停掉本 iframe 的 RAF/setInterval，避免后台烧 CPU
+(function(){
+  let _raf = window.requestAnimationFrame.bind(window);
+  let _caf = window.cancelAnimationFrame.bind(window);
+  let _setInt = window.setInterval.bind(window);
+  let _clrInt = window.clearInterval.bind(window);
+  let active = true;
+  let pendingRafs = [];      // {cb, id}
+  let liveIntervals = new Map();
+  let nextId = 1;
+  window.requestAnimationFrame = function(cb){
+    if (active) return _raf(cb);
+    const id = nextId++;
+    pendingRafs.push({cb, id});
+    return id;
+  };
+  window.cancelAnimationFrame = function(id){
+    pendingRafs = pendingRafs.filter(x => x.id !== id);
+    return _caf(id);
+  };
+  window.setInterval = function(cb, ms){
+    const id = _setInt(function(){ if (active) cb(); }, ms);
+    liveIntervals.set(id, true);
+    return id;
+  };
+  window.clearInterval = function(id){
+    liveIntervals.delete(id);
+    return _clrInt(id);
+  };
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.type !== "memory-sparks:visibility") return;
+    const wasActive = active;
+    active = !!e.data.visible;
+    if (!wasActive && active && pendingRafs.length){
+      const q = pendingRafs; pendingRafs = [];
+      q.forEach(({cb}) => _raf(cb));
+    }
+  });
+})();
+</script>
+<!-- MS shared -->
+<link rel="stylesheet" href="../_shared/ms-shared.css?v=20260602f">
+<link rel="stylesheet" href="../_shared/ms-composer.css?v=20260601x">
+<script src="../_shared/ms-config.js?v=20260606x"></script>
+<script src="../_shared/ms-sound.js?v=20260604i"></script>
+<script>window.MS_SOUND && MS_SOUND.init('healing');</script>
+<script src="../_shared/ms-icons.js?v=20260601x"></script>
+<script src="../_shared/ms-feedback.js?v=20260601x"></script>
+<script src="../_shared/ms-mount.js?v=20260602f"></script>
+<script src="../_shared/ms-list-bridge.js?v=20260601x"></script>
+<script src="../_shared/ms-media-vault.js?v=20260605s"></script>
+<script src="../_shared/ms-media-store.js?v=20260606c"></script>
+<script src="../_shared/ms-composer.js?v=20260605l"></script>
+</head>
+<body>
+  <canvas id="stage" aria-label="治愈星三维记忆云"></canvas>
+  <div class="layer-title" id="layerTitle" aria-hidden="true"></div>
+  <aside class="hud" id="hud">
+    <h1>治愈星</h1>
+    <p class="hint">拖动环顾　↑ 深入　↓ 回返</p>
+  </aside>
+  <button class="add" id="addBtn" data-open-composer type="button" aria-label="放一颗微光进来">
+    <span class="plus">+</span><span>放一颗微光</span>
+  </button>
+  <div class="empty" id="empty">
+    <p class="empty-line">这里还没有微光</p>
+    <button class="empty-add" id="emptyAdd" data-open-composer type="button">放一颗进来</button>
+  </div>
+  <div class="overlay" id="overlay"></div>
+
+  <!-- 原 composer DOM 已由 ms-composer.js 接管，统一加内容入口 -->
+
+  <section class="panel reader" id="reader" aria-label="查看治愈时刻">
+    <button class="close" id="closeReader" type="button" aria-label="关闭">×</button>
+    <h2 class="reader-date" id="readerDate"></h2>
+    <div class="reader-media" id="readerMedia"></div>
+    <p id="readerText"></p>
+  </section>
+
+  <div class="key-hint" aria-hidden="true">
+    拖动环顾 &nbsp;·&nbsp; <kbd>↑</kbd> 深入 &nbsp;·&nbsp; <kbd>↓</kbd> 回返 &nbsp;·&nbsp; <kbd>空格</kbd> 回到中央
+  </div>
+
+  <div class="fallback" id="fallback">这个原型需要 WebGL 才能进入治愈星。</div>
+
+  <script>
+    (async () => {
+    window.__healingBoot = true;
+    document.body.dataset.healingBoot = '1';
+    // three.js 复制到 public/vendor/，Vite 把 public/ 原样作为根输出 → 浏览器走 /vendor/three.module.js
+    const THREE = await import('/vendor/three.module.js');
+    window.THREE = THREE;
+    const STORAGE_KEY = 'memory-sparks:healing-records';
+    // 默认空状态（不显示 demo），只有 ?demo=1 才载入 108 条演示数据
+    const SHOW_DEMO = new URLSearchParams(location.search).get('demo') === '1';
+    const canvas = document.getElementById('stage');
+    const fallback = document.getElementById('fallback');
+    const hud = document.getElementById('hud');
+    const overlay = document.getElementById('overlay');
+    const composer = null; // 由 ms-composer.js 接管
+    const reader = document.getElementById('reader');
+    // 兼容旧代码：暴露 isComposerOpen() 判断
+    const isComposerOpen = () => !!(window.MS && window.MS.composer && window.MS.composer.isOpen && window.MS.composer.isOpen());
+    let records = [];
+    let cardMeshes = [];
+
+    // ── 媒体真文件「读取水合」 ──────────────────────────────────
+    // 记录里的媒体字段可能是 'fsa:相对路径'（U 盘真文件）、'data:...base64'（兜底）或空。
+    // 渲染前把 fsa 引用换成能显示的 blob: URL；base64/空 原样返回（无 U 盘时全走这条 → 行为同现在）。
+    const mediaUrlCache = new Map(); // fsaRef -> blobUrl，避免同一引用重复 resolve 出多个 blob
+
+    async function resolveRef(ref) {
+      if (!ref || ref.startsWith('data:')) return ref || '';
+      if (!ref.startsWith('fsa:')) return ref;
+      if (mediaUrlCache.has(ref)) return mediaUrlCache.get(ref);
+      try {
+        const url = await MS.mediaVault.resolve(ref);
+        if (url) mediaUrlCache.set(ref, url);
+        return url;
+      } catch (err) {
+        console.warn('[healing] resolveRef 失败：', ref, err);
+        return '';
+      }
+    }
+
+    // 把 records 里的 fsa 引用就地换成 blob: URL（mutate）。
+    // 删除时要拿原始 fsa 引用，所以先在 _fsaSrc 留底。
+    async function hydrateRecords(recordsArr) {
+      if (!Array.isArray(recordsArr)) return recordsArr;
+      for (const r of recordsArr) {
+        if (!r) continue;
+        if (typeof r.src === 'string' && r.src.startsWith('fsa:')) r._fsaSrc = r.src;
+        for (const f of ['src', 'image', 'video', 'audio']) {
+          if (typeof r[f] === 'string' && r[f].startsWith('fsa:')) r[f] = await resolveRef(r[f]);
+        }
+        if (Array.isArray(r.images)) {
+          r.images = await Promise.all(r.images.map(x =>
+            (typeof x === 'string' && x.startsWith('fsa:')) ? resolveRef(x) : x));
+        }
+      }
+      return recordsArr;
+    }
+
+    // 读 + 水合：所有「读 records 喂给 buildCards」的入口统一走这里。
+    // 无 U 盘时 hydrateRecords 内每个字段都不是 fsa: → 原样返回，等价于直接 loadRecords()。
+    async function loadHydratedRecords() {
+      return hydrateRecords(loadRecords());
+    }
+    let currentLayerCards = [];
+    let spawningCount = 0;
+    let raycaster;
+    let pointer;
+    let camera, scene, renderer, cardGroup, particleGroup, decorGroup, bgGroup;
+    // 任务 2：用户调好的初始视角（yaw 0.8° / pitch -9.5° / fov 66.8°）
+    // 进入治愈 + 空格复位都用这套
+    const INITIAL_YAW = 0.8 * Math.PI / 180;
+    const INITIAL_PITCH = -9.5 * Math.PI / 180;
+    const INITIAL_FOV = 66.8;
+    let targetYaw = INITIAL_YAW;
+    let targetPitch = INITIAL_PITCH;
+    let yaw = INITIAL_YAW;
+    let pitch = INITIAL_PITCH;
+    let velocityYaw = 0;
+    let velocityPitch = 0;
+    let lastPointer = null;
+    let dragging = false;
+    let dragStart = null;
+    let hoverMesh = null;
+    let sceneTitleMeshes = [];
+    const PITCH_LIMIT = Math.PI * 0.46; // 物理硬上限
+    // STORE-008 定稿：水平不限制（可自由环视）；垂直只能在静止视角上下 ±20° 内转。
+    const PITCH_RANGE = Math.PI * 20 / 180;
+    const clampPitch = (v) => Math.max(Math.max(-PITCH_LIMIT, INITIAL_PITCH - PITCH_RANGE), Math.min(Math.min(PITCH_LIMIT, INITIAL_PITCH + PITCH_RANGE), v));
+    const FOV_MIN = 38;
+    const FOV_MAX = 72;
+    const FOV_DEFAULT = 62;
+    let targetFov = INITIAL_FOV;
+    let currentLayer = 0;
+    let isLayerAnimating = false;
+    let targetForward = 0;
+    let forward = 0;
+    const CARD_TEXTURE_WIDTH = 1024; // 卡片画布，Retina 下 416/768 都糊，提到 1024
+    const mediaThumbnailCache = new Map();
+    const mediaThumbnailInflight = new Map();
+
+    const demoRecords = [
+      { id: 'demo-1', title: '有人记得我怕冷', text: '那天只是很普通的一句提醒，却让我觉得自己被放在心上。', type: 'text', warmth: 5, date: '2026.05.21' },
+      { id: 'demo-2', title: '晒到太阳的下午', text: '坐在窗边十分钟，心里突然安静下来。窗台上有麻雀的影子。', type: 'audio', warmth: 4, duration: 73, date: '2026.05.17' },
+      { id: 'demo-3', title: '一小段路', text: '什么都没有发生，但散步回来以后，好像又能继续了。', type: 'image', warmth: 3, date: '2026.05.12' },
+      { id: 'demo-4', title: '被认真听完', text: '没有建议，没有评价，只是被认真听完。', type: 'text', warmth: 5, date: '2026.05.06' },
+      { id: 'demo-5', title: '晚上的热汤', text: '身体先被安顿下来，心也慢慢跟着落地。', type: 'image', warmth: 4, date: '2026.04.30' },
+      { id: 'demo-6', title: '一句没关系', text: '原来不用立刻变好，也可以被喜欢。', type: 'audio', warmth: 5, duration: 42, date: '2026.04.22' },
+      { id: 'demo-7', title: '干净的被套', text: '换完床单的夜晚，整个人都松了一点。', type: 'text', warmth: 3, date: '2026.04.19' },
+      { id: 'demo-8', title: '把灯打开', text: '房间亮起来的时候，我也跟着回来了。', type: 'image', warmth: 4, date: '2026.04.13' },
+      { id: 'demo-9', title: '朋友发来的歌', text: '刚好是我需要的那一句歌词。', type: 'audio', warmth: 3, duration: 188, date: '2026.04.08' },
+      { id: 'demo-10', title: '雨停以后', text: '空气里有一点新的味道。', type: 'video', warmth: 2, date: '2026.03.29' },
+      { id: 'demo-11', title: '没有赶时间', text: '慢慢走，也没有关系。脚步可以比想象中更轻。', type: 'text', warmth: 3, date: '2026.03.18' },
+      { id: 'demo-12', title: '被允许休息', text: '什么都不做的那天，反而救了我。', type: 'image', warmth: 4, date: '2026.03.09' },
+      { id: 'demo-13', title: '轻轻地被叫住', text: '有人说：你已经做得够好了。我突然就停下来了。', type: 'text', warmth: 4, date: '2026.02.28' },
+      { id: 'demo-14', title: '不用解释', text: '那一刻，我不用解释自己为什么难过。', type: 'video', warmth: 5, date: '2026.02.13' },
+      { id: 'demo-15', title: '安静地亮起来', text: '我没有突然变好，只是心里终于有了一点光。', type: 'image', warmth: 4, date: '2026.02.01' },
+      { id: 'demo-16', title: '有人等我回家', text: '门口亮着灯，这件事本身就足够了。', type: 'text', warmth: 5, date: '2026.01.20' },
+      { id: 'demo-17', title: '把话说出来', text: '说出来以后，它就不再只困在身体里。说话本身就是一种安顿。', type: 'text', warmth: 3, date: '2026.01.11' },
+      { id: 'demo-18', title: '慢慢吃完一顿饭', text: '好好吃饭的时候，人会重新回到自己这里。', type: 'image', warmth: 3, date: '2025.12.29' },
+      { id: 'demo-19', title: '第一口热茶', text: '握着杯子的那一刻，手先暖了，心才跟着暖。', type: 'text', warmth: 4, date: '2025.12.18' },
+      { id: 'demo-20', title: '妈妈打来的电话', text: '没什么事，就是想听听你的声音。', type: 'audio', warmth: 5, duration: 245, date: '2025.12.10' },
+      { id: 'demo-21', title: '阳台的风', text: '风穿过窗帘的样子，让人想起小时候的午后。', type: 'text', warmth: 3, date: '2025.12.03' },
+      { id: 'demo-22', title: '把手机放下半天', text: '世界没有因为我离线而崩塌。反而清晰了一点。', type: 'text', warmth: 4, date: '2025.11.25' },
+      { id: 'demo-23', title: '朋友的一个拥抱', text: '什么都没说，但身体先认出了她。', type: 'image', warmth: 5, date: '2025.11.18' },
+      { id: 'demo-24', title: '雨天的咖啡馆', text: '玻璃上的水珠和热气，一起把窗外隔成另一个世界。', type: 'image', warmth: 4, date: '2025.11.09' },
+      { id: 'demo-25', title: '散步时遇到一只猫', text: '它停下来看了我一会儿，然后慢慢走开了。', type: 'text', warmth: 3, date: '2025.10.30' },
+      { id: 'demo-26', title: '不必道歉', text: '原来我不需要为存在本身道歉。', type: 'text', warmth: 5, date: '2025.10.22' },
+      { id: 'demo-27', title: '一直陪着', text: '没有解决任何问题，但她一直坐在我旁边。', type: 'text', warmth: 5, date: '2025.10.15' },
+      { id: 'demo-28', title: '看到对方眼里的我', text: '原来在他眼里，我是值得被珍惜的样子。', type: 'text', warmth: 5, date: '2025.10.07' },
+      { id: 'demo-29', title: '听完一首歌', text: '安静地听到最后一秒，没有快进，没有切换。', type: 'audio', warmth: 4, duration: 215, date: '2025.09.28' },
+      { id: 'demo-30', title: '整理书桌', text: '一边收拾一边发现，自己也在被整理。', type: 'text', warmth: 3, date: '2025.09.20' },
+      { id: 'demo-31', title: '走进澡堂的瞬间', text: '热气一裹上来，今天就先到这里。', type: 'text', warmth: 4, date: '2025.09.12' },
+      { id: 'demo-32', title: '写下自己的名字', text: '在新本子的第一页，认真地写下名字。', type: 'text', warmth: 3, date: '2025.09.04' },
+      { id: 'demo-33', title: '把碗洗干净', text: '热水冲下去，泡沫散开，今天也算完成了。', type: 'text', warmth: 3, date: '2025.08.27' },
+      { id: 'demo-34', title: '早上的第一杯水', text: '身体先苏醒过来，然后是世界。', type: 'text', warmth: 3, date: '2025.08.20' },
+      { id: 'demo-35', title: '远方寄来的信', text: '拆开的瞬间，远的地方就在手心里了。', type: 'image', warmth: 5, date: '2025.08.12' },
+      { id: 'demo-36', title: '共同沉默', text: '不用说话也不尴尬的人，是这一生少有的礼物。', type: 'text', warmth: 5, date: '2025.08.04' },
+      { id: 'demo-37', title: '一片清晨的光', text: '从云缝里漏下来，刚好落在书页上。', type: 'image', warmth: 4, date: '2025.07.28' },
+      { id: 'demo-38', title: '路边的花', text: '不知道名字，但是它开得很认真。', type: 'text', warmth: 3, date: '2025.07.20' },
+      { id: 'demo-39', title: '一段下班路', text: '今天的路特别长，也特别值得走。', type: 'video', warmth: 3, date: '2025.07.12' },
+      { id: 'demo-40', title: '关上门的瞬间', text: '把外面的喧嚣留在外面，里面只剩我一个人。', type: 'text', warmth: 3, date: '2025.07.04' },
+      { id: 'demo-41', title: '把窗帘拉开', text: '让光进来，让自己也跟着进来。', type: 'text', warmth: 4, date: '2025.06.26' },
+      { id: 'demo-42', title: '没有评判', text: '我说完，对面没有皱眉、没有插话、没有点头。', type: 'text', warmth: 5, date: '2025.06.18' },
+      { id: 'demo-43', title: '听见自己的笑声', text: '是真的从胸腔里出来的那种，不是礼貌的。', type: 'audio', warmth: 5, duration: 12, date: '2025.06.09' },
+      { id: 'demo-44', title: '雪落下来', text: '整个城市突然安静。我也是。', type: 'video', warmth: 4, date: '2025.06.01' },
+      { id: 'demo-45', title: '答应的事被做到', text: '原来世界上真的有人，说了就做到。', type: 'text', warmth: 5, date: '2025.05.23' },
+      { id: 'demo-46', title: '给自己买一束花', text: '不为任何人，就为了让今天的桌子上有花。', type: 'text', warmth: 4, date: '2025.05.15' },
+      { id: 'demo-47', title: '走过去问候', text: '本来可以低头走过，但今天选择了停下来。', type: 'text', warmth: 4, date: '2025.05.07' },
+      { id: 'demo-48', title: '整夜的雨声', text: '没有睡着，但也没有焦虑。雨替我守着夜。', type: 'audio', warmth: 4, duration: 1820, date: '2025.04.29' },
+      { id: 'demo-49', title: '看着植物长大', text: '它发了一片新叶，今天比昨天好。', type: 'text', warmth: 3, date: '2025.04.21' },
+      { id: 'demo-50', title: '把手放在心口', text: '只是放着，告诉自己：我还在这里。', type: 'text', warmth: 4, date: '2025.04.13' },
+      { id: 'demo-51', title: '一起做饭', text: '切菜的声音，油锅的声音，话题的声音，混在一起。', type: 'video', warmth: 5, date: '2025.04.05' },
+      { id: 'demo-52', title: '久违的拥抱', text: '比记忆里更紧一点，也更长一点。', type: 'text', warmth: 5, date: '2025.03.28' },
+      { id: 'demo-53', title: '第二天能继续', text: '昨天看起来过不去的事，今天发现还是可以走。', type: 'text', warmth: 4, date: '2025.03.20' },
+      { id: 'demo-54', title: '终于哭出来', text: '憋了很久的东西，今天有人在旁边，所以可以哭了。', type: 'text', warmth: 5, date: '2025.03.12' },
+      { id: 'demo-55', title: '看一场日落', text: '从橙到粉到紫，没有错过一秒。', type: 'text', warmth: 4, date: '2025.03.04' },
+      { id: 'demo-56', title: '信任', text: '不必每次都解释，是一种很安静的爱。', type: 'text', warmth: 5, date: '2025.02.24' },
+      { id: 'demo-57', title: '没人催', text: '"你慢慢来" 这四个字，今天救了我。', type: 'text', warmth: 5, date: '2025.02.16' },
+      { id: 'demo-58', title: '听见雨打在窗', text: '窗外是雨，窗内是我，中间隔着一层玻璃和一杯热茶。', type: 'audio', warmth: 4, duration: 432, date: '2025.02.08' },
+      { id: 'demo-59', title: '收到一张照片', text: '是朋友顺手拍的天空。原来她也想到了我。', type: 'text', warmth: 4, date: '2025.01.31' },
+      { id: 'demo-60', title: '终于睡着', text: '不靠任何东西，只是身体决定它今天可以放下了。', type: 'text', warmth: 5, date: '2025.01.23' },
+      { id: 'demo-61', title: '杯底碰桌子的轻响', text: '一个人的晚上，这一声让我觉得不那么空。', type: 'text', warmth: 2, date: '2025.01.15' },
+      { id: 'demo-62', title: '对面楼的窗', text: '早上拉开窗帘，对面的窗也开了。陌生人在同一时刻醒着。', type: 'text', warmth: 1, date: '2025.01.08' },
+      { id: 'demo-63', title: '面包店的香', text: '走过去那一刻，忍不住停了一下，深呼吸。', type: 'text', warmth: 2, date: '2025.01.02' },
+      { id: 'demo-64', title: '水洼里的云', text: '雨后地面上有一片天空。低头也能看到光。', type: 'text', warmth: 1, date: '2024.12.27' },
+      { id: 'demo-65', title: '学走路的孩子', text: '扶着外婆的手，摇摇晃晃地走着。', type: 'text', warmth: 2, date: '2024.12.20' },
+      { id: 'demo-66', title: '风里的衣服', text: '阳台上的T恤被风吹起来，像谁在挥手。', type: 'text', warmth: 3, date: '2024.12.13' },
+      { id: 'demo-67', title: '一句"路上慢"', text: '外卖小哥递东西时随口说的话。', type: 'audio', warmth: 3, duration: 8, date: '2024.12.05' },
+      { id: 'demo-68', title: '老朋友的问候', text: '"你最近怎么样" 简单的五个字，刚好戳到我。', type: 'text', warmth: 3, date: '2024.11.28' },
+      { id: 'demo-69', title: '丢进洗衣机的衣服', text: '这一周的累，也一起洗掉吧。', type: 'text', warmth: 3, date: '2024.11.20' },
+      { id: 'demo-70', title: '水龙头下的剩饭', text: '听水声把别的声音盖过去。', type: 'text', warmth: 3, date: '2024.11.13' },
+      { id: 'demo-71', title: '台阶上的小猫', text: '睡得很熟，连我经过都没动一下。', type: 'text', warmth: 3, date: '2024.11.05' },
+      { id: 'demo-72', title: '找到对的味道', text: '原来这家咖啡店有我想要的。下次还来。', type: 'text', warmth: 3, date: '2024.10.28' },
+      { id: 'demo-73', title: '上班路上的歌', text: '正好赶在我要灰心之前响起。', type: 'audio', warmth: 3, duration: 187, date: '2024.10.20' },
+      { id: 'demo-74', title: '同事留的蛋糕', text: '上面写着我的名字。我没说话，咬了一口。', type: 'text', warmth: 3, date: '2024.10.12' },
+      { id: 'demo-75', title: '地铁里的短文', text: '刚好读到结尾就到站。心里有一点暖。', type: 'text', warmth: 3, date: '2024.10.05' },
+      { id: 'demo-76', title: '扶起摔倒的人', text: '陌生人之间也可以很温柔。', type: 'text', warmth: 3, date: '2024.09.28' },
+      { id: 'demo-77', title: '电梯里没别人', text: '可以发一会儿呆，不用做表情。', type: 'text', warmth: 3, date: '2024.09.20' },
+      { id: 'demo-78', title: '没用的对话', text: '话题从一个跳到另一个，聊了快两小时。', type: 'text', warmth: 3, date: '2024.09.12' },
+      { id: 'demo-79', title: '午后短睡', text: '醒来时窗外的光已经变了，像睡了好几年。', type: 'text', warmth: 3, date: '2024.09.04' },
+      { id: 'demo-80', title: '妹妹的想念', text: '她说"有点想你"。简单五个字。', type: 'text', warmth: 4, date: '2024.08.27' },
+      { id: 'demo-81', title: '爸爸守了一夜', text: '天亮时他还坐在医院走廊的椅子上。', type: 'text', warmth: 4, date: '2024.08.20' },
+      { id: 'demo-82', title: '朋友的猫照', text: '她发来时说，胖了一点。', type: 'text', warmth: 4, date: '2024.08.13' },
+      { id: 'demo-83', title: '凑钱买的礼物', text: '她拆开时眼睛亮了一下。', type: 'text', warmth: 4, date: '2024.08.06' },
+      { id: 'demo-84', title: '聊到凌晨', text: '时间在话里溜走，谁都没看表。', type: 'audio', warmth: 4, duration: 1820, date: '2024.07.30' },
+      { id: 'demo-85', title: '她终于放下了', text: '看着她，脸上的紧绷不见了。', type: 'text', warmth: 4, date: '2024.07.22' },
+      { id: 'demo-86', title: '想通了', text: '困了我很久的那件事，突然就清晰了。', type: 'text', warmth: 4, date: '2024.07.15' },
+      { id: 'demo-87', title: '爸爸问我累不累', text: '他从来没问过这种话。', type: 'audio', warmth: 4, duration: 22, date: '2024.07.07' },
+      { id: 'demo-88', title: '原来我也可以这样温柔', text: '是面对他人，也是面对自己。', type: 'text', warmth: 4, date: '2024.06.30' },
+      { id: 'demo-89', title: '答应自己的事做到了', text: '原来我没那么轻易放弃。', type: 'text', warmth: 4, date: '2024.06.22' },
+      { id: 'demo-90', title: '听见自己说"没关系"', text: '声音是从心里出来的，不是嘴上。', type: 'text', warmth: 4, date: '2024.06.14' },
+      { id: 'demo-91', title: '放下多年的怨念', text: '突然觉得，那件事不再重要。', type: 'text', warmth: 4, date: '2024.06.06' },
+      { id: 'demo-92', title: '婚礼上的那封信', text: '我哽咽着读完，全场都安静。', type: 'text', warmth: 4, date: '2024.05.30' },
+      { id: 'demo-93', title: '重新联系上的人', text: '她还记得我喜欢什么，几年没变。', type: 'text', warmth: 4, date: '2024.05.22' },
+      { id: 'demo-94', title: '妈妈说"你长大了"', text: '她看着我，眼神不一样了。', type: 'text', warmth: 5, date: '2024.05.14' },
+      { id: 'demo-95', title: '握住她的手', text: '她说"谢谢"。我以为该说谢谢的是我。', type: 'text', warmth: 5, date: '2024.05.06' },
+      { id: 'demo-96', title: '告诉父母真实的我', text: '他们沉默了一会儿，然后慢慢点头。', type: 'text', warmth: 5, date: '2024.04.28' },
+      { id: 'demo-97', title: '外婆说"等你回来"', text: '她记得我什么时候放假，比我自己还清楚。', type: 'text', warmth: 5, date: '2024.04.20' },
+      { id: 'demo-98', title: '婚礼上的誓言', text: '说出口的瞬间想哭。原来这是真的。', type: 'audio', warmth: 5, duration: 96, date: '2024.04.12' },
+      { id: 'demo-99', title: '孩子的第一声哭', text: '整个房间都松了一口气。', type: 'video', warmth: 5, date: '2024.04.04' },
+      { id: 'demo-100', title: '原谅了那个人', text: '原来一直困着的不是他，是我自己。', type: 'text', warmth: 5, date: '2024.03.27' },
+      { id: 'demo-101', title: '异乡的乡音', text: '在地铁上突然听到，整个人停住。', type: 'audio', warmth: 5, duration: 14, date: '2024.03.19' },
+      { id: 'demo-102', title: '见到奶奶', text: '她比上次又小了一点。', type: 'text', warmth: 5, date: '2024.03.11' },
+      { id: 'demo-103', title: '被深深地拥抱', text: '比想象的更紧、更长。我没有挣脱。', type: 'text', warmth: 5, date: '2024.03.03' },
+      { id: 'demo-104', title: '离别前的拥抱', text: '知道这一别，不知何时再见。', type: 'text', warmth: 5, date: '2024.02.24' },
+      { id: 'demo-105', title: '妈妈讲小时候的我', text: '听到一些自己都没记得的样子。', type: 'audio', warmth: 5, duration: 423, date: '2024.02.16' },
+      { id: 'demo-106', title: '把信扔进信箱', text: '等了十几年才寄出，那一刻心里轻了。', type: 'text', warmth: 5, date: '2024.02.08' },
+      { id: 'demo-107', title: '等到她说"我也是"', text: '短短四个字，过了好多年。', type: 'text', warmth: 5, date: '2024.01.31' },
+      { id: 'demo-108', title: '山顶看日出', text: '从黑到亮，没错过一秒。眼睛湿了。', type: 'video', warmth: 5, date: '2024.01.23' }
+    ];
+
+    function loadRecords() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        if (Array.isArray(stored) && stored.length) {
+          return SHOW_DEMO ? [...stored, ...demoRecords] : stored;
+        }
+      } catch {}
+      return SHOW_DEMO ? demoRecords : [];
+    }
+
+    function updateEmptyState() {
+      const emptyEl = document.getElementById('empty');
+      const addBtn = document.getElementById('addBtn');
+      const isEmpty = records.length === 0;
+      emptyEl.classList.toggle('on', isEmpty);
+      addBtn.classList.toggle('hidden', isEmpty);
+      if (isEmpty) hud.classList.add('soft');
+    }
+
+    // U盘建库（STORE-006）：同步进 healing/records.json + 总索引 / 插盘恢复 / 通知父级。
+    function healingSyncFile() {
+      const s = window.MS && window.MS.mediaStore;
+      if (s && s.syncRecordsFromStorage) {
+        s.syncRecordsFromStorage('healing', STORAGE_KEY, {
+          meta: { name: '治愈星', keyword: '治愈' },
+          mediaFields: ['src', 'image', 'video', 'audio'],
+        }).catch(() => {});
+      }
+    }
+    function healingRestoreFile() {
+      const s = window.MS && window.MS.mediaStore;
+      if (!s || !s.restoreToStorage) return Promise.resolve(false);
+      return s.restoreToStorage('healing', STORAGE_KEY).then(restored => {
+        if (restored) {
+          try { window.parent && window.parent.postMessage({ type: 'memory-sparks:storage-changed', key: STORAGE_KEY }, '*'); } catch (_) {}
+        }
+        return restored;
+      });
+    }
+
+    function saveRecords() {
+      const cleaned = records
+        .filter(item => !item.id.startsWith('demo-'))
+        .map(item => {
+          // fsa 真文件：内存里的 src/媒体字段已被水合成 blob: URL（会话级），
+          // 存回 localStorage 时必须还原成持久的 'fsa:引用'（留底在 _fsaSrc），
+          // 否则下次启动读不到媒体。
+          if (item._fsaSrc && item._fsaSrc.startsWith('fsa:')) {
+            const { _fsaSrc, ...rest } = item;
+            const ref = _fsaSrc;
+            const restored = { ...rest, src: ref };
+            // 对应 kind 的媒体字段也写回引用（与 beforeSave 一致），其它清空
+            if (item.type === 'image') { restored.image = ref; restored.images = [ref]; restored.video = ''; restored.audio = ''; }
+            else if (item.type === 'video') { restored.video = ref; restored.image = ''; restored.images = []; restored.audio = ''; }
+            else if (item.type === 'audio') { restored.audio = ref; restored.image = ''; restored.images = []; restored.video = ''; }
+            return restored;
+          }
+          // blob: URL（非 fsa 来源，如大文件兜底）是会话级，刷新即失，不存进 localStorage
+          if (item.src && item.src.startsWith('blob:')) {
+            return { ...item, src: '', _largeFile: true };
+          }
+          return item;
+        });
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+      } catch (e) {
+        // localStorage 满了（base64 太大）：去掉所有 src 再存
+        const fallback = cleaned.map(item => ({ ...item, src: '', _largeFile: true }));
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(fallback)); } catch {}
+      }
+      healingSyncFile(); // U盘建库（STORE-006）
+    }
+
+    function init() {
+      if (!window.THREE) {
+        fallback.classList.add('on');
+        return;
+      }
+      try {
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
+      } catch {
+        fallback.classList.add('on');
+        return;
+      }
+      // Retina(dpr=2) 全分辨率 = 渲染像素 ×4，治愈磨砂玻璃风格不需要 razor-sharp，
+      // cap 到 1.5 省约 40% GPU，视觉几乎看不出差
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.outputColorSpace = THREE.SRGBColorSpace || undefined;
+
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0xf2ded4, 0.010);
+      camera = new THREE.PerspectiveCamera(FOV_DEFAULT, window.innerWidth / window.innerHeight, 0.1, 180);
+      camera.position.copy(layerCenters[0]);
+      applyInitialLayerFromUrl();
+      camera.position.z = -forward;
+      raycaster = new THREE.Raycaster();
+      pointer = new THREE.Vector2();
+      bgGroup = new THREE.Group();
+      cardGroup = new THREE.Group();
+      particleGroup = new THREE.Group();
+      decorGroup = new THREE.Group();
+      scene.add(bgGroup, cardGroup, particleGroup, decorGroup);
+
+      createBackground();
+      createParticles();
+      const hasBackend = !!(MS.mediaVault && MS.mediaVault.hasFileBackend && MS.mediaVault.hasFileBackend());
+      if (!hasBackend) {
+        // 无 U 盘（开发期默认路径）：直接同步建，行为与改动前完全一致。
+        records = loadRecords();
+        buildCards();
+      } else {
+        // 已有 U 盘句柄：先水合（把 fsa 引用换成 blob:）再建，避免拿 fsa: src 建一次空图。
+        loadHydratedRecords().then(hydrated => {
+          records = hydrated;
+          buildCards();
+        }).catch(err => {
+          console.warn('[healing] 初次水合失败，降级直接建卡：', err);
+          records = loadRecords();
+          buildCards();
+        });
+      }
+      bindEvents();
+      animate();
+      window.__healingSceneReady = true;
+      // dev/debug only：expose 关键状态便于 CDP 自测
+      window.__heal = { get cardMeshes(){ return cardMeshes; }, get records(){ return records; }, get currentLayer(){ return currentLayer; } };
+      // 调试用：?open=<id> 自动打开 reader / ?testShape=<text|audio|image-h|image-v|video-h|video-v> 强制某形状
+      const params = new URLSearchParams(location.search);
+      const openId = params.get('open');
+      if (openId) setTimeout(() => openReader(openId), 800);
+      const testShape = params.get('testShape');
+      if (testShape) setTimeout(() => openReaderTestShape(testShape), 800);
+      if (params.get('openComposer')) setTimeout(() => openComposer(), 800);
+
+      // 自动连测：?autoSeq=1 依次跨层添加 3 条
+      if (params.get('autoSeq')) {
+        const sequence = [
+          { layer: 1, title: 'A · 陪伴' },
+          { layer: 2, title: 'B · 启发' },
+          { layer: 0, title: 'C · 温柔' },
+        ];
+        let i = 0;
+        const dumpState = (tag) => {
+          const layerCounts = [0, 1, 2].map(layer =>
+            cardMeshes.filter(m => m.userData.base.layer === layer).length
+          );
+          const visibleByLayer = [0, 1, 2].map(layer =>
+            cardMeshes.filter(m => m.userData.base.layer === layer && m.visible).length
+          );
+          window.__autoSeqLog = window.__autoSeqLog || [];
+          window.__autoSeqLog.push({ tag, currentLayer, layerCounts, visibleByLayer, time: Date.now() });
+        };
+        const runOne = (step) => {
+          if (step >= sequence.length) {
+            dumpState('done');
+            window.__autoSeqDone = true;
+            return;
+          }
+          const s = sequence[step];
+          dumpState(`before_${step}_layer${s.layer}`);
+          openComposer();
+          setTimeout(() => {
+            titleInput.value = s.title;
+            textInput.value = '自测条目 #' + (step + 1);
+            selectedLayer = s.layer;
+            document.querySelectorAll('#layerTags button').forEach(b => {
+              b.classList.toggle('active', Number(b.dataset.layer) === s.layer);
+            });
+            setTimeout(async () => {
+              await addMemory();
+              setTimeout(() => {
+                dumpState(`after_${step}_layer${s.layer}`);
+                runOne(step + 1);
+              }, 3000); // 等 flyIn 跑完
+            }, 300);
+          }, 200);
+        };
+        setTimeout(() => runOne(0), 1200);
+      }
+    }
+
+    function openReaderTestShape(shape) {
+      const isVertical = shape.endsWith('-v');
+      const isHorizontal = shape.endsWith('-h');
+      const isImage = shape.startsWith('image');
+      const isVideo = shape.startsWith('video');
+      const w = isVertical ? 360 : 800;
+      const h = isVertical ? 640 : (shape === 'video-h' ? 450 : 500);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#e8a89e"/><stop offset="40%" stop-color="#f4c89e"/><stop offset="100%" stop-color="#4a3a52"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#g)"/></svg>`;
+      const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
+      const titles = { text: '把话说出来', audio: '奶奶哼歌', 'image-h': '回家的桥', 'image-v': '小巷', 'video-h': '傍晚的雨', 'video-v': '猫' };
+      const titleEl = document.getElementById('readerTitle');
+      const textEl = document.getElementById('readerText');
+      const mediaEl = document.getElementById('readerMedia');
+      titleEl.textContent = titles[shape] || shape;
+      textEl.textContent = '那天天色融得很慢，像有人在远处轻轻揉它。';
+      if (isImage) mediaEl.innerHTML = `<img src="${dataUrl}" alt="">`;
+      else if (isVideo) mediaEl.innerHTML = `<img src="${dataUrl}" alt="">`; // 用图代替视频静帧
+      else if (shape === 'audio') mediaEl.innerHTML = '';
+      else mediaEl.innerHTML = '';
+      READER_SHAPES.forEach(c => reader.classList.remove(c));
+      reader.classList.add('shape-' + shape);
+      reader.classList.add('open');
+      overlay.classList.add('on');
+      // dev 用：直接 set 到屏幕中心 + 完全可见（绕过动画）
+      gsap.set(reader, { xPercent: -50, yPercent: -50, x: 0, y: 0, opacity: 1 });
+    }
+
+    const SCENE_PALETTE = [
+      {
+        name: 'gentle',
+        card: '#dfb8a8',
+        title: 'rgba(112, 78, 66, 0.78)',
+        base: '#f8eee6',
+        glowA: 'rgba(255, 247, 230, 0.98)',
+        glowB: 'rgba(246, 209, 190, 0.48)',
+        glowC: 'rgba(255, 226, 205, 0.24)',
+        speck: '142, 104, 88'
+      },
+      {
+        name: 'companion',
+        card: '#dec29a',
+        title: 'rgba(113, 88, 54, 0.78)',
+        base: '#f7efdf',
+        glowA: 'rgba(255, 249, 226, 0.94)',
+        glowB: 'rgba(246, 220, 168, 0.50)',
+        glowC: 'rgba(240, 200, 177, 0.22)',
+        speck: '143, 113, 70'
+      },
+      {
+        name: 'inspire',
+        card: '#f1e5db',
+        title: 'rgba(104, 82, 70, 0.78)',
+        base: '#f8f1ea',
+        glowA: 'rgba(255, 250, 238, 0.92)',
+        glowB: 'rgba(238, 218, 198, 0.36)',
+        glowC: 'rgba(248, 226, 204, 0.22)',
+        speck: '132, 106, 92'
+      }
+    ];
+    const SCENE_FOG_COLORS = SCENE_PALETTE.map(item => new THREE.Color(item.base));
+
+    function createBackground() {
+      const geometry = new THREE.SphereGeometry(140, 48, 24);
+      SCENE_PALETTE.forEach((palette, index) => {
+        const texture = new THREE.CanvasTexture(makeVoidCanvas(1024, 1024, palette));
+        texture.colorSpace = THREE.SRGBColorSpace || undefined;
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.BackSide,
+          transparent: true,
+          opacity: index === currentLayer ? 1 : 0,
+          depthTest: false,
+          depthWrite: false
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.userData.layer = index;
+        mesh.userData.baseOpacity = 1;
+        mesh.renderOrder = -1000;
+        mesh.visible = index === currentLayer;
+        bgGroup.add(mesh);
+      });
+    }
+
+    function makeVoidCanvas(width, height, palette) {
+      const c = document.createElement('canvas');
+      c.width = width;
+      c.height = height;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = palette.base;
+      ctx.fillRect(0, 0, width, height);
+
+      addRadial(ctx, width * 0.18, height * 0.16, width * 0.86, palette.glowA, 'rgba(255, 248, 232, 0)');
+      addRadial(ctx, width * 0.72, height * 0.32, width * 0.76, palette.glowB, 'rgba(235, 244, 239, 0)');
+      addRadial(ctx, width * 0.52, height * 0.84, width * 0.70, palette.glowC, 'rgba(238, 242, 252, 0)');
+      addRadial(ctx, width * 0.46, height * 0.44, width * 0.54, 'rgba(255, 255, 255, 0.26)', 'rgba(255, 255, 255, 0)');
+
+      const starCount = 340;
+      for (let i = 0; i < starCount; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        const tiny = Math.random();
+        const r = tiny < 0.92 ? 0.35 + Math.random() * 0.45 : 0.8 + Math.random() * 0.95;
+        const alpha = tiny < 0.92 ? 0.11 + Math.random() * 0.2 : 0.22 + Math.random() * 0.28;
+        ctx.fillStyle = `rgba(${palette.speck}, ${alpha.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return c;
+    }
+
+    function addRadial(ctx, x, y, r, a, b) {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, a);
+      g.addColorStop(1, b);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+
+    function createParticles() {
+      const count = 150;
+      const positions = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const colorA = new THREE.Color(0xfff4d7);
+      const colorB = new THREE.Color(0xf1b99a);
+      for (let i = 0; i < count; i++) {
+        positions[i * 3 + 0] = (Math.random() - 0.5) * 18;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * 9;
+        positions[i * 3 + 2] = -Math.random() * FIELD_DEPTH - 2;
+        const color = colorA.clone().lerp(colorB, Math.random() * 0.7);
+        colors[i * 3 + 0] = color.r;
+        colors[i * 3 + 1] = color.g;
+        colors[i * 3 + 2] = color.b;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      const mat = new THREE.PointsMaterial({
+        size: 0.045,
+        sizeAttenuation: true,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.42,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+      particleGroup.add(new THREE.Points(geo, mat));
+    }
+
+    function flyInNewCard(newId) {
+      // 找被标记 spawning 的那一份（buildCards 只标第一份）
+      const mesh = cardMeshes.find(m => m.userData.record.id === newId && m.userData.spawning)
+                || cardMeshes.find(m => m.userData.record.id === newId);
+      if (!mesh) return;
+      if (typeof gsap === 'undefined') {
+        if (mesh.userData.spawning) {
+          spawningCount = Math.max(0, spawningCount - 1);
+          mesh.userData.spawning = false;
+        }
+        const baseScale = mesh.userData.base?.scale || 1;
+        mesh.userData.currentScale = baseScale;
+        mesh.userData.targetScale = baseScale;
+        mesh.scale.setScalar(baseScale);
+        mesh.material.opacity = mesh.userData.base?.opacity || 1;
+        return;
+      }
+
+      // 终点 = 卡片已经在 buildCards 里确定的位置
+      const finalPos = mesh.position.clone();
+      const finalScale = 1;
+      const finalOpacity = mesh.userData.base.opacity || 1;
+
+      // 起点 = 相机正前方 ~2.4 单位（即用户刚刚看 composer 的位置）
+      const camForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const startPos = camera.position.clone().add(camForward.clone().multiplyScalar(2.4));
+
+      // 控制点 = 起点→终点中点 + 垂直方向 hash 偏移 → 每张卡曲线不一样
+      const idHash = hashId(newId);
+      const midPos = startPos.clone().lerp(finalPos, 0.5);
+      const dirToFinal = finalPos.clone().sub(startPos).normalize();
+      const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+      const perp = new THREE.Vector3().crossVectors(dirToFinal, camUp).normalize();
+      const sideAmount = ((idHash % 1000) / 1000 - 0.5) * 5.0;
+      const upAmount = ((idHash % 71) / 71 - 0.15) * 3.5;
+      const ctrlPos = midPos
+        .add(perp.multiplyScalar(sideAmount))
+        .add(camUp.clone().multiplyScalar(upAmount));
+
+      mesh.position.copy(startPos);
+      mesh.scale.setScalar(0.35);
+      mesh.material.opacity = 0;
+      mesh.userData.spawning = true;
+      mesh.userData.currentScale = 0.35;
+      mesh.userData.targetScale = 1;
+
+      const halo = makeHaloMesh(mesh);
+      mesh.add(halo);
+
+      // 相机引导：朝向 finalPos
+      const camTarget = computeYawPitchTo(finalPos.clone().sub(camera.position));
+      const yawDelta = shortestAngleDelta(targetYaw, camTarget.yaw);
+      const pitchDelta = camTarget.pitch - targetPitch;
+      velocityYaw = 0;
+      velocityPitch = 0;
+      targetYaw += yawDelta * 0.92;
+      targetPitch = clampPitch(targetPitch + pitchDelta * 0.92);
+
+      // bezier 轨迹 · 每张卡独立曲线
+      const t = { value: 0 };
+      const tl = gsap.timeline({
+        onComplete: () => {
+          if (mesh.userData.spawning) spawningCount = Math.max(0, spawningCount - 1);
+          mesh.userData.spawning = false;
+          mesh.userData.currentScale = finalScale;
+          mesh.userData.targetScale = finalScale;
+          mesh.position.copy(finalPos);
+          mesh.remove(halo);
+          halo.geometry.dispose();
+          halo.material.map?.dispose();
+          halo.material.dispose();
+        }
+      });
+
+      tl.to(t, {
+        value: 1,
+        duration: 2.4,
+        ease: 'power3.out',
+        onUpdate: () => {
+          const tt = t.value;
+          const omt = 1 - tt;
+          const k0 = omt * omt;
+          const k1 = 2 * omt * tt;
+          const k2 = tt * tt;
+          mesh.position.set(
+            k0 * startPos.x + k1 * ctrlPos.x + k2 * finalPos.x,
+            k0 * startPos.y + k1 * ctrlPos.y + k2 * finalPos.y,
+            k0 * startPos.z + k1 * ctrlPos.z + k2 * finalPos.z
+          );
+        }
+      }, 0)
+      .to(mesh.scale, {
+        x: finalScale, y: finalScale, z: finalScale,
+        duration: 2.0, ease: 'expo.out'
+      }, 0)
+      .to(mesh.material, {
+        opacity: finalOpacity,
+        duration: 1.2, ease: 'power2.out'
+      }, 0)
+      .to(halo.material, { opacity: 0.48, duration: 1.0, ease: 'power2.out' }, 0)
+      .to(halo.material, { opacity: 0, duration: 1.4, ease: 'sine.inOut' }, '>-0.2')
+      .to(mesh.scale, {
+        x: finalScale * 1.05, y: finalScale * 1.05, z: finalScale * 1.05,
+        duration: 0.7, ease: 'sine.inOut', yoyo: true, repeat: 1
+      }, '>-0.1');
+    }
+
+    function makeHaloMesh(cardMesh) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 256;
+      const ctx = c.getContext('2d');
+      const g = ctx.createRadialGradient(128, 128, 24, 128, 128, 128);
+      g.addColorStop(0, 'rgba(255,230,195,0.72)');
+      g.addColorStop(0.4, 'rgba(255,205,165,0.30)');
+      g.addColorStop(1, 'rgba(255,195,155,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 256, 256);
+      const tex = new THREE.CanvasTexture(c);
+      const pose = cardMesh.userData.base;
+      const geo = new THREE.PlaneGeometry(pose.w * 2.0, pose.h * 2.0);
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      });
+      const halo = new THREE.Mesh(geo, mat);
+      halo.position.z = -0.02;
+      return halo;
+    }
+
+    function computeYawPitchTo(worldVector) {
+      const v = worldVector.clone().normalize();
+      const pitch = Math.asin(Math.max(-1, Math.min(1, v.y)));
+      const yaw = Math.atan2(-v.x, -v.z);
+      return { yaw, pitch };
+    }
+
+    function shortestAngleDelta(from, to) {
+      const TAU = Math.PI * 2;
+      let d = (to - from) % TAU;
+      if (d > Math.PI) d -= TAU;
+      if (d < -Math.PI) d += TAU;
+      return d;
+    }
+
+    function repositionLayer(layer) {
+      cardMeshes.forEach(mesh => {
+        if (mesh.userData.base.layer !== layer) return;
+        const pose = mesh.userData.base;
+        mesh.position.copy(pose.localOffset);
+        mesh.lookAt(pose.lookTarget);
+        if (pose.rollJitter) mesh.rotateZ(pose.rollJitter);
+        mesh.userData.baseEuler.copy(mesh.rotation);
+      });
+    }
+
+    // 层切换串行队列：连续两次调用不会被吞掉，第二次等第一次跑完再开始
+    let _layerTransitionChain = Promise.resolve();
+    function goToLayer(target) {
+      const next = _layerTransitionChain.then(() => new Promise(resolve => {
+        if (target < 0 || target >= TOTAL_LAYERS) { resolve(); return; }
+        if (target === currentLayer) { resolve(); return; }
+        const fromLayer = currentLayer;
+        currentLayer = target;
+        targetForward = FOCUS_DEPTHS[target] ?? FOCUS_DEPTHS[0];
+        targetFov = FOV_DEFAULT + Math.min(5, targetForward * 0.12);
+        hud.classList.add('soft');
+        applyLayerTitleOverlay(target);
+        let settled = false;
+        const settle = () => { if (!settled) { settled = true; resolve(); } };
+        transitionLayer(fromLayer, target, settle);
+        // 兜底：gsap 异常或 onComplete 没触发时，最长 2.5s 强制结束
+        setTimeout(settle, 2500);
+      }));
+      _layerTransitionChain = next.catch(() => {});
+      return next;
+    }
+
+    function deepen() { goToLayer(currentLayer + 1); }
+    function surface() { goToLayer(currentLayer - 1); }
+
+    function resetView() {
+      targetYaw = INITIAL_YAW;
+      targetPitch = INITIAL_PITCH;
+      targetFov = INITIAL_FOV;
+      velocityYaw = 0;
+      velocityPitch = 0;
+      dragging = false;
+      hoverMesh = null;
+      hud.classList.add('soft');
+    }
+
+    function applyInitialLayerFromUrl() {
+      const layer = Number(new URLSearchParams(location.search).get('layer'));
+      if (!Number.isInteger(layer) || layer < 0 || layer >= TOTAL_LAYERS) return;
+      currentLayer = layer;
+      targetForward = FOCUS_DEPTHS[layer] ?? 0;
+      forward = targetForward;
+      targetFov = FOV_DEFAULT + Math.min(5, targetForward * 0.12);
+    }
+
+    function buildCards(newId = null) {
+      const disposedMaps = new Set();
+      cardMeshes.forEach(mesh => {
+        mesh.userData.disposed = true;
+        mesh.geometry.dispose();
+        const map = mesh.material.map;
+        if (map && !disposedMaps.has(map)) {
+          map.dispose();
+          disposedMaps.add(map);
+        }
+        mesh.material.dispose();
+        cardGroup.remove(mesh);
+      });
+      clearDecorGroup();
+      sceneTitleMeshes = [];
+      cardMeshes = [];
+      currentLayerCards = [];
+      spawningCount = 0;
+      // STORE-008：场景只渲染最新 90 张（records 新→旧，存档/日志页仍是全部，saveRecords 写全量，不丢）
+      const visualItems = expandVisualItems(records.slice(0, HEALING_DISPLAY_MAX));
+      pruneMediaThumbnailCache(visualItems);
+      const cardTextureCache = new Map();
+      let newIdSpawnAssigned = false;
+      visualItems.forEach((item, index) => {
+        const { record, visualId } = item;
+        const slot = Number.isInteger(item.slotIndex) ? item.slotIndex : index;
+        const layer = getPointForSlot(slot);
+        const pose = getPose(record, Number(record.warmth || 3), slot, layer, visualId);
+        const { texture } = getSharedCardTexture(record, pose, cardTextureCache);
+        const geometry = new THREE.PlaneGeometry(pose.w, pose.h, 1, 1);
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          opacity: pose.opacity,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(pose.localOffset);
+        mesh.lookAt(pose.lookTarget);
+        if (pose.rollJitter) mesh.rotateZ(pose.rollJitter);
+        mesh.renderOrder = 10;
+        const baseEuler = new THREE.Euler(mesh.rotation.x, mesh.rotation.y, mesh.rotation.z, mesh.rotation.order);
+        const isSpawnTarget = record.id === newId && !newIdSpawnAssigned;
+        if (isSpawnTarget) newIdSpawnAssigned = true;
+        mesh.userData = {
+          record,
+          visualId,
+          base: pose,
+          baseEuler,
+          targetScale: pose.scale,
+          currentScale: isSpawnTarget ? 0.05 : pose.scale
+        };
+        // 只有第一份 newId 走 flyInNewCard 入场动画，其他副本正常出现
+        if (isSpawnTarget) {
+          material.opacity = 0;
+          mesh.userData.spawning = true;
+          spawningCount++;
+        }
+        mesh.scale.setScalar(mesh.userData.currentScale);
+        cardGroup.add(mesh);
+        cardMeshes.push(mesh);
+      });
+      buildSceneDecor();
+      applyLayerVisibility(currentLayer, true);
+      refreshCurrentLayerCards();
+      decorateMediaForLayer(currentLayer);
+      updateEmptyState();
+      window.__healingDebug = {
+        cards: cardMeshes.length,
+        layerCounts: [0, 1, 2].map(layer => cardMeshes.filter(mesh => mesh.userData.base.layer === layer).length),
+        layout: 'orbit-field-with-layer-scenes'
+      };
+    }
+
+    function refreshCurrentLayerCards() {
+      currentLayerCards = cardMeshes.filter(mesh => mesh.userData.base.layer === currentLayer);
+    }
+
+    function decorateMediaForLayer(layer) {
+      const seen = new Set();
+      cardMeshes.forEach(mesh => {
+        if (mesh.userData.base.layer !== layer) return;
+        const record = mesh.userData.record;
+        if (!record?.src || (record.type !== 'image' && record.type !== 'video')) return;
+        const key = mediaCacheKey(record);
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        decorateMediaMesh(mesh, record);
+      });
+    }
+
+    function getSharedCardTexture(record, pose, cache) {
+      const key = cardTextureKey(record, pose);
+      const cached = cache.get(key);
+      if (cached) return { texture: cached, shouldDecorate: false };
+      const texture = new THREE.CanvasTexture(makeCardCanvas(record, pose));
+      texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+      texture.minFilter = THREE.LinearMipMapLinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.generateMipmaps = true;
+      texture.colorSpace = THREE.SRGBColorSpace || undefined;
+      cache.set(key, texture);
+      return { texture, shouldDecorate: true };
+    }
+
+    function cardTextureKey(record, pose) {
+      return [
+        record.id,
+        record.type || 'text',
+        pose?.shape || getRecordShape(record),
+        record.title || '',
+        record.text || '',
+        record.duration || '',
+        record.fileName || '',
+        mediaSignature(record.src)
+      ].join('|');
+    }
+
+    function layerObjects(layer) {
+      const objects = cardMeshes.filter(mesh => mesh.userData.base.layer === layer);
+      decorGroup.children.forEach(obj => {
+        if (obj.userData.layer === layer) objects.push(obj);
+      });
+      return objects;
+    }
+
+    function backgroundObjects(layer) {
+      return bgGroup.children.filter(obj => obj.userData.layer === layer);
+    }
+
+    function setObjectOpacity(obj, opacity) {
+      const materials = [];
+      if (obj.material) {
+        materials.push(...(Array.isArray(obj.material) ? obj.material : [obj.material]));
+      } else if (obj.children?.length) {
+        obj.traverse(child => {
+          if (!child.material) return;
+          materials.push(...(Array.isArray(child.material) ? child.material : [child.material]));
+        });
+      }
+      materials.forEach(mat => {
+        mat.transparent = true;
+        mat.opacity = opacity;
+      });
+    }
+
+    function objectBaseOpacity(obj) {
+      if (typeof obj.userData.baseOpacity === 'number') return obj.userData.baseOpacity;
+      if (typeof obj.userData.base?.opacity === 'number') return obj.userData.base.opacity;
+      return 1;
+    }
+
+    function applyLayerVisibility(layer, immediate = false) {
+      [...bgGroup.children, ...cardMeshes, ...decorGroup.children].forEach(obj => {
+        // spawning 状态的卡（新增中）opacity/scale 由 flyInNewCard 接管，这里只确保 visible
+        if (obj.userData.spawning) {
+          obj.visible = true;
+          return;
+        }
+        const active = obj.userData.base?.layer === layer || obj.userData.layer === layer;
+        obj.visible = active;
+        setObjectOpacity(obj, active ? objectBaseOpacity(obj) : 0);
+        if (obj.userData.base) {
+          const baseScale = obj.userData.base.scale || 1;
+          obj.userData.currentScale = active || immediate ? baseScale : baseScale * 0.82;
+          obj.userData.targetScale = baseScale;
+          obj.scale.setScalar(obj.userData.currentScale);
+        }
+      });
+    }
+
+    function transitionLayer(fromLayer, toLayer, onDone) {
+      isLayerAnimating = true;
+      const oldBackgrounds = backgroundObjects(fromLayer);
+      const newBackgrounds = backgroundObjects(toLayer);
+      const oldObjects = layerObjects(fromLayer);
+      const newObjects = layerObjects(toLayer);
+
+      newBackgrounds.forEach(obj => {
+        obj.visible = true;
+        setObjectOpacity(obj, 0);
+      });
+      newObjects.forEach(obj => {
+        obj.visible = true;
+        setObjectOpacity(obj, 0);
+        if (obj.userData.base) {
+          const baseScale = obj.userData.base.scale || 1;
+          obj.userData.currentScale = baseScale * 0.82;
+          obj.userData.targetScale = baseScale;
+          obj.scale.setScalar(obj.userData.currentScale);
+        }
+      });
+
+      if (typeof gsap === 'undefined') {
+        oldBackgrounds.forEach(obj => { obj.visible = false; setObjectOpacity(obj, 0); });
+        newBackgrounds.forEach(obj => { obj.visible = true; setObjectOpacity(obj, objectBaseOpacity(obj)); });
+        oldObjects.forEach(obj => { obj.visible = false; setObjectOpacity(obj, 0); });
+        newObjects.forEach(obj => setObjectOpacity(obj, objectBaseOpacity(obj)));
+        isLayerAnimating = false;
+        refreshCurrentLayerCards();
+        decorateMediaForLayer(toLayer);
+        onDone?.();
+        return;
+      }
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          oldBackgrounds.forEach(obj => { obj.visible = false; setObjectOpacity(obj, 0); });
+          newBackgrounds.forEach(obj => { obj.visible = true; setObjectOpacity(obj, objectBaseOpacity(obj)); });
+          oldObjects.forEach(obj => { obj.visible = false; setObjectOpacity(obj, 0); });
+          newObjects.forEach(obj => {
+            obj.visible = true;
+            setObjectOpacity(obj, objectBaseOpacity(obj));
+            if (obj.userData.base) {
+              const baseScale = obj.userData.base.scale || 1;
+              obj.userData.currentScale = baseScale;
+              obj.userData.targetScale = baseScale;
+              obj.scale.setScalar(baseScale);
+            }
+          });
+          isLayerAnimating = false;
+          refreshCurrentLayerCards();
+          decorateMediaForLayer(toLayer);
+          onDone?.();
+        }
+      });
+
+      oldBackgrounds.forEach(obj => {
+        const materials = Array.isArray(obj.material) ? obj.material : [obj.material].filter(Boolean);
+        materials.forEach(mat => tl.to(mat, { opacity: 0, duration: 0.95, ease: 'sine.inOut' }, 0));
+      });
+      newBackgrounds.forEach(obj => {
+        const materials = Array.isArray(obj.material) ? obj.material : [obj.material].filter(Boolean);
+        materials.forEach(mat => tl.to(mat, { opacity: objectBaseOpacity(obj), duration: 0.95, ease: 'sine.inOut' }, 0));
+      });
+      oldObjects.forEach(obj => {
+        const materials = Array.isArray(obj.material) ? obj.material : [obj.material].filter(Boolean);
+        materials.forEach(mat => tl.to(mat, { opacity: 0, duration: 0.42, ease: 'sine.out' }, 0.08));
+      });
+      newObjects.forEach(obj => {
+        const materials = Array.isArray(obj.material) ? obj.material : [obj.material].filter(Boolean);
+        materials.forEach(mat => tl.to(mat, { opacity: objectBaseOpacity(obj), duration: 0.9, ease: 'sine.out' }, 0.62));
+        if (obj.userData.base) {
+          const baseScale = obj.userData.base.scale || 1;
+          tl.to(obj.scale, { x: baseScale, y: baseScale, z: baseScale, duration: 1.0, ease: 'power2.out' }, 0.62);
+        }
+      });
+    }
+
+    function getRecordLayer(record) {
+      if (Number.isInteger(record.layer) && record.layer >= 0 && record.layer < TOTAL_LAYERS) return record.layer;
+      const w = Math.max(1, Math.min(5, Number(record.warmth) || 3));
+      if (w >= 5) return 2;
+      if (w >= 4) return 1;
+      return 0;
+    }
+
+    function expandVisualItems(sourceRecords) {
+      if (!sourceRecords.length) return [];
+      const layerBuckets = [[], [], []];
+      sourceRecords.forEach(record => {
+        const layer = getRecordLayer(record);
+        layerBuckets[layer].push(record);
+      });
+      const items = [];
+      layerBuckets.forEach((bucket, layer) => {
+        if (!bucket.length) return;
+        const copies = 1; // 1 个内容只占 1 张卡（修：原来 < 15 时复制 3 份，会出 1 变 3 的视觉 bug）
+        const layerStart = layer * CARDS_PER_POINT;
+        let slotInLayer = 0;
+        bucket.forEach((record, idx) => {
+          for (let c = 0; c < copies; c++) {
+            if (slotInLayer >= CARDS_PER_POINT) break;
+            items.push({
+              record,
+              visualId: `${record.id}:v${c}:${slotInLayer}`,
+              slotIndex: layerStart + slotInLayer,
+            });
+            slotInLayer++;
+          }
+        });
+      });
+      return items;
+    }
+
+    const LAYER_TITLES = ['GENTLE', 'COMPANION', 'INSPIRE'];
+
+    function clearDecorGroup() {
+      if (!decorGroup) return;
+      decorGroup.traverse(obj => {
+        obj.geometry?.dispose?.();
+        if (Array.isArray(obj.material)) obj.material.forEach(mat => mat.dispose?.());
+        else obj.material?.dispose?.();
+        obj.material?.map?.dispose?.();
+      });
+      decorGroup.clear();
+    }
+
+    function buildSceneDecor() {
+      createSceneTitles();
+      createGentleLightPanes();
+      createCompanionThreads();
+      createInspirationTrails();
+    }
+
+    function createSceneTitles() {
+      // 标题改用 HTML overlay（在 #layerTitle），不再创建 3D plane
+      // 3D plane 即使 depthTest:false 也会被 transparent 卡片的 alpha 稀释
+      applyLayerTitleOverlay(currentLayer);
+    }
+
+    function applyLayerTitleOverlay(layerIndex) {
+      const paletteName = (SCENE_PALETTE[layerIndex] && SCENE_PALETTE[layerIndex].name) || 'gentle';
+      document.body.dataset.layer = paletteName;
+      const el = document.getElementById('layerTitle');
+      if (!el) return;
+      const target = LAYER_TITLES[layerIndex] || '';
+      if (el.dataset.text === target) return;
+      el.classList.add('fade-out');
+      setTimeout(() => {
+        el.textContent = target;
+        el.dataset.text = target;
+        el.classList.remove('fade-out');
+      }, 260);
+    }
+
+    function makeTitleCanvas(title, palette, index) {
+      const c = document.createElement('canvas');
+      c.width = 1280;
+      c.height = 280;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+
+      ctx.fillStyle = palette.title.replace(/[\d.]+\)$/, '0.55)');
+      ctx.font = '300 64px "SF Mono", "JetBrains Mono", "Menlo", "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const spacedTitle = [...title].join('  ');
+      ctx.fillText(spacedTitle, c.width / 2, c.height / 2);
+      return c;
+    }
+
+    function drawSpacedText(ctx, text, x, y, spacing) {
+      let cursor = x;
+      [...text].forEach(char => {
+        ctx.fillText(char, cursor, y);
+        cursor += ctx.measureText(char).width + spacing;
+      });
+    }
+
+    function createGentleLightPanes() {
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xfff4e8,
+        transparent: true,
+        opacity: 0.16,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      for (let i = 0; i < 7; i++) {
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(3.4 + i * 0.12, 1.5), material.clone());
+        mesh.position.set((i - 3) * 1.55, 1.7 + (i % 2) * 0.9, -4.5 - i * 1.2);
+        mesh.rotation.set(0.12, -0.36 + i * 0.12, 0.05);
+        mesh.renderOrder = 2;
+        mesh.userData.layer = 0;
+        mesh.userData.baseOpacity = 0.16;
+        decorGroup.add(mesh);
+      }
+    }
+
+    function createCompanionThreads() {
+      const meshes = cardMeshes.filter(mesh => mesh.userData.base.layer === 1);
+      const points = [];
+      for (let i = 0; i < meshes.length - 1; i += 5) {
+        const a = meshes[i].position;
+        const b = meshes[(i + 3) % meshes.length].position;
+        if (a.distanceTo(b) > 7.8) continue;
+        points.push(a.x, a.y, a.z, b.x, b.y, b.z);
+      }
+      if (!points.length) return;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+      const material = new THREE.LineBasicMaterial({
+        color: 0xfff0cf,
+        transparent: true,
+        opacity: 0.20,
+        depthTest: false,
+        depthWrite: false
+      });
+      const line = new THREE.LineSegments(geometry, material);
+      line.renderOrder = 3;
+      line.userData.layer = 1;
+      line.userData.baseOpacity = 0.20;
+      decorGroup.add(line);
+    }
+
+    function createInspirationTrails() {
+      const centerZ = -2 * POINT_GAP;
+      const material = new THREE.LineBasicMaterial({
+        color: 0xffead8,
+        transparent: true,
+        opacity: 0.20,
+        depthTest: false,
+        depthWrite: false
+      });
+      for (let i = 0; i < 6; i++) {
+        const side = i % 2 ? -1 : 1;
+        const y = -1.9 + i * 0.72;
+        const curve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side * 5.2, y, centerZ + 5.2),
+          new THREE.Vector3(side * 2.2, y * 0.42, centerZ - 1.4),
+          new THREE.Vector3(side * 0.9, y * 0.18, centerZ - 8.4),
+          new THREE.Vector3(side * 3.2, y * 0.08, centerZ - 15.8)
+        ]);
+        const geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(36));
+        const line = new THREE.Line(geometry, material.clone());
+        line.renderOrder = 3;
+        line.userData.layer = 2;
+        line.userData.baseOpacity = 0.20;
+        decorGroup.add(line);
+      }
+    }
+
+    const CARD_SIZE = 2.25; // 原 1.32 → 1.5 → 2.25（用户反复反馈要更大）
+    const FIELD_DEPTH = 72;
+    const FORWARD_MAX = 56;
+    const TOTAL_LAYERS = 3;
+    const FOCUS_DEPTHS = [0, 28, 56];
+    const POINT_GAP = 28;
+    // 横竖编排不重叠规则（CARD_SIZE=2.25 下重新验算）：
+    //   - 每 ring 12 个 slot → yawStep 30°
+    //   - 最大卡（ring0 横版+anchor1.18+warmth5+random max1.07）卡角宽 ≈ 20°
+    //   - yawJitter ±4°（0.14 coeff），最坏 slot 间距 = 30° - 8° = 22° > 20° → 不重叠
+    //   - ring 1/2（scale 0.82）卡角 14.4°、ring 3（scale 0.62）卡角 9°，都安全
+    const RING_SLOTS = 12;
+    const CARDS_PER_POINT = RING_SLOTS * 4; // 每层 4 圈 × 12 = 48 槽位
+    const HEALING_SPREAD = 1.2; // STORE-008 定稿：卡片圈半径倍数（间距）
+    const HEALING_DISPLAY_MAX = 90; // STORE-008 定稿：场景最多同时显示最新 90 张（其余仍在日志页/存档）
+    const ORBIT_RINGS = [
+      { radius: 8.7, pitch: -0.02, scale: 1.00, count: RING_SLOTS },
+      { radius: 9.7, pitch: 0.34, scale: 0.82, count: RING_SLOTS },
+      { radius: 9.7, pitch: -0.34, scale: 0.82, count: RING_SLOTS },
+      { radius: 11.4, pitch: 0.10, scale: 0.62, count: RING_SLOTS }
+    ];
+    const layerCenters = [
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, 0)
+    ];
+
+    function getLayerForWarmth(w) {
+      const wn = Math.max(1, Math.min(5, Number(w) || 3));
+      if (wn >= 5) return 2;
+      if (wn === 4) return 1;
+      return 0;
+    }
+
+    // 卡片形状 = 内容形状（含异步测量缓存）
+    const SHAPE_DIM = {
+      'image-h': { w: 1.18, h: 0.74 }, // 16/10
+      'image-v': { w: 0.66, h: 1.18 }, // 9/16
+      'video-h': { w: 1.20, h: 0.68 }, // 16/9
+      'video-v': { w: 0.66, h: 1.18 }, // 9/16
+      'audio':   { w: 0.95, h: 0.95 }, // 1/1
+      'text':    { w: 0.80, h: 1.12 }, // 5/7
+    };
+    const aspectCache = new Map(); // id → 'h' | 'v'
+    const aspectInflight = new Set();
+
+    function getRecordShape(record) {
+      if (!record) return 'text';
+      if (record.type === 'text') return 'text';
+      if (record.type === 'audio') return 'audio';
+      if (record.type === 'image' || record.type === 'video') {
+        // 1) record.aspect 持久化优先（保存时已测量过）
+        if (record.aspect === 'h' || record.aspect === 'v') {
+          return `${record.type}-${record.aspect}`;
+        }
+        // 2) 内存缓存（异步测量后存的）
+        const cached = aspectCache.get(record.id);
+        if (cached) return `${record.type}-${cached}`;
+        // 3) 未测量：先返回横向默认；如果有 src 异步测一下
+        if (record.src && !aspectInflight.has(record.id)) {
+          aspectInflight.add(record.id);
+          measureAspect(record).then(asp => {
+            aspectInflight.delete(record.id);
+            if (!asp) return;
+            const prev = aspectCache.get(record.id);
+            aspectCache.set(record.id, asp);
+            // 顺手把 aspect 写回 record + 持久化，下次启动就不用再测了
+            const target = records.find(r => r.id === record.id);
+            if (target && target.aspect !== asp) {
+              target.aspect = asp;
+              try { saveRecords(); } catch {}
+            }
+            if (prev !== asp) buildCards();
+          });
+        }
+        return `${record.type}-h`;
+      }
+      return 'text';
+    }
+
+    function measureAspect(record) {
+      return new Promise(resolve => {
+        if (!record.src) return resolve(null);
+        if (record.type === 'image') {
+          const img = new Image();
+          img.onload = () => resolve(img.naturalWidth >= img.naturalHeight ? 'h' : 'v');
+          img.onerror = () => resolve(null);
+          img.src = record.src;
+        } else if (record.type === 'video') {
+          const v = document.createElement('video');
+          let done = false;
+          const finish = (value) => {
+            if (done) return;
+            done = true;
+            try {
+              v.removeAttribute('src');
+              v.load();
+            } catch {}
+            resolve(value);
+          };
+          v.preload = 'metadata';
+          v.muted = true;
+          v.playsInline = true;
+          v.onloadedmetadata = () => finish(v.videoWidth >= v.videoHeight ? 'h' : 'v');
+          v.onerror = () => finish(null);
+          v.src = record.src;
+        } else {
+          resolve(null);
+        }
+      });
+    }
+
+    function hashId(s) {
+      const str = String(s || 'x');
+      let h = 5381;
+      for (let i = 0; i < str.length; i++) {
+        h = ((h * 33) ^ str.charCodeAt(i)) | 0;
+      }
+      return Math.abs(h) + 1;
+    }
+
+    function getPointForSlot(slot) {
+      return Math.min(TOTAL_LAYERS - 1, Math.floor(slot / CARDS_PER_POINT));
+    }
+
+    function getPose(record, warmth, slot, layer, visualId = record.id) {
+      const idHash = hashId(visualId);
+      const point = getPointForSlot(slot);
+      const local = slot % CARDS_PER_POINT;
+      const ringIndex = Math.floor(local / RING_SLOTS);
+      const ringSlot = local % RING_SLOTS;
+      const ring = ORBIT_RINGS[ringIndex] || ORBIT_RINGS[0];
+      const centerZ = -point * POINT_GAP;
+      const yawStep = (Math.PI * 2) / ring.count;
+      // jitter 收紧到 ±4°（原 ±6.9°）→ 配合 ring 14 slot 让最大横版卡完全不重叠
+      const yawJitter = (seeded(idHash + 31) - 0.5) * 0.14;
+      const theta = ringSlot * yawStep + ringIndex * 0.31 + point * 0.23 + yawJitter;
+      const pitch = ring.pitch + (seeded(idHash + 32) - 0.5) * 0.16;
+      const radius = ring.radius * HEALING_SPREAD + (seeded(idHash + 33) - 0.5) * 1.1;
+      const horizontal = Math.cos(pitch) * radius;
+      const x = Math.sin(theta) * horizontal * 1.12;
+      const y = Math.sin(pitch) * radius * 0.94;
+      const z = centerZ - Math.cos(theta) * horizontal;
+      const localOffset = new THREE.Vector3(x, y, z);
+      const lookTarget = new THREE.Vector3(x * 0.10, y * 0.10, centerZ);
+
+      const shape = getRecordShape(record);
+      const dim = SHAPE_DIM[shape] || SHAPE_DIM['text'];
+      const isPortrait = dim.h > dim.w;
+      const warmthScale = 0.92 + Math.min(5, Math.max(1, warmth)) * 0.032;
+      const anchorScale = ringSlot % 6 === 0 ? 1.18 : 0.92;
+      const sizeMul = ring.scale * anchorScale * warmthScale * (0.92 + seeded(idHash + 17) * 0.15);
+      const w = CARD_SIZE * sizeMul * dim.w;
+      const h = CARD_SIZE * sizeMul * dim.h;
+
+      return {
+        localOffset,
+        lookTarget,
+        w, h,
+        layer,
+        shape,
+        isPortrait,
+        scale: layer === 1 ? 1.04 : 1,
+        rollJitter: (seeded(idHash + 6) - 0.5) * 0.13,
+        opacity: 0.94,
+        breathSeed: (idHash % 9973) * 0.013
+      };
+    }
+
+    function recordAspect(index) {
+      return [0, 4, 7, 12, 15].includes(index % 18) ? 'portrait' : 'landscape';
+    }
+
+    function seeded(n) {
+      const x = Math.sin(n * 999.91) * 10000;
+      return x - Math.floor(x);
+    }
+
+    // 3D 卡片每层色调（取 SCENE_PALETTE.card 衍生，磨砂玻璃风格）
+    const CARD_LAYER_PALETTE = [
+      { // gentle 温柔
+        bg: 'rgba(223, 184, 168, 0.68)',
+        highlight: 'rgba(255, 250, 245, 0.42)',
+        bottomDim: 'rgba(80, 50, 38, 0.10)',
+        border: 'rgba(255, 245, 235, 0.50)',
+        text: 'rgb(82, 50, 38)',
+        mute: 'rgba(82, 50, 38, 0.55)',
+        accent: 'rgba(112, 60, 44, 0.85)',
+        accentSolid: '#703c2c'
+      },
+      { // companion 陪伴
+        bg: 'rgba(222, 194, 154, 0.68)',
+        highlight: 'rgba(255, 252, 240, 0.42)',
+        bottomDim: 'rgba(80, 58, 28, 0.10)',
+        border: 'rgba(255, 248, 230, 0.52)',
+        text: 'rgb(82, 58, 28)',
+        mute: 'rgba(82, 58, 28, 0.55)',
+        accent: 'rgba(140, 90, 32, 0.88)',
+        accentSolid: '#8c5a20'
+      },
+      { // inspire 启发
+        bg: 'rgba(241, 229, 219, 0.80)',
+        highlight: 'rgba(255, 254, 252, 0.48)',
+        bottomDim: 'rgba(74, 52, 38, 0.08)',
+        border: 'rgba(255, 252, 248, 0.55)',
+        text: 'rgb(74, 52, 38)',
+        mute: 'rgba(74, 52, 38, 0.55)',
+        accent: 'rgba(132, 80, 56, 0.80)',
+        accentSolid: '#845038'
+      }
+    ];
+    function getCardPalette(layer) {
+      return CARD_LAYER_PALETTE[layer] || CARD_LAYER_PALETTE[0];
+    }
+
+    function makeCardCanvas(record, pose) {
+      const shape = pose?.shape || getRecordShape(record);
+      const dim = SHAPE_DIM[shape] || SHAPE_DIM['text'];
+      const aspect = dim.h / dim.w;
+      const baseW = CARD_TEXTURE_WIDTH;
+      const w = baseW;
+      const h = Math.round(baseW * aspect);
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const ctx = c.getContext('2d');
+      const layer = pose?.layer ?? 0;
+      const pal = getCardPalette(layer);
+
+      drawGlassBase(ctx, w, h, pal);
+
+      const type = record.type || 'text';
+      if (type === 'image' || type === 'video') {
+        drawMediaPlaceholder(ctx, w, h, record, pal);
+        drawCardMeta(ctx, w, h, record, type, pal);
+        if (type === 'video') drawVideoCorner(ctx, w, h, pal);
+      } else if (type === 'audio') {
+        drawAudioContent(ctx, w, h, record, pal);
+      } else {
+        drawTextContent(ctx, w, h, record, pal);
+      }
+
+      drawGlassEdge(ctx, w, h, pal);
+      return c;
+    }
+
+    function drawGlassBase(ctx, w, h, pal) {
+      // 磨砂玻璃：半透色底 + 顶部高光 + 底部微暗
+      ctx.save();
+      ctx.beginPath();
+      roundRect(ctx, 0, 0, w, h, 18);
+      ctx.clip();
+      // 底色
+      ctx.fillStyle = pal.bg;
+      ctx.fillRect(0, 0, w, h);
+      // 顶部高光（玻璃反光）
+      const hi = ctx.createLinearGradient(0, 0, 0, h * 0.55);
+      hi.addColorStop(0, pal.highlight);
+      hi.addColorStop(0.35, 'rgba(255, 255, 255, 0.06)');
+      hi.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = hi;
+      ctx.fillRect(0, 0, w, h * 0.55);
+      // 底部微暗（增加立体感）
+      const dim = ctx.createLinearGradient(0, h * 0.7, 0, h);
+      dim.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      dim.addColorStop(1, pal.bottomDim);
+      ctx.fillStyle = dim;
+      ctx.fillRect(0, h * 0.7, w, h * 0.3);
+      ctx.restore();
+    }
+
+    function drawGlassEdge(ctx, w, h, pal) {
+      ctx.save();
+      ctx.strokeStyle = pal.border;
+      ctx.lineWidth = 1.8;
+      roundRect(ctx, 0.9, 0.9, w - 1.8, h - 1.8, 18);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMediaPlaceholder(ctx, w, h, record, pal) {
+      const dx = 24, dy = 24;
+      const dw = w - 48;
+      const dh = h - 130;
+      ctx.save();
+      ctx.beginPath();
+      roundRect(ctx, dx, dy, dw, dh, 10);
+      ctx.clip();
+      const g = ctx.createLinearGradient(dx, dy, dx + dw, dy + dh);
+      g.addColorStop(0, 'rgba(255, 232, 200, 0.42)');
+      g.addColorStop(1, 'rgba(180, 140, 110, 0.38)');
+      ctx.fillStyle = g;
+      ctx.fillRect(dx, dy, dw, dh);
+      ctx.fillStyle = pal.mute;
+      ctx.font = '300 56px "PingFang SC", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(record.type === 'video' ? '▶' : '◯', dx + dw / 2, dy + dh / 2);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.restore();
+    }
+
+    function drawAudioContent(ctx, w, h, record, pal) {
+      // 音频卡：上半 = 播放按钮 + 波形 / 下半 = 标题 + AUDIO·时长
+      const padding = 36;
+      // 播放按钮（左上，圆形 accent 色）
+      const btnR = 36;
+      const btnX = padding + btnR;
+      const btnY = padding + btnR + 6;
+      ctx.save();
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath();
+      ctx.arc(btnX, btnY, btnR, 0, Math.PI * 2);
+      ctx.fill();
+      // 播放三角（在按钮中央）
+      ctx.fillStyle = '#fff8ee';
+      ctx.beginPath();
+      ctx.moveTo(btnX - 9, btnY - 12);
+      ctx.lineTo(btnX + 13, btnY);
+      ctx.lineTo(btnX - 9, btnY + 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // 波形（按钮右边，跟按钮 vertically 对齐）
+      const waveStartX = btnX + btnR + 18;
+      const waveEndX = w - padding;
+      const waveCenterY = btnY;
+      const bars = 14;
+      const spacing = (waveEndX - waveStartX) / bars;
+      const seed = (record.id ? record.id.length : 7) + Number(record.warmth || 3);
+      ctx.save();
+      for (let i = 0; i < bars; i++) {
+        const phase = (i + seed) * 0.62;
+        const amp = Math.sin(phase) * 0.55 + Math.sin(phase * 1.6) * 0.30 + Math.sin(phase * 0.73) * 0.32;
+        const barH = 14 + Math.abs(amp) * 42;
+        const x = waveStartX + i * spacing;
+        ctx.fillStyle = pal.accent;
+        ctx.globalAlpha = 0.62;
+        ctx.beginPath();
+        roundRect(ctx, x, waveCenterY - barH / 2, Math.max(4, spacing - 6), barH, 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+
+      // 音频名（下半左对齐）
+      ctx.save();
+      ctx.fillStyle = pal.text;
+      ctx.font = '400 44px "PingFang SC", -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      const title = (record.title || record.text || '语音记录').trim();
+      const titleLine = title.length > 12 ? title.slice(0, 11) + '…' : title;
+      ctx.fillText(titleLine, padding, h - 78);
+      // AUDIO + 时长（左右两端对齐）
+      ctx.fillStyle = pal.mute;
+      ctx.font = '300 26px "SF Mono", "Menlo", monospace';
+      ctx.fillText('AUDIO', padding, h - 32);
+      if (record.duration) {
+        const durText = formatDuration(record.duration);
+        ctx.textAlign = 'right';
+        ctx.fillText(durText, w - padding, h - 32);
+        ctx.textAlign = 'left';
+      }
+      ctx.restore();
+    }
+
+    function drawTextContent(ctx, w, h, record, pal) {
+      // 文字卡 v4：跟 reader 弹窗版式一致 — 顶部小日期（SF Mono 左对齐）+ 大正文（左对齐从日期下方排）
+      // canvas 1024 宽对 reader 460 宽，scale ≈ 2.23
+      // reader：padding 32 / date 13px / body 16px → canvas：padding ~64 / date ~30px / body ~46px
+      ctx.save();
+      const padX = 72;
+      const padTop = 96;
+
+      // 顶部日期：SF Mono 左对齐，跟弹窗 reader-date 同字体同格式
+      ctx.fillStyle = pal.mute;
+      ctx.font = '500 32px "SF Mono", "Menlo", monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      const dateText = record.date || '';
+      ctx.fillText(dateText, padX, padTop);
+
+      // 正文：PingFang 左对齐，从日期下方起，跟弹窗 readerText 同字体
+      ctx.fillStyle = pal.text;
+      ctx.font = '400 50px "PingFang SC", -apple-system, sans-serif';
+      ctx.textBaseline = 'alphabetic';
+      const body = (record.text || record.title || '').trim();
+      const lines = wrapTextLines(ctx, body, w - padX * 2, 9);
+      const lineH = 80; // 行距 ≈ 1.6 → 跟弹窗 line-height 1.85 视觉接近
+      const bodyStartY = padTop + 76; // 日期下方留 76px 呼吸
+      lines.forEach((line, i) => {
+        ctx.fillText(line, padX, bodyStartY + i * lineH);
+      });
+
+      ctx.restore();
+    }
+
+    function drawCardMeta(ctx, w, h, record, type, pal) {
+      // 图卡/视频卡底部的标题 + meta（覆盖在 photo 渐变上）
+      ctx.save();
+      ctx.fillStyle = pal.text;
+      ctx.font = '400 46px "PingFang SC", -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      const title = (record.title || record.text || '').trim();
+      const titleLine = title.length > 14 ? title.slice(0, 13) + '…' : title;
+      ctx.fillText(titleLine, 32, h - 64);
+
+      let metaText = type.toUpperCase();
+      if (type === 'audio' && record.duration) {
+        metaText = `AUDIO · ${formatDuration(record.duration)}`;
+      }
+      ctx.fillStyle = pal.mute;
+      ctx.font = '300 24px "SF Mono", "Menlo", monospace';
+      ctx.fillText(metaText, 32, h - 28);
+      ctx.restore();
+    }
+
+    function drawVideoCorner(ctx, w, h, pal) {
+      const cx = w - 48, cy = h - 146;
+      ctx.save();
+      // 用 accent 色画播放按钮（跟音频卡风格统一）
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff8ee';
+      ctx.beginPath();
+      ctx.moveTo(cx - 6, cy - 8);
+      ctx.lineTo(cx + 9, cy);
+      ctx.lineTo(cx - 6, cy + 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCoverImage(ctx, source, dx, dy, dw, dh) {
+      const sw = source.videoWidth || source.naturalWidth || source.width;
+      const sh = source.videoHeight || source.naturalHeight || source.height;
+      if (!sw || !sh) return;
+      const destRatio = dw / dh;
+      const srcRatio = sw / sh;
+      let sx, sy, ssw, ssh;
+      if (srcRatio > destRatio) {
+        ssh = sh;
+        ssw = sh * destRatio;
+        sx = (sw - ssw) / 2;
+        sy = 0;
+      } else {
+        ssw = sw;
+        ssh = sw / destRatio;
+        sx = 0;
+        sy = (sh - ssh) / 2;
+      }
+      ctx.save();
+      ctx.beginPath();
+      roundRect(ctx, dx, dy, dw, dh, 6);
+      ctx.clip();
+      ctx.drawImage(source, sx, sy, ssw, ssh, dx, dy, dw, dh);
+      ctx.restore();
+    }
+
+    function formatDuration(seconds) {
+      const total = Math.max(0, Math.round(Number(seconds) || 0));
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function wrapTextLines(ctx, text, maxWidth, maxLines) {
+      const chars = [...String(text)];
+      const lines = [];
+      let line = '';
+      for (const ch of chars) {
+        const test = line + ch;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          lines.push(line);
+          line = ch;
+          if (lines.length >= maxLines) break;
+        } else {
+          line = test;
+        }
+      }
+      if (line && lines.length < maxLines) lines.push(line);
+      return lines;
+    }
+
+    function decorateMediaMesh(mesh, record) {
+      if (!record.src) return;
+      const key = mediaCacheKey(record);
+      const cached = mediaThumbnailCache.get(key);
+      if (cached) {
+        redrawMeshWithSource(mesh, record, cached);
+        return;
+      }
+      const waiting = mediaThumbnailInflight.get(key);
+      if (waiting) {
+        waiting.push({ mesh, record });
+        return;
+      }
+      mediaThumbnailInflight.set(key, [{ mesh, record }]);
+      const finish = (source) => {
+        if (!source) {
+          mediaThumbnailInflight.delete(key);
+          return;
+        }
+        mediaThumbnailCache.set(key, source);
+        const waiters = mediaThumbnailInflight.get(key) || [];
+        mediaThumbnailInflight.delete(key);
+        waiters.forEach(item => redrawMeshWithSource(item.mesh, item.record, source));
+      };
+      if (record.type === 'video') {
+        const video = document.createElement('video');
+        // blob: URL 不需要 crossOrigin；http(s) 远程才需要
+        if (!record.src.startsWith('blob:')) video.crossOrigin = 'anonymous';
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+        let drawn = false;
+        const tryDraw = () => {
+          if (drawn) return;
+          // 视频维度准备好才能 drawImage
+          if (!video.videoWidth || !video.videoHeight) return;
+          drawn = true;
+          finish(captureMediaFrame(video));
+          try {
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+          } catch {}
+        };
+        video.addEventListener('loadeddata', () => {
+          try {
+            video.currentTime = Math.min(0.6, (video.duration || 1) / 4);
+          } catch {
+            tryDraw();
+          }
+        }, { once: true });
+        video.addEventListener('seeked', tryDraw, { once: true });
+        // 兜底：3 秒还没 seeked 就用当前帧
+        setTimeout(tryDraw, 3000);
+        video.addEventListener('error', () => {
+          finish(null);
+          try {
+            video.removeAttribute('src');
+            video.load();
+          } catch {}
+        }, { once: true });
+        video.src = record.src;
+        video.load();
+        return;
+      }
+      const img = new Image();
+      img.onload = () => finish(captureMediaFrame(img));
+      img.onerror = () => finish(null);
+      img.src = record.src;
+    }
+
+    function mediaCacheKey(record) {
+      if (!record?.src || (record.type !== 'image' && record.type !== 'video')) return '';
+      return `${record.id}|${record.type}|${record.fileName || ''}|${mediaSignature(record.src)}`;
+    }
+
+    function mediaSignature(src) {
+      if (!src) return '';
+      const s = String(src);
+      if (s.startsWith('blob:')) return s;
+      return `${s.length}:${s.slice(0, 32)}:${s.slice(-32)}`;
+    }
+
+    function pruneMediaThumbnailCache(visualItems) {
+      const active = new Set();
+      visualItems.forEach(item => {
+        const key = mediaCacheKey(item.record);
+        if (key) active.add(key);
+      });
+      mediaThumbnailCache.forEach((_, key) => {
+        if (!active.has(key)) mediaThumbnailCache.delete(key);
+      });
+    }
+
+    function captureMediaFrame(source) {
+      const sw = source.videoWidth || source.naturalWidth || source.width;
+      const sh = source.videoHeight || source.naturalHeight || source.height;
+      if (!sw || !sh) return null;
+      const maxSide = 720;
+      const scale = Math.min(1, maxSide / Math.max(sw, sh));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(sw * scale));
+      c.height = Math.max(1, Math.round(sh * scale));
+      const ctx = c.getContext('2d');
+      try {
+        ctx.drawImage(source, 0, 0, c.width, c.height);
+      } catch {
+        return null;
+      }
+      return c;
+    }
+
+    function redrawMeshWithSource(mesh, record, source) {
+      if (!mesh || mesh.userData.disposed) return;
+      const map = mesh.material.map;
+      const canvas = map?.image;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      const layer = mesh.userData.base?.layer ?? 0;
+      const pal = getCardPalette(layer);
+      ctx.clearRect(0, 0, w, h);
+      drawGlassBase(ctx, w, h, pal);
+      drawCoverImage(ctx, source, 24, 24, w - 48, h - 130);
+      drawCardMeta(ctx, w, h, record, record.type || 'image', pal);
+      if (record.type === 'video') drawVideoCorner(ctx, w, h, pal);
+      drawGlassEdge(ctx, w, h, pal);
+      map.needsUpdate = true;
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
+      const chars = [...String(text)];
+      let line = '';
+      let lines = 0;
+      for (const ch of chars) {
+        const test = line + ch;
+        if (ctx.measureText(test).width > maxWidth && line) {
+          ctx.fillText(line, x, y + lines * lineHeight);
+          line = ch;
+          lines++;
+          if (lines >= maxLines) return;
+        } else {
+          line = test;
+        }
+      }
+      if (line && lines < maxLines) ctx.fillText(line, x, y + lines * lineHeight);
+    }
+
+    function bindEvents() {
+      window.addEventListener('resize', resize);
+      canvas.addEventListener('pointerdown', onPointerDown);
+      canvas.addEventListener('pointermove', onPointerMove);
+      canvas.addEventListener('pointerup', onPointerUp);
+      canvas.addEventListener('pointerleave', onPointerUp);
+      canvas.addEventListener('click', onClick);
+      canvas.addEventListener('wheel', onWheel, { passive: false });
+      // composer 由 ms-composer.js 接管，按钮直接调 MS.composer.open()
+      const openMS = () => { if (window.MS?.composer?.open) MS.composer.open(); };
+      document.getElementById('addBtn')?.addEventListener('click', openMS);
+      document.getElementById('emptyAdd')?.addEventListener('click', openMS);
+      document.getElementById('closeReader').addEventListener('click', closeReader);
+      overlay.addEventListener('click', () => { closeReader(); });
+      window.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { closeReader(); }
+        if (event.code === 'Space' || event.key === ' ') {
+          const tag = document.activeElement?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+          if (isComposerOpen() || reader.classList.contains('open')) return;
+          event.preventDefault();
+          resetView();
+        }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          const tag = document.activeElement?.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+          if (isComposerOpen() || reader.classList.contains('open')) return;
+          event.preventDefault();
+          if (event.key === 'ArrowUp') deepen();
+          else surface();
+        }
+      });
+    }
+
+    function resize() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      // Retina(dpr=2) 全分辨率 = 渲染像素 ×4，治愈磨砂玻璃风格不需要 razor-sharp，
+      // cap 到 1.5 省约 40% GPU，视觉几乎看不出差
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    }
+
+    function onPointerDown(event) {
+      dragging = true;
+      dragStart = { x: event.clientX, y: event.clientY, yaw: targetYaw, pitch: targetPitch, time: performance.now() };
+      lastPointer = { x: event.clientX, y: event.clientY, time: performance.now() };
+      velocityYaw = 0;
+      velocityPitch = 0;
+      canvas.setPointerCapture(event.pointerId);
+      hud.classList.add('soft');
+    }
+
+    function onPointerMove(event) {
+      updatePointer(event);
+      if (dragging) {
+        const now = performance.now();
+        const dx = event.clientX - (lastPointer?.x ?? event.clientX);
+        const dy = event.clientY - (lastPointer?.y ?? event.clientY);
+        const dt = Math.max(1, now - (lastPointer?.time ?? now));
+        const yawPerPx = (Math.PI * 1.4) / window.innerWidth;
+        const pitchPerPx = (Math.PI * 0.9) / window.innerHeight;
+        targetYaw -= dx * yawPerPx;
+        targetPitch = clampPitch(targetPitch - dy * pitchPerPx);
+        velocityYaw = -dx * yawPerPx / dt * 16;
+        velocityPitch = -dy * pitchPerPx / dt * 16;
+        lastPointer = { x: event.clientX, y: event.clientY, time: now };
+      }
+    }
+
+    function onPointerUp(event) {
+      dragging = false;
+      try { canvas.releasePointerCapture(event.pointerId); } catch {}
+    }
+
+    function onWheel(event) {
+      // 触控板/滚轮：控制场景视野（推近/拉远），不再切层（切层走上下方向键）
+      event.preventDefault();
+      // 双指捏合在 macOS 触控板上会带 ctrlKey；普通滚动不带
+      const speed = event.ctrlKey ? 0.06 : 0.02;
+      targetFov = Math.max(FOV_MIN, Math.min(FOV_MAX, targetFov + event.deltaY * speed));
+      hud.classList.add('soft');
+    }
+
+    function updatePointer(event) {
+      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+
+    function onClick(event) {
+      if (dragStart && Math.abs(event.clientX - dragStart.x) + Math.abs(event.clientY - dragStart.y) > 8) return;
+      updatePointer(event);
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(currentLayerCards, false);
+      const hit = hits.find(item => item.object.visible && !item.object.userData.spawning);
+      if (hit) openReader(hit.object.userData.record.id);
+    }
+
+    // 渲染节流：场景闲置时降到 ~30fps，popup 打开时几乎完全停（让出 CPU/GPU 给视频解码 + backdrop-filter）
+    let _frameTick = 0;
+    let _lastPointerX = -1, _lastPointerY = -1;
+    function animate() {
+      requestAnimationFrame(animate);
+      _frameTick++;
+      const t = performance.now() * 0.001;
+
+      // composer 打开：背景被 backdrop-filter blur(22) 全屏糊了，停一帧画面用户也看不出
+      //   → 完全停渲染（return），省整个 WebGL pipeline 的 GPU 开销
+      // reader 打开：弹窗只占中间 460×575，屏幕边缘 3D 场景还能看到 → 走 30fps（每 2 帧 1 帧）
+      if (isComposerOpen()) {
+        return;
+      }
+      const readerOpen = reader.classList.contains('open');
+      if (readerOpen && (_frameTick & 1)) {
+        return;
+      }
+      const popupOpen = readerOpen;
+
+      // 检测"是否有运动" — 没有就直接 return 跳过本帧
+      const camMoving =
+        dragging ||
+        Math.abs(velocityYaw) > 0.0002 ||
+        Math.abs(velocityPitch) > 0.0002 ||
+        Math.abs(targetYaw - yaw) > 0.001 ||
+        Math.abs(targetPitch - pitch) > 0.001 ||
+        Math.abs(targetForward - forward) > 0.05 ||
+        Math.abs(-forward - camera.position.z) > 0.05 ||
+        Math.abs(camera.fov - targetFov) > 0.05;
+      const sceneMoving = isLayerAnimating || spawningCount > 0;
+      const pointerMoved = pointer.x !== _lastPointerX || pointer.y !== _lastPointerY;
+
+      // 闲置：每 2 帧渲染一次，节省 50% GPU
+      if (!camMoving && !sceneMoving && !pointerMoved && !popupOpen && (_frameTick & 1)) {
+        return;
+      }
+      _lastPointerX = pointer.x;
+      _lastPointerY = pointer.y;
+
+      if (!dragging && (Math.abs(velocityYaw) > 0.0002 || Math.abs(velocityPitch) > 0.0002)) {
+        targetYaw += velocityYaw;
+        targetPitch = clampPitch(targetPitch + velocityPitch);
+        velocityYaw *= 0.93;
+        velocityPitch *= 0.93;
+      }
+      yaw += (targetYaw - yaw) * 0.10;
+      pitch += (targetPitch - pitch) * 0.10;
+      forward += (targetForward - forward) * 0.085;
+      camera.position.x += (0 - camera.position.x) * 0.08;
+      camera.position.y += (0 - camera.position.y) * 0.08;
+      camera.position.z += (-forward - camera.position.z) * 0.08;
+      camera.rotation.order = 'YXZ';
+      camera.rotation.y = yaw;
+      camera.rotation.x = pitch;
+      camera.rotation.z = 0;
+      if (Math.abs(camera.fov - targetFov) > 0.05) {
+        camera.fov += (targetFov - camera.fov) * 0.12;
+        camera.updateProjectionMatrix();
+      }
+      cardGroup.position.x = Math.sin(t * 0.08) * 0.06;
+      cardGroup.position.y = Math.sin(t * 0.06) * 0.05;
+      particleGroup.position.z += (-forward * 0.18 - particleGroup.position.z) * 0.05;
+      if (bgGroup) {
+        bgGroup.children.forEach((mesh, index) => {
+          if (!mesh.visible) return;
+          mesh.position.copy(camera.position);
+          mesh.rotation.y = t * (0.003 + index * 0.0015);
+        });
+        scene.fog.color.lerp(SCENE_FOG_COLORS[currentLayer], 0.035);
+      }
+      updateHoverScale();
+      renderer.render(scene, camera);
+      canvas.dataset.rendered = '1';
+    }
+
+    function updateHoverScale() {
+      // raycast 每 3 帧一次：人眼感知不到 hover 延迟，节省 2/3 raycast 成本
+      if ((_frameTick % 3) === 0) {
+        // 只 raycast 当前层的可见卡片（隐藏层的卡片不参与命中）
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(currentLayerCards, false);
+        const nextHover = hits.find(item => item.object.visible && !item.object.userData.spawning)?.object || null;
+        if (nextHover !== hoverMesh) {
+          if (hoverMesh && !hoverMesh.userData.spawning) hoverMesh.userData.targetScale = hoverMesh.userData.base.scale || 1;
+          hoverMesh = nextHover;
+          if (hoverMesh) hoverMesh.userData.targetScale = (hoverMesh.userData.base.scale || 1) * 1.08;
+        }
+        document.body.style.cursor = hoverMesh ? 'pointer' : 'default';
+      }
+      // 呼吸动画：只跑当前层卡片，隐藏层完全跳过
+      const now = performance.now();
+      currentLayerCards.forEach(mesh => {
+        if (mesh.userData.spawning) {
+          mesh.lookAt(camera.position);
+          return;
+        }
+        if (!mesh.visible) return;
+        mesh.userData.currentScale += (mesh.userData.targetScale - mesh.userData.currentScale) * 0.12;
+        mesh.scale.setScalar(mesh.userData.currentScale);
+        const baseEuler = mesh.userData.baseEuler;
+        const seed = mesh.userData.base.breathSeed || 0;
+        mesh.rotation.x = baseEuler.x + Math.sin(now * 0.00028 + seed) * 0.006;
+        mesh.rotation.z = baseEuler.z + Math.sin(now * 0.00024 + seed * 0.71) * 0.005;
+      });
+    }
+
+    // composer 由 ms-composer.js 接管：图/视频/音频/文 任意组合，无标题，200 字上限，层 3 选 1
+    let _editingId = null;
+
+    function revokeRecordMedia(record) {
+      if (record?.src && record.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(record.src); } catch {}
+      }
+    }
+
+    // 删除一条记录时，把它的「真文件」媒体挪进回收站 + 清掉对应的 blob 缓存。
+    // 注意：水合时 record.src 已被换成 blob: URL，原始 fsa 引用留在 record._fsaSrc。
+    async function trashRecordMedia(record) {
+      if (!record) return;
+      const fsaRef = record._fsaSrc;
+      if (typeof fsaRef === 'string' && fsaRef.startsWith('fsa:')) {
+        try { await MS.mediaVault.trash(fsaRef, { planetKey: 'healing' }); }
+        catch (err) { console.warn('[healing] trash 真文件失败：', fsaRef, err); }
+        // 缓存里那条 blob 释放掉 + 从 cache 删，避免悬挂引用
+        const cachedBlob = mediaUrlCache.get(fsaRef);
+        if (cachedBlob) {
+          try { URL.revokeObjectURL(cachedBlob); } catch {}
+          mediaUrlCache.delete(fsaRef);
+        }
+      }
+    }
+
+    function stopMediaIn(container) {
+      if (!container) return;
+      container.querySelectorAll('video, audio').forEach(el => {
+        try {
+          el.pause();
+          el.currentTime = 0;
+          el.removeAttribute('src');
+          el.load();
+        } catch {}
+      });
+    }
+
+    // 旧入口兼容：dev tools (?openComposer=1, ?autoSeq=1) 还可能调到 openComposer / addMemory
+    function openComposer(prefill) {
+      if (prefill && prefill.id) {
+        const userRecs = records.filter(r => !r.id.startsWith('demo-'));
+        const idx = userRecs.findIndex(r => r.id === prefill.id);
+        if (idx >= 0 && window.MS?.composer?.open) { MS.composer.open(idx); return; }
+      }
+      if (window.MS?.composer?.open) MS.composer.open();
+    }
+    function closeComposer() {
+      if (window.MS?.composer?.close) MS.composer.close();
+    }
+    async function addMemory() { /* no-op：ms-composer 的 onSaved 接管保存逻辑 */ }
+
+    // 父 App 列表点 +/编辑 → 弹本星 composer（idx 直接给 ms-composer）
+    window.__msOpenComposer = function(editIdx) {
+      if (!window.MS?.composer?.open) return;
+      if (typeof editIdx !== 'number' || editIdx < 0) {
+        MS.composer.open();
+      } else {
+        MS.composer.open(editIdx);
+      }
+    };
+
+    // 父 App 列表数据变了（删除等）→ 重新 load + 重建 3D 卡片
+    window.__msReloadAll = function() {
+      healingSyncFile(); // 父级删除/编辑后同步 records.json（STORE-006）
+      loadHydratedRecords().then(hydrated => {
+        records = hydrated;
+        if (typeof buildCards === 'function') buildCards();
+        if (typeof applyLayerVisibility === 'function') applyLayerVisibility(currentLayer, true);
+      }).catch(err => {
+        console.warn('[healing] __msReloadAll failed:', err);
+      });
+    };
+
+    const READER_SHAPES = ['shape-text', 'shape-audio', 'shape-image-h', 'shape-image-v', 'shape-video-h', 'shape-video-v'];
+    function setReaderShape(record) {
+      READER_SHAPES.forEach(c => reader.classList.remove(c));
+      if (!record) { reader.classList.add('shape-text'); return; }
+      // audio 永远是 1:1，无论有没有 src
+      if (record.type === 'audio') {
+        reader.classList.add('shape-audio');
+        return;
+      }
+      // text 或 image/video 但没有 src（demo）→ 文本形状
+      if (record.type === 'text' || !record.src) {
+        reader.classList.add('shape-text');
+        return;
+      }
+      // image / video：直接复用 getRecordShape — 它已经处理了 record.aspect / aspectCache / 异步测量
+      // 同一张图打开过一次后 record.aspect 已写回，再次打开走 record.aspect 直出，绝不闪
+      // 首次打开如果还没测过，getRecordShape 内部会触发异步测量并 buildCards，下次就好
+      const shape = getRecordShape(record);
+      reader.classList.add('shape-' + shape);
+      // 备用：万一 getRecordShape 当前返回 image-h（fallback），等 measureAspect 完成后切真实形状
+      if (record.src && (shape === 'image-h' || shape === 'video-h') && record.aspect !== 'h') {
+        measureAspect(record).then(asp => {
+          if (!asp || !reader.classList.contains('open')) return;
+          const finalShape = `${record.type}-${asp}`;
+          if (!reader.classList.contains('shape-' + finalShape)) {
+            READER_SHAPES.forEach(c => reader.classList.remove(c));
+            reader.classList.add('shape-' + finalShape);
+          }
+        });
+      }
+    }
+
+    let _readerCurrentId = null;
+    let _readerFromMeshId = null; // 记下从哪张卡片打开，关闭时返回那张卡片
+    // 任务 3：把 cardMesh 的世界坐标投影到屏幕 px → 转化为相对屏幕中心的偏移
+    // 返回 {dx, dy}，给 GSAP 当起点 / 终点
+    function getReaderOffsetFromMesh(mesh) {
+      if (!mesh) return { dx: 0, dy: 0 };
+      const v = new THREE.Vector3();
+      mesh.getWorldPosition(v);
+      v.project(camera);
+      const cardX = (v.x * 0.5 + 0.5) * window.innerWidth;
+      const cardY = (-v.y * 0.5 + 0.5) * window.innerHeight;
+      return { dx: cardX - window.innerWidth / 2, dy: cardY - window.innerHeight / 2 };
+    }
+
+    function openReader(id) {
+      const record = records.find(item => item.id === id);
+      if (!record) return;
+      // 算 cardMesh 屏幕位置 → GSAP 起点偏移
+      const mesh = cardMeshes.find(m => m.userData?.record?.id === id);
+      const { dx, dy } = getReaderOffsetFromMesh(mesh);
+      _readerCurrentId = id;
+      _readerFromMeshId = id;
+      setReaderShape(record);
+      document.getElementById('readerDate').textContent = record.date || '';
+      document.getElementById('readerMedia').innerHTML = mediaHtml(record);
+      document.getElementById('readerText').textContent = record.text || '';
+      // 立刻加 .open（启用 backdrop-filter + pointer-events:auto）
+      reader.classList.add('open');
+      overlay.classList.add('on');
+      // GSAP：layout 永远 460×可变高，只 translate + opacity → 字体永远清晰
+      // back.out(1.2) 轻 overshoot + 0.55s，从卡片位置弹到屏幕中央
+      gsap.killTweensOf(reader);
+      gsap.fromTo(reader,
+        { xPercent: -50, yPercent: -50, x: dx, y: dy, opacity: 0 },
+        { xPercent: -50, yPercent: -50, x: 0, y: 0, opacity: 1, duration: 0.55, ease: 'back.out(1.2)' }
+      );
+      // 挂统一编辑/删除按钮
+      if (window.MS && MS.bindEdit) {
+        MS.bindEdit({
+          container: reader,
+          getId: () => _readerCurrentId,
+          label: '再写一笔',
+          onEdit: (rid) => {
+            const r = records.find(x => x.id === rid);
+            if (!r) return;
+            closeReader();
+            openComposer(r);
+          },
+        });
+      }
+      if (window.MS && MS.bindDelete) {
+        MS.bindDelete({
+          container: reader,
+          getId: () => _readerCurrentId,
+          question: '熄灭这道微光？',
+          yes: '熄灭',
+          onDelete: (rid) => {
+            const removed = records.find(r => r.id === rid);
+            if (!removed) return;
+            // 真文件媒体挪进回收站（无盘 / 非 fsa 时是 no-op）；不阻塞后续 UI 更新
+            trashRecordMedia(removed);
+            revokeRecordMedia(removed);
+            { const s = window.MS && window.MS.mediaStore; if (s && s.trashRecord) { try { s.trashRecord('healing', removed); } catch (_) {} } } // 整条进回收站（STORE-006d）
+            records = records.filter(r => r.id !== rid);
+            saveRecords();
+            closeReader();
+            document.querySelectorAll('.ms-confirm-backdrop.show').forEach(el => el.classList.remove('show'));
+            const goneMeshes = cardMeshes.filter(m => m.userData?.record?.id === rid);
+            goneMeshes.forEach(m => {
+              m.visible = false;
+              if (m.material) m.material.opacity = 0;
+              m.userData.disposed = true;
+            });
+            currentLayerCards = currentLayerCards.filter(m => m.userData?.record?.id !== rid);
+            if (window.msToast) window.msToast('已熄灭');
+            requestAnimationFrame(() => requestAnimationFrame(() => buildCards()));
+          },
+        });
+      }
+    }
+
+    function closeReader() {
+      stopMediaIn(reader); // 立刻停掉视频/音频播放，不让它在后台继续出声
+      const mediaWrap = document.getElementById('readerMedia');
+      if (mediaWrap) mediaWrap.innerHTML = ''; // 彻底释放，避免下次打开还残留
+      // 算返回目标：飞回来源卡片的当前屏幕位置
+      const mesh = cardMeshes.find(m => m.userData?.record?.id === _readerFromMeshId);
+      const { dx, dy } = getReaderOffsetFromMesh(mesh);
+      gsap.killTweensOf(reader);
+      // 立刻删 .open + .on：让 animate() 的 popupOpen 判断瞬间变 false，场景恢复正常帧率
+      // （不删的话 5fps 渲染会持续到动画结束 0.47s，删除/编辑时新 buildCards 看起来卡死）
+      reader.classList.remove('open');
+      overlay.classList.remove('on');
+      gsap.to(reader, {
+        xPercent: -50, yPercent: -50, x: dx, y: dy, opacity: 0,
+        duration: 0.47, ease: 'back.in(1.2)',
+        onComplete: () => {
+          READER_SHAPES.forEach(c => reader.classList.remove(c));
+          gsap.set(reader, { clearProps: 'transform,opacity' });
+        }
+      });
+      _readerFromMeshId = null;
+    }
+
+    // 父 App 切页面/星球时强制关 reader：ms-list-bridge 只 remove .open class，
+    // 不清 GSAP 设的 inline transform/opacity → reader 还视觉残留。这里补清掉。
+    window.addEventListener('message', (e) => {
+      if (e?.data?.type === 'memory-sparks:close-popups') {
+        try {
+          gsap.killTweensOf(reader);
+          gsap.set(reader, { clearProps: 'transform,opacity' });
+          READER_SHAPES.forEach(c => reader.classList.remove(c));
+          _readerFromMeshId = null;
+          _readerCurrentId = null;
+          stopMediaIn(reader);
+          const mediaWrap = document.getElementById('readerMedia');
+          if (mediaWrap) mediaWrap.innerHTML = '';
+        } catch (_) {}
+      }
+      // 父 App 把 U 盘目录句柄传进来（可能晚于首屏到达）：存进保险箱后，
+      // 重新水合一遍把 fsa 引用的图换成 blob: 补显示出来。
+      if (e?.data?.type === 'memory-sparks:fsa-handle') {
+        try {
+          MS.mediaVault.setDirHandle(e.data.dirHandle || null);
+          healingRestoreFile().then(() => loadHydratedRecords()).then(hydrated => {
+            records = hydrated;
+            if (typeof buildCards === 'function') buildCards();
+          }).catch(err => console.warn('[healing] 收到句柄后恢复/水合失败：', err));
+        } catch (err) {
+          console.warn('[healing] 处理 fsa-handle 失败：', err);
+        }
+      }
+    });
+
+    function mediaHtml(record) {
+      if (record.src && record.type === 'image') return `<img src="${record.src}" alt="">`;
+      if (record.src && record.type === 'video') return `<video src="${record.src}" controls playsinline></video>`;
+      if (record.src && record.type === 'audio') return `<audio src="${record.src}" controls style="width:78%; margin:96px 11%;"></audio>`;
+      return '';
+    }
+
+    // 小文件用 base64（可持久化到 localStorage）；大文件回退到 object URL（本次会话有效，刷新即失）
+    const DATAURL_LIMIT = 1.4 * 1024 * 1024; // 1.4MB
+    function readFileAsDataUrl(file) {
+      return new Promise(resolve => {
+        if (!file) return resolve({ url: '', persistent: false });
+        if (file.size > DATAURL_LIMIT) {
+          const url = URL.createObjectURL(file);
+          resolve({ url, persistent: false });
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => resolve({ url: reader.result, persistent: true });
+        reader.onerror = () => resolve({ url: '', persistent: false });
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function formatToday() {
+      const now = new Date();
+      return `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    // ── ms-composer 接入：图/视频/音频/文 任意组合，无标题，200 字上限，层 3 选 1 ──
+    function initHealingComposer() {
+      if (!window.MS || !MS.composer || !MS.composer.init) { setTimeout(initHealingComposer, 60); return; }
+      const layerNames = ['温柔', '陪伴', '启发'];
+      const layerToWarmth = [3, 4, 5];
+      MS.composer.init({
+        planet: 'healing',
+        storageKey: STORAGE_KEY,
+        capabilities: { image: true, video: true, audio: true },
+        textareaPlaceholder: '这一刻，是什么让你又好起来了……',
+        textareaMaxLength: 200,
+        extraHTML: `
+          <div class="msc-tier-row">
+            <span class="msc-extra-label">放到哪一层</span>
+            <div class="msc-tier-buttons" data-msc-tier="healing-layer">
+              ${layerNames.map((n, i) => `<button type="button" data-layer="${i}"${i===0?' class="on"':''}>${n}</button>`).join('')}
+            </div>
+          </div>
+        `,
+        extraInit(extraEl, editingRec) {
+          const grp = extraEl.querySelector('[data-msc-tier="healing-layer"]');
+          if (!grp) return;
+          let layer = 0;
+          if (editingRec) {
+            layer = Number.isInteger(editingRec.layer) ? editingRec.layer
+                  : (editingRec.warmth >= 5 ? 2 : editingRec.warmth >= 4 ? 1 : 0);
+          } else {
+            layer = currentLayer || 0;
+          }
+          grp.querySelectorAll('button[data-layer]').forEach(b => {
+            b.classList.toggle('on', Number(b.dataset.layer) === layer);
+            b.addEventListener('click', () => {
+              grp.querySelectorAll('button[data-layer]').forEach(x => x.classList.remove('on'));
+              b.classList.add('on');
+            });
+          });
+        },
+        extraGet(extraEl) {
+          const grp = extraEl.querySelector('[data-msc-tier="healing-layer"]');
+          const active = grp?.querySelector('button[data-layer].on');
+          return { layer: active ? Number(active.dataset.layer) : 0 };
+        },
+        onOpened(editingIdx) {
+          // 之前用 stage.style.display='none' 省 GPU —— 错了：composer 的 .msc-backdrop
+          // 半透 + blur(22) 透着背后 3D 场景做虚化，stage 不在 → 看到 body 黑底
+          // 现在不动 stage，让虚化背景正常显示。animate() 已经把 composer 打开时锁到
+          // 5fps，CPU/GPU 已经够省了
+          // 额外省点：composer 期间把 fab 呼吸暂停（持续 box-shadow 动画的合成开销）
+          document.body.classList.add('healing-composer-open');
+        },
+        onClosed() {
+          document.body.classList.remove('healing-composer-open');
+        },
+        async beforeDelete(removedRecord) {
+          // 共用 ms-composer 删除入口（V2 列表里编辑删除）：把真文件挪进回收站。
+          // 这里的 removedRecord 来自 localStorage 原始数据，媒体字段就是 'fsa:引用'（未水合），
+          // 直接逐个字段 trash + 清缓存。无盘 / base64 时各 trash 调用都是 no-op。
+          if (!removedRecord || !MS.mediaVault) return;
+          const refs = new Set();
+          for (const f of ['src', 'image', 'video', 'audio']) {
+            const v = removedRecord[f];
+            if (typeof v === 'string' && v.startsWith('fsa:')) refs.add(v);
+          }
+          if (Array.isArray(removedRecord.images)) {
+            removedRecord.images.forEach(x => {
+              if (typeof x === 'string' && x.startsWith('fsa:')) refs.add(x);
+            });
+          }
+          for (const ref of refs) {
+            try { await MS.mediaVault.trash(ref, { planetKey: 'healing' }); }
+            catch (err) { console.warn('[healing] beforeDelete trash 失败：', ref, err); }
+            const cachedBlob = mediaUrlCache.get(ref);
+            if (cachedBlob) {
+              try { URL.revokeObjectURL(cachedBlob); } catch {}
+              mediaUrlCache.delete(ref);
+            }
+          }
+        },
+        async beforeSave(payload, editingIdx) {
+          // ms-composer 给的字段：text/image/video/audio/audioName/type/date
+          // 治愈卡片渲染要的字段：title/text/type ('text'|'image'|'video'|'audio')/src/fileName/layer/warmth/date
+          const layer = Number.isInteger(payload.layer) ? payload.layer : 0;
+          let type = 'text', src = '', fileName = '';
+          if (payload.audio) { type = 'audio'; src = payload.audio; fileName = payload.audioName || ''; }
+          else if (payload.video) { type = 'video'; src = payload.video; }
+          else if (payload.image) { type = 'image'; src = payload.image; }
+          else if (payload.images && payload.images[0]) { type = 'image'; src = payload.images[0]; }
+
+          // ── 媒体走真文件存储 ──────────────────────────────
+          // 默认 src = base64 兜底；有 U 盘句柄时把媒体写成真文件，src 换成 'fsa:相对路径'。
+          // 无 U 盘（hasFileBackend()=false）时 put 直接返回原 base64 → 行为同现在。
+          // 画质优化：图片若用户本次新选了图（payload.imageFiles[0] 是原 File），有盘时用原 File
+          // 落盘 → 真文件保存原画质、不压缩。视频/音频，以及编辑没重选图的图片，仍用 src（现状）。
+          let mediaRef = src;
+          if (src && type !== 'text' && MS.mediaVault && MS.mediaVault.hasFileBackend()) {
+            const hasNewImageFile = type === 'image' && payload.imageFiles && payload.imageFiles[0];
+            const source = hasNewImageFile ? payload.imageFiles[0] : src;
+            try {
+              mediaRef = await MS.mediaVault.put({
+                planetKey: 'healing',
+                id: payload.id,
+                kind: type,          // 'image' | 'video' | 'audio'
+                dateStr: payload.date || formatToday(),
+                source,              // 原 File（新选图）或 base64 src（视频/音频/没重选图）
+              });
+              // 防御：原图落盘理论上不返回空；万一返回空，退回 base64 src 兜底，绝不丢媒体
+              if (!mediaRef) mediaRef = src;
+            } catch (err) {
+              console.warn('[healing] mediaVault.put 失败，保留 base64：', err);
+              mediaRef = src;
+            }
+          }
+
+          const wroteFile = typeof mediaRef === 'string' && mediaRef.startsWith('fsa:');
+          const patched = {
+            ...payload,
+            title: payload.title || '', // 砍标题
+            type,
+            src: mediaRef,
+            fileName,
+            layer,
+            warmth: layerToWarmth[layer] ?? 3,
+            date: payload.date || formatToday(),
+          };
+          // 关键清理：imageFiles 是临时的原 File 数组，不可 JSON 化，绝不能进 localStorage。
+          delete patched.imageFiles;
+
+          if (wroteFile) {
+            // 真写了文件：把对应 kind 的媒体字段也设成引用，其它媒体字段清空，
+            // 避免大 base64 仍被 ms-composer 写进 localStorage（视频尤其会撑爆）。
+            patched.image = type === 'image' ? mediaRef : '';
+            patched.images = type === 'image' ? [mediaRef] : [];
+            patched.video = type === 'video' ? mediaRef : '';
+            patched.audio = type === 'audio' ? mediaRef : '';
+          }
+          // mediaRef 还是 base64（无盘兜底）→ 保持 payload 原有 image/images/video/audio 不动
+
+          return patched;
+        },
+        async onSaved(savedRecord, editingIdx) {
+          // ms-composer 已写 storage；治愈内存 records 跟着对齐 + 3D 重建
+          const isNew = editingIdx == null;
+          const layer = savedRecord.layer ?? 0;
+          // 1) 保存前同步测一下图片/视频横竖比例，写回 record，避免出来后再"先横后竖"闪一下
+          if ((savedRecord.type === 'image' || savedRecord.type === 'video') && savedRecord.src && !savedRecord.aspect) {
+            try {
+              // src 可能是 'fsa:引用'（真文件）→ 先 resolve 成 blob: 再测；base64 原样
+              const measureSrc = await resolveRef(savedRecord.src);
+              const asp = await measureAspect({ type: savedRecord.type, src: measureSrc });
+              if (asp) {
+                savedRecord.aspect = asp;
+                aspectCache.set(savedRecord.id, asp);
+                // 同步写回 storage 里那条 record
+                try {
+                  const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                  const idxInStorage = arr.findIndex(r => r.id === savedRecord.id);
+                  if (idxInStorage >= 0) {
+                    arr[idxInStorage] = { ...arr[idxInStorage], aspect: asp };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+                  }
+                } catch {}
+              }
+            } catch {}
+          }
+          if (isNew) {
+            // 跨层：先切层再 buildCards + flyIn
+            if (layer !== currentLayer && typeof goToLayer === 'function') {
+              await goToLayer(layer);
+            }
+            records = await loadHydratedRecords();
+            buildCards(savedRecord.id);
+            if (typeof flyInNewCard === 'function') flyInNewCard(savedRecord.id);
+          } else {
+            records = await loadHydratedRecords();
+            buildCards(savedRecord.id);
+          }
+          if (typeof hud !== 'undefined' && hud) hud.classList.add('soft');
+          healingSyncFile(); // 录入主路径建库：storage 已最终态（含 aspect）（STORE-006）
+        },
+      });
+    }
+    initHealingComposer();
+
+    // P3 性能：延迟 800ms 启动 WebGL，给父 App 转场动画让出 GPU 资源
+    setTimeout(init, 800);
+    })().catch(error => {
+      console.error(error);
+      document.getElementById('fallback')?.classList.add('on');
+    });
+  </script>
+
+<script>
+  // ── Memory Sparks · 统一组件挂载（介绍卡 + 添加按钮） ──
+  // 在 DOM ready 后挂载，避免被原有 init 顺序覆盖
+  (function bootMSShared() {
+    // 治愈 .hud 已隐藏，由 ms-intro-card 替代左上角介绍
+    function go() {
+      if (window.MS && window.MS.bootstrap) {
+        MS.bootstrap('healing');
+      } else setTimeout(go, 60);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+  })();
+</script>
+</body>
+</html>

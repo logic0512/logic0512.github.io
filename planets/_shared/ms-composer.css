@@ -1,0 +1,619 @@
+/* ═══════════════════════════════════════════════════════════════
+   通用添加界面 ─ 3 颗星共用（花/云/繁星，后续 7 颗都接）
+   设计稿：app/public/composer-design-v3.html
+   思路：文字主体 + 媒体按需补充，无类型 tabs
+   配色随 body class 切换
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 谷歌字体只 import 一次，由 ms-composer.js 在第一次打开时加 */
+
+.msc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.45);
+  /* blur 从全屏 backdrop 移到 msc-paper（小卡片）：全屏 blur 代价是卡片 blur 的数十倍 */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px 80px;
+  opacity: 0;
+  transition: opacity 280ms ease;
+  /* 系统字体优先：苹方(Mac)/微软雅黑(Win) 即时可用、离线、零网络依赖。
+     不再依赖 Google Fonts 的 Noto Sans SC（国内慢/墙 + U盘离线加载不了 → 打字卡顿） */
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC", sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.msc-backdrop.msc-open {
+  display: flex;
+  opacity: 1;
+}
+
+/* 三颗星纸张色 + 墨水色（CSS 变量在 backdrop 上设，所有内部继承）*/
+.msc-backdrop[data-planet="flower"] {
+  --msc-paper: #fffafa;
+  --msc-paper-edge: rgba(74, 15, 36, 0.04);
+  --msc-paper-texture: radial-gradient(ellipse 100% 80% at 0% 0%, rgba(200, 74, 110, 0.04), transparent 60%);
+  --msc-ink: #4a0f24;
+  --msc-ink-soft: rgba(74, 15, 36, 0.62);
+  --msc-ink-faint: rgba(74, 15, 36, 0.18);
+  --msc-accent: #c84a6e;
+}
+.msc-backdrop[data-planet="cloud"] {
+  --msc-paper: #fcfbff;
+  --msc-paper-edge: rgba(42, 24, 80, 0.04);
+  --msc-paper-texture: radial-gradient(ellipse 100% 80% at 100% 0%, rgba(106, 90, 160, 0.04), transparent 60%);
+  --msc-ink: #2a1850;
+  --msc-ink-soft: rgba(42, 24, 80, 0.62);
+  --msc-ink-faint: rgba(42, 24, 80, 0.15);
+  --msc-accent: #6a5aa0;
+}
+.msc-backdrop[data-planet="starry"] {
+  --msc-paper: #18213a;
+  --msc-paper-edge: rgba(248, 236, 192, 0.04);
+  --msc-paper-texture: radial-gradient(ellipse 100% 80% at 50% 100%, rgba(232, 192, 96, 0.06), transparent 60%);
+  --msc-ink: #f8ecc0;
+  --msc-ink-soft: rgba(248, 236, 192, 0.62);
+  --msc-ink-faint: rgba(248, 236, 192, 0.14);
+  --msc-accent: #e8c060;
+}
+/* 其他星（按照 paletteVars.js 的真实颜色）*/
+.msc-backdrop[data-planet="beizi"] {
+  --msc-paper: #fcfdff;
+  --msc-paper-edge: rgba(30, 55, 80, 0.05);
+  --msc-paper-texture: radial-gradient(ellipse 100% 80% at 0% 0%, rgba(90, 136, 176, 0.04), transparent 60%);
+  --msc-ink: #1e3750;
+  --msc-ink-soft: rgba(30, 55, 80, 0.62);
+  --msc-ink-faint: rgba(30, 55, 80, 0.15);
+  --msc-accent: #5a88b0;
+}
+.msc-backdrop[data-planet="sea"] {
+  --msc-paper: #fdfaf0;
+  --msc-paper-edge: rgba(20, 55, 90, 0.05);
+  --msc-paper-texture: radial-gradient(ellipse 100% 80% at 100% 100%, rgba(8, 121, 192, 0.04), transparent 60%);
+  --msc-ink: #143759;
+  --msc-ink-soft: rgba(20, 55, 90, 0.62);
+  --msc-ink-faint: rgba(20, 55, 90, 0.16);
+  --msc-accent: #0879c0;
+}
+.msc-backdrop[data-planet="tree"] {
+  --msc-paper: #f8faf4;
+  --msc-paper-edge: rgba(30, 55, 30, 0.05);
+  --msc-paper-texture: radial-gradient(ellipse 100% 80% at 50% 100%, rgba(60, 110, 70, 0.04), transparent 60%);
+  --msc-ink: #1e3a23;
+  --msc-ink-soft: rgba(30, 55, 30, 0.62);
+  --msc-ink-faint: rgba(30, 55, 30, 0.15);
+  --msc-accent: #5a8a5a;
+}
+.msc-backdrop[data-planet="hiking"] {
+  --msc-paper: #f6f8f0;
+  --msc-paper-edge: rgba(45, 70, 35, 0.05);
+  --msc-paper-texture: radial-gradient(ellipse 100% 80% at 0% 0%, rgba(120, 160, 70, 0.04), transparent 60%);
+  --msc-ink: #2d4626;
+  --msc-ink-soft: rgba(45, 70, 35, 0.62);
+  --msc-ink-faint: rgba(45, 70, 35, 0.15);
+  --msc-accent: #4d7a28;
+}
+.msc-backdrop[data-planet="healing"] {
+  /* 跟介绍卡 + 卡片 + 场景同色系：浅奶米 + 暖咖栗 */
+  --msc-paper: #faf3e8;
+  --msc-paper-edge: rgba(120, 90, 70, 0.10);
+  --msc-paper-texture: radial-gradient(ellipse 100% 80% at 50% 0%, rgba(223, 184, 168, 0.08), transparent 60%);
+  --msc-ink: #604636;
+  --msc-ink-soft: rgba(96, 70, 56, 0.62);
+  --msc-ink-faint: rgba(96, 70, 56, 0.18);
+  --msc-accent: #a06848;
+}
+/* 兜底（按云星色）*/
+.msc-backdrop:not([data-planet]),
+.msc-backdrop[data-planet=""] {
+  --msc-paper: #fcfbff;
+  --msc-paper-edge: rgba(42, 24, 80, 0.04);
+  --msc-ink: #2a1850;
+  --msc-ink-soft: rgba(42, 24, 80, 0.62);
+  --msc-ink-faint: rgba(42, 24, 80, 0.15);
+  --msc-accent: #6a5aa0;
+}
+
+/* ── 纸 ── */
+.msc-paper {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  max-height: calc(100vh - 160px);
+  /* 把 layout/paint 隔离在 composer 内：textarea 内容变化触发的 reflow 不影响外部
+     这是繁星卡顿的关键 — 外部有大量发光元素，reflow 时浏览器要重算全部 */
+  contain: layout style paint;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: var(--msc-paper);
+  background-image: var(--msc-paper-texture, none);
+  color: var(--msc-ink);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px var(--msc-paper-edge),
+    0 30px 80px -28px rgba(0, 0, 0, 0.28),
+    0 8px 28px -10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(14px) scale(0.985);
+  opacity: 0;
+  transition: transform 540ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 540ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.msc-backdrop.msc-open .msc-paper { transform: none; opacity: 1; }
+/* 海星专用：纸张背景是不透明实色（#fdfaf0），背后的毛玻璃模糊根本看不见，
+   却让卡片进场/打字时每帧对复杂海洋 SVG 重算模糊 → 添加页卡顿主因。
+   去掉它视觉零变化（同云星结论：输入时不做背景模糊）。
+   但 backdrop-filter 原本顺带让卡片独立成 GPU 合成层，去掉后卡片掉回背景同层，
+   打字重绘会连带重栅格化背后复杂海洋 SVG → 仍卡。
+   用 will-change: transform 零开销重新把卡片提升为独立层：打字只更新卡片层，
+   背景碰都不碰。不占用 transform 属性，进场滑入动画照常，视觉零变化。 */
+.msc-backdrop[data-planet="sea"] .msc-paper {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  will-change: transform;
+}
+.msc-backdrop[data-planet="starry"] .msc-paper {
+  background: linear-gradient(180deg, #1c2640 0%, #161e36 100%);
+  box-shadow:
+    0 0 0 1px var(--msc-paper-edge),
+    0 30px 80px -28px rgba(0, 0, 0, 0.72),
+    0 8px 28px -10px rgba(0, 0, 0, 0.42);
+}
+
+/* ── 顶角：日期 + 关闭 ── */
+.msc-top {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 26px 28px 0;
+}
+.msc-date {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  color: var(--msc-ink-soft);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+.msc-date .msc-dot { opacity: 0.4; margin: 0 6px; }
+.msc-close {
+  background: transparent;
+  border: 0;
+  padding: 4px;
+  margin: -4px;
+  color: var(--msc-ink-soft);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 180ms ease;
+}
+.msc-close:hover { opacity: 1; }
+.msc-close svg { width: 14px; height: 14px; display: block; }
+
+/* ── 写字 ── */
+.msc-write {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 22px 36px 12px;
+}
+.msc-write::-webkit-scrollbar { width: 6px; }
+.msc-write::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--msc-accent) 30%, transparent);
+  border-radius: 3px;
+}
+.msc-textarea {
+  width: 100%;
+  min-height: 220px;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  resize: none;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 300;
+  line-height: 1.95;
+  letter-spacing: 0.04em;
+  color: var(--msc-ink);
+  caret-color: var(--msc-accent);
+  padding: 0;
+}
+.msc-textarea::placeholder { color: var(--msc-ink-soft); opacity: 0.42; }
+
+/* ── 扩展槽里的单行输入（如行星地名）── */
+.msc-input {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--msc-ink-faint);
+  padding: 8px 0 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--msc-ink);
+  letter-spacing: 0.04em;
+  outline: none;
+  transition: border-color 180ms ease;
+}
+.msc-input:focus {
+  border-bottom-color: var(--msc-accent);
+}
+.msc-input::placeholder { color: var(--msc-ink-soft); opacity: 0.5; }
+
+/* ── 扩展槽（如花种类选择）── */
+.msc-extra {
+  flex-shrink: 0;
+  padding: 6px 36px 10px;
+}
+.msc-flower-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.msc-flower-grid button {
+  background: transparent;
+  border: 1px solid var(--msc-paper-edge);
+  border-radius: 12px;
+  padding: 10px 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--msc-ink-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 180ms ease;
+}
+.msc-flower-grid button:hover {
+  color: var(--msc-ink);
+  border-color: var(--msc-ink-faint);
+}
+.msc-flower-grid button.on {
+  background: color-mix(in srgb, var(--msc-accent) 12%, transparent);
+  border-color: var(--msc-accent);
+  color: var(--msc-accent);
+  font-weight: 500;
+}
+.msc-flower-grid .emotion {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  opacity: 0.62;
+}
+.msc-extra-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  color: var(--msc-ink-soft);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* 字数计数器（云星等 maxLength 启用时） */
+.msc-counter {
+  align-self: flex-end;
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--msc-ink-soft);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+/* 档位单选（被子 1/2/3、树 1-5） */
+.msc-tier-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.msc-tier-row .msc-extra-label { margin-bottom: 0; flex-shrink: 0; }
+
+/* 滑动条（繁星 大小/亮度） */
+.msc-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.msc-slider-row .msc-extra-label { margin-bottom: 0; flex-shrink: 0; min-width: 36px; }
+.msc-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--msc-paper-edge);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.msc-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--msc-accent);
+  cursor: pointer;
+  border: 0;
+  transition: transform 140ms ease;
+}
+.msc-slider::-webkit-slider-thumb:hover { transform: scale(1.18); }
+.msc-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--msc-accent);
+  cursor: pointer;
+  border: 0;
+}
+.msc-slider-val {
+  flex-shrink: 0;
+  min-width: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--msc-accent);
+  font-weight: 500;
+}
+.msc-tier-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.msc-tier-buttons button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--msc-paper-edge);
+  background: transparent;
+  color: var(--msc-ink-soft);
+  font-family: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.msc-tier-buttons button:hover {
+  color: var(--msc-ink);
+  border-color: var(--msc-ink-faint);
+}
+.msc-tier-buttons button.on {
+  background: color-mix(in srgb, var(--msc-accent) 14%, transparent);
+  border-color: var(--msc-accent);
+  color: var(--msc-accent);
+  font-weight: 500;
+}
+
+/* ── 媒体附加区 ── */
+.msc-media {
+  padding: 6px 36px 8px;
+  display: none;
+  flex-shrink: 0;
+}
+.msc-media.msc-has-content { display: block; }
+
+.msc-images {
+  display: none;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.msc-images.msc-show { display: flex; }
+.msc-images .msc-thumb {
+  position: relative;
+  width: calc((100% - 16px) / 3);
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  background: var(--msc-ink-faint);
+  overflow: hidden;
+}
+.msc-images .msc-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.msc-images .msc-thumb .msc-x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.msc-images .msc-thumb:hover .msc-x { opacity: 1; }
+
+.msc-video {
+  display: none;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0a0e16;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 4px;
+}
+.msc-video.msc-show { display: block; }
+.msc-video video { width: 100%; height: 100%; object-fit: cover; }
+.msc-video .msc-x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.msc-video .msc-x svg { width: 11px; height: 11px; }
+
+/* ── 音频附件（治愈支持） ── */
+.msc-audio {
+  display: none;
+  margin-bottom: 12px;
+}
+.msc-audio.msc-show { display: block; }
+.msc-audio-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 38px 10px 14px;
+  background: var(--msc-ink-faint);
+  border-radius: 10px;
+  color: var(--msc-ink);
+}
+.msc-audio-row svg { flex-shrink: 0; width: 16px; height: 16px; color: var(--msc-ink-soft); }
+.msc-audio-name {
+  font-size: 13px;
+  flex-shrink: 0;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.msc-audio audio {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+}
+.msc-audio .msc-x {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.msc-audio .msc-x svg { width: 11px; height: 11px; color: white; }
+
+/* ── 底部工具行 ── */
+.msc-bottom {
+  flex-shrink: 0;
+  padding: 14px 30px 22px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-top: 1px solid var(--msc-paper-edge);
+}
+.msc-add-tool {
+  background: transparent;
+  border: 0;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: var(--msc-ink-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  border-radius: 8px;
+  transition: color 160ms ease, background 160ms ease;
+}
+.msc-add-tool:hover {
+  color: var(--msc-accent);
+  background: color-mix(in srgb, var(--msc-accent) 9%, transparent);
+}
+.msc-add-tool svg { width: 16px; height: 16px; flex-shrink: 0; }
+.msc-add-tool input { display: none; }
+
+.msc-spacer { flex: 1; }
+
+.msc-cancel,
+.msc-delete {
+  background: transparent;
+  border: 0;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--msc-ink-soft);
+  transition: color 160ms ease;
+}
+.msc-cancel:hover { color: var(--msc-ink); }
+.msc-delete { color: var(--msc-ink-faint); }
+.msc-delete:hover { color: #c84444; }
+
+.msc-save {
+  background: transparent;
+  border: 0;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--msc-accent);
+  position: relative;
+  transition: letter-spacing 200ms ease;
+}
+.msc-save::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 4px;
+  height: 1px;
+  background: var(--msc-accent);
+  opacity: 0;
+  transform: scaleX(0.4);
+  transform-origin: left center;
+  transition: opacity 220ms ease,
+              transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.msc-save:hover { letter-spacing: 0.26em; }
+.msc-save:hover::after { opacity: 1; transform: scaleX(1); }
+.msc-save[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.msc-save[disabled]:hover { letter-spacing: 0.2em; }
+.msc-save[disabled]:hover::after { opacity: 0; transform: scaleX(0.4); }
+
+/* 图片处理中提示 */
+.msc-img-loading {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--msc-mute, rgba(60, 50, 100, 0.55));
+  padding: 6px 0 2px;
+  animation: mscLoadingPulse 1s ease-in-out infinite;
+}
+@keyframes mscLoadingPulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1;   }
+}

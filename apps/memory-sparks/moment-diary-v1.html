@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>重要时刻 · 数字日记本 — 三方向对比</title>
+<style>
+  /* ── Memory Sparks tokens（与 App 同一套） ── */
+  :root{
+    --bg-deepest:#050810; --bg-deep:#08101e; --bg-mid:#0d1626; --bg-elev:#131d33;
+    --surface-1:rgba(255,255,255,.04); --surface-2:rgba(255,255,255,.07); --surface-3:rgba(255,255,255,.12);
+    --text-strong:rgba(255,255,255,.92); --text-primary:rgba(232,237,245,.85); --text-soft:rgba(232,237,245,.62);
+    --text-mute:rgba(232,237,245,.38); --text-faint:rgba(232,237,245,.22);
+    --gold:#ffd070; --gold-soft:#c79858; --gold-glow:rgba(255,208,112,.4);
+    --rose:#e8a8bc; --rose-soft:#b87a92;
+    --border-faint:rgba(255,255,255,.06); --border-soft:rgba(255,255,255,.12); --border-strong:rgba(255,255,255,.22);
+    --font-body:'PingFang SC',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+    --font-serif:'Songti SC','Source Han Serif SC','STSong',serif;
+    --tk-tight:.02em; --tk-normal:.04em; --tk-wide:.08em; --tk-wider:.14em; --tk-widest:.22em;
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg-deepest);color:var(--text-primary);font-family:var(--font-body);}
+  body{padding:0 0 140px;}
+
+  /* ── 顶部说明 ── */
+  .intro{max-width:880px;margin:0 auto;padding:64px 36px 24px;}
+  .intro .eyebrow{font-size:11px;letter-spacing:var(--tk-widest);color:var(--gold-soft);text-transform:uppercase;}
+  .intro h1{font-family:var(--font-serif);font-weight:300;font-size:30px;letter-spacing:var(--tk-wide);color:var(--text-strong);margin:14px 0 16px;}
+  .intro p{font-size:13.5px;line-height:2;color:var(--text-soft);letter-spacing:var(--tk-normal);max-width:680px;}
+  .intro .meta{margin-top:18px;font-size:11px;color:var(--text-mute);letter-spacing:var(--tk-wider);}
+
+  /* ── 方向区块通用 ── */
+  .dir{max-width:1180px;margin:60px auto 0;padding:0 36px;}
+  .dir-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px;}
+  .dir-tag{font-size:12px;font-weight:600;letter-spacing:var(--tk-wide);padding:4px 12px;border-radius:999px;}
+  .dir-a .dir-tag{color:#e7c89a;background:rgba(231,200,154,.12);border:1px solid rgba(231,200,154,.3);}
+  .dir-b .dir-tag{color:#cfd8e6;background:rgba(207,216,230,.1);border:1px solid rgba(207,216,230,.26);}
+  .dir-c .dir-tag{color:#9ec6ff;background:rgba(158,198,255,.12);border:1px solid rgba(158,198,255,.3);}
+  .dir-head h2{font-family:var(--font-serif);font-weight:300;font-size:23px;letter-spacing:var(--tk-wide);color:var(--text-strong);}
+  .dir-desc{font-size:13px;line-height:1.95;color:var(--text-soft);letter-spacing:var(--tk-normal);max-width:760px;margin:0 0 26px;}
+  .dir-desc b{color:var(--text-primary);font-weight:600;}
+  .stage{display:grid;grid-template-columns:300px 1fr;gap:26px;align-items:start;}
+  @media(max-width:900px){.stage{grid-template-columns:1fr;}}
+  .stage-label{font-size:10.5px;letter-spacing:var(--tk-widest);color:var(--text-faint);text-transform:uppercase;margin-bottom:12px;}
+
+  /* ════════════════════════════════════════════
+     方向 A · 装帧本（纸张质感 + 书脊 + 缎带书签）
+     ════════════════════════════════════════════ */
+  .a-frame{
+    position:relative;border-radius:4px 12px 12px 4px;overflow:hidden;
+    background:
+      linear-gradient(180deg, rgba(26,22,18,.0), rgba(0,0,0,.18)),
+      linear-gradient(100deg,#161310 0%,#1d1813 48%,#171410 100%);
+    box-shadow:0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,225,180,.05);
+  }
+  /* 书脊（左侧装订暗槽） */
+  .a-frame::before{content:'';position:absolute;left:0;top:0;bottom:0;width:26px;
+    background:linear-gradient(90deg, rgba(0,0,0,.55), rgba(0,0,0,.05));
+    border-right:1px solid rgba(255,225,180,.06);}
+  /* 纸面噪点纹理 */
+  .a-frame::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/></svg>");}
+  .a-page{position:relative;z-index:2;padding:52px 54px 56px 70px;}
+  /* 缎带书签 */
+  .a-ribbon{position:absolute;top:-4px;right:46px;width:22px;height:84px;z-index:5;
+    background:linear-gradient(180deg,#caa15a,#a07c3e);box-shadow:0 6px 14px rgba(0,0,0,.4);}
+  .a-ribbon::after{content:'';position:absolute;bottom:-10px;left:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:11px solid #a07c3e;}
+  /* 情感重量 → 纸面暖光（重 5 暖金，轻 2 几乎无） */
+  .a-warm{position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,208,112,.16), transparent 62%),
+              radial-gradient(ellipse 70% 40% at 50% 110%, rgba(255,208,112,.1), transparent 60%);}
+  .a-date{font-family:var(--font-serif);font-size:13px;letter-spacing:var(--tk-widest);color:#b89a6a;
+    text-transform:uppercase;margin-bottom:22px;}
+  .a-date::after{content:'';display:block;width:34px;height:1px;background:#9c7c46;margin-top:14px;}
+  .a-body{font-family:var(--font-serif);font-size:18px;line-height:2.15;color:#e9e2d4;font-weight:300;
+    letter-spacing:var(--tk-tight);white-space:pre-wrap;text-shadow:0 1px 0 rgba(0,0,0,.3);}
+  .a-body .drop{float:left;font-size:48px;line-height:.82;padding:6px 12px 0 0;color:#caa15a;font-weight:400;}
+  /* A 时间轴：翻到的页脚标签堆叠 */
+  .a-tl{display:flex;flex-direction:column;gap:0;}
+  .a-tl-item{position:relative;padding:18px 18px 18px 22px;cursor:pointer;
+    background:linear-gradient(100deg,#1a1611,#211b15);border-radius:3px 8px 8px 3px;
+    box-shadow:0 8px 20px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,225,180,.04);
+    margin-bottom:10px;transition:transform .35s var(--ease-out);}
+  .a-tl-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px;
+    background:linear-gradient(180deg,#caa15a,#7a5e30);opacity:var(--w,.6);}
+  .a-tl-item:hover{transform:translateX(5px);}
+  .a-tl-date{font-family:var(--font-serif);font-size:11px;letter-spacing:var(--tk-wider);color:#b89a6a;margin-bottom:7px;}
+  .a-tl-text{font-family:var(--font-serif);font-size:13.5px;line-height:1.85;color:#d8cfbf;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+  /* ════════════════════════════════════════════
+     方向 B · 素笺（极简排版 · 信稿手记）
+     ════════════════════════════════════════════ */
+  .b-page{position:relative;background:
+      radial-gradient(ellipse 60% 35% at 50% 0%, rgba(232,168,188,.04), transparent 60%),
+      linear-gradient(180deg,var(--bg-deep),var(--bg-mid));
+    border-radius:14px;padding:64px 72px 70px;
+    box-shadow:0 26px 70px rgba(0,0,0,.5), inset 0 0 0 1px var(--border-faint);}
+  /* 情感重量 → 极淡的上缘金线晕 */
+  .b-seal{display:flex;align-items:center;gap:14px;margin-bottom:40px;}
+  .b-seal-dot{width:9px;height:9px;border-radius:50%;background:radial-gradient(circle,#ffd070,#c79858);
+    box-shadow:0 0 calc(10px * var(--w,.6)) rgba(255,208,112,calc(.7*var(--w,.6)));}
+  .b-date{font-size:12px;letter-spacing:var(--tk-widest);color:var(--text-mute);font-variant-numeric:tabular-nums;}
+  .b-body{font-family:var(--font-serif);font-size:20px;line-height:2.25;color:var(--text-strong);font-weight:300;
+    letter-spacing:var(--tk-tight);white-space:pre-wrap;}
+  .b-rule{width:100%;height:1px;background:var(--border-faint);margin:46px 0 0;position:relative;}
+  .b-rule::after{content:'';position:absolute;left:0;top:0;width:30px;height:1px;background:var(--gold-soft);}
+  /* B 时间轴：单线垂直线索 */
+  .b-tl{position:relative;padding-left:24px;}
+  .b-tl::before{content:'';position:absolute;left:4px;top:8px;bottom:8px;width:1px;background:var(--border-faint);}
+  .b-tl-item{position:relative;padding:0 0 30px 0;cursor:pointer;}
+  .b-tl-item::before{content:'';position:absolute;left:-23px;top:6px;width:7px;height:7px;border-radius:50%;
+    background:rgba(255,208,112,var(--w,.6));box-shadow:0 0 8px rgba(255,208,112,calc(.6*var(--w,.6)));}
+  .b-tl-date{font-size:10.5px;letter-spacing:var(--tk-wider);color:var(--text-mute);margin-bottom:8px;font-variant-numeric:tabular-nums;}
+  .b-tl-text{font-family:var(--font-serif);font-size:14px;line-height:1.9;color:var(--text-primary);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .b-tl-item:hover .b-tl-text{color:var(--text-strong);}
+
+  /* ════════════════════════════════════════════
+     方向 C · 夜光手账（漂浮玻璃页 · 氛围光晕）
+     ════════════════════════════════════════════ */
+  .c-sky{position:relative;border-radius:18px;overflow:hidden;padding:70px 40px;
+    background:radial-gradient(ellipse 70% 60% at 50% 30%, #14213d, #070c18 70%);}
+  /* 星尘 */
+  .c-sky .star{position:absolute;border-radius:50%;background:#fff;opacity:.0;animation:tw 5s infinite var(--ease-out);}
+  @keyframes tw{0%,100%{opacity:.1;}50%{opacity:.7;}}
+  .c-glass{position:relative;z-index:3;max-width:620px;margin:0 auto;border-radius:18px;
+    padding:54px 52px 58px;background:rgba(18,26,46,.45);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.1);
+    box-shadow:0 30px 80px rgba(0,0,0,.5);}
+  /* 情感重量 → 玻璃页四周的暖金气场 */
+  .c-aura{position:absolute;inset:-30px;z-index:2;pointer-events:none;border-radius:30px;
+    background:radial-gradient(ellipse 70% 60% at 50% 50%, rgba(255,208,112,calc(.22*var(--w,.6))), transparent 70%);
+    filter:blur(20px);}
+  .c-date{font-size:12px;letter-spacing:var(--tk-widest);color:#9ec6ff;margin-bottom:26px;
+    font-variant-numeric:tabular-nums;}
+  .c-body{font-family:var(--font-serif);font-size:19px;line-height:2.2;color:rgba(255,255,255,.9);font-weight:300;
+    letter-spacing:var(--tk-tight);white-space:pre-wrap;text-shadow:0 0 20px rgba(180,210,255,.12);}
+  /* C 时间轴：漂浮的小光页 */
+  .c-tl{display:flex;flex-direction:column;gap:14px;}
+  .c-tl-item{position:relative;padding:16px 18px;cursor:pointer;border-radius:12px;
+    background:rgba(18,26,46,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,.07);transition:all .35s var(--ease-out);}
+  .c-tl-item::after{content:'';position:absolute;inset:0;border-radius:12px;pointer-events:none;
+    box-shadow:inset 0 0 calc(30px*var(--w,.6)) rgba(255,208,112,calc(.12*var(--w,.6)));}
+  .c-tl-item:hover{border-color:rgba(255,255,255,.16);transform:translateY(-2px);}
+  .c-tl-date{font-size:10.5px;letter-spacing:var(--tk-wider);color:#9ec6ff;margin-bottom:7px;font-variant-numeric:tabular-nums;}
+  .c-tl-text{font-family:var(--font-serif);font-size:13.5px;line-height:1.85;color:rgba(255,255,255,.82);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+  /* ── 批注 dock ── */
+  .dock{position:fixed;right:0;bottom:0;left:0;z-index:50;background:rgba(8,12,22,.92);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border-soft);
+    transform:translateY(calc(100% - 46px));transition:transform .4s var(--ease-out);}
+  .dock.open{transform:translateY(0);}
+  .dock-handle{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;cursor:pointer;}
+  .dock-handle .t{font-size:12px;letter-spacing:var(--tk-wider);color:var(--text-soft);}
+  .dock-handle .t b{color:var(--gold);}
+  .dock-actions{display:flex;gap:10px;align-items:center;}
+  .dock-btn{font-size:11px;letter-spacing:var(--tk-wide);color:var(--text-soft);background:var(--surface-2);
+    border:1px solid var(--border-soft);padding:6px 14px;border-radius:999px;cursor:pointer;}
+  .dock-btn:hover{color:var(--text-strong);background:var(--surface-3);}
+  .dock-btn.gold{color:var(--gold);border-color:rgba(255,208,112,.32);background:rgba(255,208,112,.08);}
+  .dock-body{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:8px 24px 26px;}
+  @media(max-width:900px){.dock-body{grid-template-columns:1fr 1fr;}}
+  .dock-field label{display:block;font-size:11px;letter-spacing:var(--tk-wide);color:var(--text-mute);margin-bottom:8px;}
+  .dock-field textarea{width:100%;height:96px;resize:vertical;background:var(--surface-1);
+    border:1px solid var(--border-faint);border-radius:10px;padding:10px 12px;color:var(--text-primary);
+    font-family:var(--font-body);font-size:12.5px;line-height:1.7;letter-spacing:var(--tk-normal);}
+  .dock-field textarea:focus{outline:none;border-color:var(--border-strong);}
+  .dock-saved{font-size:10.5px;color:var(--text-faint);letter-spacing:var(--tk-wide);}
+</style>
+</head>
+<body>
+
+  <div class="intro">
+    <div class="eyebrow">Memory Sparks · 重要时刻 重做</div>
+    <h1>三种「数字日记本」质感,挑一种</h1>
+    <p>PRD 要的是「像一本有质感的深色日记本,私密、文字感强」。下面三个方向用的是 App 里现成的示例时刻,配色字体都跟 App 同一套。每个方向给了<b>时间轴</b>(平时翻看的样子)和<b>展开一篇</b>(沉浸阅读的样子)。情感重量都按 PRD「隐性光晕、不显示数字」处理——你能感觉到哪篇更重,但看不到分数。</p>
+    <p class="meta">右下角可以拉开批注栏边看边记，写完点导出。</p>
+  </div>
+
+  <!-- ════ 方向 A ════ -->
+  <section class="dir dir-a">
+    <div class="dir-head"><span class="dir-tag">方向 A</span><h2>装帧本</h2></div>
+    <p class="dir-desc">最有「物质感」的一版。深色皮质 / 纸纹的页面，左侧一道<b>装订暗槽</b>像真书的书脊，右上角垂一条<b>缎带书签</b>。正文宋体、首字下沉，日期做成压印小标题。情感重的篇章，纸面会从边缘透出暖金光。<b>翻看时像在翻一本旧日记。</b></p>
+    <div class="stage">
+      <div>
+        <div class="stage-label">时间轴</div>
+        <div class="a-tl">
+          <div class="a-tl-item" style="--w:1"><div class="a-tl-date">11.12</div><div class="a-tl-text">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。第一次听她讲这个。</div></div>
+          <div class="a-tl-item" style="--w:.78"><div class="a-tl-date">9.28</div><div class="a-tl-text">决定不去那个工作面试了。我知道自己想要的不是那个。</div></div>
+          <div class="a-tl-item" style="--w:.55"><div class="a-tl-date">7.05</div><div class="a-tl-text">看完了那本读了三年的书。合上的那一刻，没有想象中那么激动，只是很安静。</div></div>
+          <div class="a-tl-item" style="--w:.33"><div class="a-tl-date">5.21</div><div class="a-tl-text">一个人吃了顿很好的晚饭。这次没有觉得孤单。</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="stage-label">展开一篇</div>
+        <div class="a-frame">
+          <div class="a-ribbon"></div>
+          <div class="a-warm"></div>
+          <div class="a-page">
+            <div class="a-date">2024 年 11 月 12 日</div>
+            <div class="a-body"><span class="drop">今</span>天和妈妈聊了很久，她说她年轻的时候也想过当画家。
+
+第一次听她讲这个。她说那时候没钱买颜料，就用铅笔在练习本背面画，画完了又怕被外婆骂，撕掉。
+
+我忽然觉得，我好像从来没真正认识过她。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ 方向 B ════ -->
+  <section class="dir dir-b">
+    <div class="dir-head"><span class="dir-tag">方向 B</span><h2>素笺</h2></div>
+    <p class="dir-desc">最克制的一版，靠<b>排版和留白</b>取胜，不做拟物。近黑底上一列温润的宋体，大字距、大行距，像一封写给自己的信。日期前一颗<b>小金印</b>，结尾一道发丝细线。情感重量只藏在金印的微光里。<b>最接近 ToWhereOnline 的安静感，也最不会过时。</b></p>
+    <div class="stage">
+      <div>
+        <div class="stage-label">时间轴</div>
+        <div class="b-tl">
+          <div class="b-tl-item" style="--w:1"><div class="b-tl-date">2024.11.12</div><div class="b-tl-text">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。第一次听她讲这个。</div></div>
+          <div class="b-tl-item" style="--w:.78"><div class="b-tl-date">2024.09.28</div><div class="b-tl-text">决定不去那个工作面试了。我知道自己想要的不是那个。</div></div>
+          <div class="b-tl-item" style="--w:.55"><div class="b-tl-date">2024.07.05</div><div class="b-tl-text">看完了那本读了三年的书。合上的那一刻，没有想象中那么激动，只是很安静。</div></div>
+          <div class="b-tl-item" style="--w:.33"><div class="b-tl-date">2024.05.21</div><div class="b-tl-text">一个人吃了顿很好的晚饭。这次没有觉得孤单。</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="stage-label">展开一篇</div>
+        <div class="b-page">
+          <div class="b-seal"><span class="b-seal-dot" style="--w:1"></span><span class="b-date">2024 年 11 月 12 日</span></div>
+          <div class="b-body">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。
+
+第一次听她讲这个。她说那时候没钱买颜料，就用铅笔在练习本背面画，画完了又怕被外婆骂，撕掉。
+
+我忽然觉得，我好像从来没真正认识过她。</div>
+          <div class="b-rule"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════ 方向 C ════ -->
+  <section class="dir dir-c">
+    <div class="dir-head"><span class="dir-tag">方向 C</span><h2>夜光手账</h2></div>
+    <p class="dir-desc">最贴「记忆闪光点」品牌的一版。日记页是一块<b>磨砂玻璃</b>，漂浮在星尘夜空里。情感重的篇章，玻璃页四周会<b>泛起暖金气场</b>——重量直接变成了光。日期用柔蓝（跟愿望色呼应）。<b>跟星球板块是同一个宇宙，氛围最强。</b></p>
+    <div class="stage">
+      <div>
+        <div class="stage-label">时间轴</div>
+        <div class="c-tl">
+          <div class="c-tl-item" style="--w:1"><div class="c-tl-date">11.12</div><div class="c-tl-text">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。第一次听她讲这个。</div></div>
+          <div class="c-tl-item" style="--w:.78"><div class="c-tl-date">9.28</div><div class="c-tl-text">决定不去那个工作面试了。我知道自己想要的不是那个。</div></div>
+          <div class="c-tl-item" style="--w:.55"><div class="c-tl-date">7.05</div><div class="c-tl-text">看完了那本读了三年的书。合上的那一刻，没有想象中那么激动，只是很安静。</div></div>
+          <div class="c-tl-item" style="--w:.33"><div class="c-tl-date">5.21</div><div class="c-tl-text">一个人吃了顿很好的晚饭。这次没有觉得孤单。</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="stage-label">展开一篇</div>
+        <div class="c-sky" id="cSky">
+          <div class="c-aura" style="--w:1"></div>
+          <div class="c-glass">
+            <div class="c-date">2024 年 11 月 12 日</div>
+            <div class="c-body">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。
+
+第一次听她讲这个。她说那时候没钱买颜料，就用铅笔在练习本背面画，画完了又怕被外婆骂，撕掉。
+
+我忽然觉得，我好像从来没真正认识过她。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 批注 dock ── -->
+  <div class="dock" id="dock">
+    <div class="dock-handle" id="dockHandle">
+      <span class="t">📝 <b>批注栏</b> — 边看边记，点这里展开/收起</span>
+      <span class="dock-actions">
+        <span class="dock-saved" id="dockSaved"></span>
+        <button class="dock-btn" id="clearBtn">清空</button>
+        <button class="dock-btn gold" id="exportBtn">导出批注</button>
+      </span>
+    </div>
+    <div class="dock-body">
+      <div class="dock-field"><label>方向 A · 装帧本</label><textarea data-k="a" placeholder="喜欢 / 不喜欢这里的什么…"></textarea></div>
+      <div class="dock-field"><label>方向 B · 素笺</label><textarea data-k="b" placeholder="…"></textarea></div>
+      <div class="dock-field"><label>方向 C · 夜光手账</label><textarea data-k="c" placeholder="…"></textarea></div>
+      <div class="dock-field"><label>结论 / 选哪个 / 要混搭</label><textarea data-k="final" placeholder="例：用 B 的排版 + C 的光晕…"></textarea></div>
+    </div>
+  </div>
+
+<script>
+  // 星尘
+  (function(){
+    const sky=document.getElementById('cSky');if(!sky)return;
+    for(let i=0;i<40;i++){const s=document.createElement('span');s.className='star';
+      const sz=Math.random()*2+1;s.style.width=sz+'px';s.style.height=sz+'px';
+      s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';
+      s.style.animationDelay=(Math.random()*5)+'s';sky.appendChild(s);}
+  })();
+
+  // 批注：localStorage 自动保存
+  const KEY='ms-moment-diary-notes-v1';
+  const dock=document.getElementById('dock'),handle=document.getElementById('dockHandle');
+  const saved=document.getElementById('dockSaved');
+  const areas=[...document.querySelectorAll('.dock-field textarea')];
+  function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'{}');areas.forEach(a=>a.value=d[a.dataset.k]||'');}catch(e){}}
+  function save(){const d={};areas.forEach(a=>d[a.dataset.k]=a.value);localStorage.setItem(KEY,JSON.stringify(d));
+    const t=new Date();saved.textContent='已保存 '+t.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});}
+  areas.forEach(a=>a.addEventListener('input',()=>{clearTimeout(window._t);window._t=setTimeout(save,500);}));
+  handle.addEventListener('click',e=>{if(e.target.closest('.dock-btn'))return;dock.classList.toggle('open');});
+  document.getElementById('clearBtn').addEventListener('click',()=>{if(confirm('清空所有批注？')){areas.forEach(a=>a.value='');save();}});
+  document.getElementById('exportBtn').addEventListener('click',()=>{
+    const names={a:'方向 A · 装帧本',b:'方向 B · 素笺',c:'方向 C · 夜光手账',final:'结论'};
+    let out='# 重要时刻 · 数字日记本 批注\n\n';
+    areas.forEach(a=>{out+='## '+names[a.dataset.k]+'\n'+(a.value.trim()||'(空)')+'\n\n';});
+    const blob=new Blob([out],{type:'text/markdown'});const u=URL.createObjectURL(blob);
+    const link=document.createElement('a');link.href=u;link.download='moment-diary-notes.md';link.click();URL.revokeObjectURL(u);
+  });
+  load();
+</script>
+</body>
+</html>

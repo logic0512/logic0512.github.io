@@ -1,0 +1,117 @@
+{
+  "version": "1.1",
+  "generated_at": "2026-04-22",
+  "notes": "v1.1: removed 12 bird calls per user feedback (too noisy for intended experience). All 8 remaining assets are CC0 ffmpeg-synthesized.",
+  "total_assets": 8,
+  "categories": {
+    "ui": 6,
+    "bg": 2
+  },
+  "base_path": "demo/assets/audio",
+  "global_controls": {
+    "default_state": "on",
+    "storage_key": "bird-demo-audio-enabled",
+    "mute_button_position": "top-right",
+    "crossfade_on_module_switch_ms": 1000
+  },
+  "items": [
+    {
+      "id": "S-UI-01-click",
+      "file": "ui/S-UI-01-click.mp3",
+      "category": "ui",
+      "trigger": "按钮点击 / 热点激活",
+      "source": "ffmpeg synthesis (sine burst + decay)",
+      "license": "CC0",
+      "attribution": "Project-synthesized",
+      "volume_target": 0.2,
+      "size_bytes": 2969,
+      "duration_s": 0.12
+    },
+    {
+      "id": "S-UI-02-switch",
+      "file": "ui/S-UI-02-switch.mp3",
+      "category": "ui",
+      "trigger": "模块 A/B 切换",
+      "source": "ffmpeg synthesis (perfect-fifth pluck chord C5+G5+C6)",
+      "license": "CC0",
+      "attribution": "Project-synthesized",
+      "volume_target": 0.2,
+      "size_bytes": 5477,
+      "duration_s": 0.28
+    },
+    {
+      "id": "S-UI-03-popup-open",
+      "file": "ui/S-UI-03-popup-open.mp3",
+      "category": "ui",
+      "trigger": "弹窗打开",
+      "source": "ffmpeg synthesis (ascending C6→G6 chime)",
+      "license": "CC0",
+      "attribution": "Project-synthesized",
+      "volume_target": 0.2,
+      "size_bytes": 6313,
+      "duration_s": 0.32
+    },
+    {
+      "id": "S-UI-04-popup-close",
+      "file": "ui/S-UI-04-popup-close.mp3",
+      "category": "ui",
+      "trigger": "弹窗关闭",
+      "source": "ffmpeg synthesis (descending G6→C6 chime)",
+      "license": "CC0",
+      "attribution": "Project-synthesized",
+      "volume_target": 0.2,
+      "size_bytes": 5059,
+      "duration_s": 0.26
+    },
+    {
+      "id": "S-UI-05-snap",
+      "file": "ui/S-UI-05-snap.mp3",
+      "category": "ui",
+      "trigger": "骨架拖拽吸附成功",
+      "source": "ffmpeg synthesis (click + low thump)",
+      "license": "CC0",
+      "attribution": "Project-synthesized",
+      "volume_target": 0.2,
+      "size_bytes": 3387,
+      "duration_s": 0.15
+    },
+    {
+      "id": "S-UI-06-layer-switch",
+      "file": "ui/S-UI-06-layer-switch.mp3",
+      "category": "ui",
+      "trigger": "模块 A 三层切换 (骨架↔透视↔完整)",
+      "source": "ffmpeg synthesis (filtered pink noise sweep)",
+      "license": "CC0",
+      "attribution": "Project-synthesized",
+      "volume_target": 0.2,
+      "size_bytes": 6313,
+      "duration_s": 0.32
+    },
+    {
+      "id": "S-BG-01-museum-quiet",
+      "file": "bg/S-BG-01-museum-quiet.mp3",
+      "category": "bg",
+      "trigger": "模块 A 背景 (loop)",
+      "source": "ffmpeg synthesis (pink noise + 65Hz sub-drone)",
+      "license": "CC0",
+      "attribution": "Project-synthesized",
+      "volume_target": 0.08,
+      "loop": true,
+      "size_bytes": 180916,
+      "duration_s": 15.0
+    },
+    {
+      "id": "S-BG-02-wetland-forest",
+      "file": "bg/S-BG-02-wetland-forest.mp3",
+      "category": "bg",
+      "trigger": "模块 B 背景 (loop)",
+      "source": "ffmpeg synthesis (layered pink/brown noise)",
+      "license": "CC0",
+      "attribution": "Project-synthesized",
+      "volume_target": 0.08,
+      "loop": true,
+      "size_bytes": 180916,
+      "duration_s": 15.0
+    }
+  ]
+}

@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>被子星 · 背景融合预览</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%; margin: 0;
+      overflow: hidden;
+      background: #c8d8e6;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
+      color: rgba(30, 55, 80, 0.85);
+    }
+    body { display: block; }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: url('../../assets/beizi/scene-bg-candidate-rack-20260603.png') center / cover no-repeat;
+    }
+
+    .scene-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    .quilt-text {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      transform: translate(-50%, -50%);
+      width: 30%;
+      max-width: 460px;
+      color: rgba(15, 40, 75, 0.85);
+      font-family: "STKaiti", "Kaiti SC", "KaiTi", "楷体", cursive;
+      font-size: clamp(14px, 1.3vw, 19px);
+      line-height: 2.0;
+      letter-spacing: 0.06em;
+      text-align: center;
+      z-index: 5;
+      pointer-events: none;
+    }
+    #quilt-body { will-change: transform; }
+
+    /* ─── 重播按钮 ─── */
+    .replay-btn {
+      position: absolute;
+      left: 50%; top: 48%;
+      transform: translate(-50%, -50%) scale(0.9);
+      z-index: 6;
+      display: flex; flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 22px 12px;
+      background: rgba(255, 255, 255, 0.42);
+      border: 1px solid rgba(80, 110, 140, 0.28);
+      border-radius: 14px;
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .replay-btn.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .replay-btn:hover { background: rgba(255,255,255,0.62); }
+    .replay-btn .replay-icon {
+      font-size: 26px; color: rgba(30, 60, 95, 0.78); line-height: 1;
+    }
+    .replay-btn .replay-label {
+      font-size: 11px; letter-spacing: 0.22em; color: rgba(30, 60, 95, 0.55);
+    }
+
+    /* ─── intro-card ─── */
+    .intro-card {
+      position: absolute;
+      top: clamp(28px, 4vh, 52px);
+      left: clamp(24px, 3.5vw, 48px);
+      z-index: 5;
+      width: min(360px, 31vw);
+      padding: 22px;
+      border: 1px solid rgba(90, 136, 176, 0.22);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.58);
+      box-shadow: 0 22px 64px rgba(42, 80, 120, 0.16);
+      backdrop-filter: blur(24px) saturate(1.1);
+      color: rgba(30, 55, 80, 0.85);
+      animation: introCardDrop 1.0s cubic-bezier(0.34, 1.56, 0.64, 1) 2.6s backwards;
+    }
+
+    @keyframes introCardDrop {
+      from { transform: translateY(-140%); opacity: 0; }
+      to   { transform: translateY(0);     opacity: 1; }
+    }
+    .planet-orb {
+      width: 80%;
+      aspect-ratio: 1;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 32%, #d4e3ec 0%, #8eb4cc 45%, #5a88b0 85%);
+      box-shadow: inset -8px -10px 24px rgba(20, 50, 80, 0.32);
+    }
+    .intro-card .eyebrow {
+      margin: 0 0 8px;
+      color: rgba(30, 55, 80, 0.45);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.26em;
+    }
+    .intro-card h1 {
+      margin: 0 0 12px;
+      color: rgba(30, 55, 80, 0.92);
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+    .intro-card .story {
+      margin: 0 0 18px;
+      color: rgba(30, 55, 80, 0.68);
+      font-size: 13px;
+      line-height: 2.0;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+    }
+    .intro-card .hint-row {
+      display: flex; align-items: center; gap: 10px;
+      color: rgba(30, 55, 80, 0.55);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      user-select: none;
+      cursor: pointer;
+    }
+    .intro-card .hint-row:hover { color: rgba(30, 55, 80, 0.85); }
+    .intro-card .icon-btn {
+      display: grid; place-items: center;
+      width: 28px; height: 28px;
+      border: 1px solid rgba(90, 136, 176, 0.38);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.45);
+      color: rgba(30, 55, 80, 0.78);
+      font-size: 13px;
+    }
+
+    /* ─── 右上 + 按钮（旧 .float-btn 已被 ms-mount.js 隐藏，由 .ms-add-fab 接管，样式见下方覆盖） ─── */
+    .float-btn {
+      position: absolute;
+      top: clamp(28px, 4vh, 52px);
+      right: clamp(28px, 3.5vw, 56px);
+      z-index: 5;
+      width: 52px; height: 52px;
+      border: 1px solid rgba(90, 136, 176, 0.48);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.55);
+      color: rgba(30, 55, 80, 0.70);
+      font-size: 22px;
+      box-shadow: 0 8px 28px rgba(42, 80, 120, 0.18);
+      backdrop-filter: blur(20px);
+      cursor: pointer;
+    }
+
+    /* 被子星 .ms-add-fab 本地强化：暖橙太阳 + 强发光呼吸（提示这里可点） */
+    .ms-add-fab {
+      color: #d89030 !important; /* 太阳本体暖橙 */
+      animation: beiziFabPulse 2.8s ease-in-out infinite;
+    }
+    .ms-add-fab:hover { animation-play-state: paused; }
+    .ms-add-fab svg {
+      animation: beiziSunSpin 18s linear infinite;
+    }
+    .ms-add-fab:hover svg { animation-duration: 8s; }
+    @keyframes beiziFabPulse {
+      0%, 100% {
+        box-shadow:
+          0 12px 36px rgba(42, 80, 120, 0.22),
+          0 0 0 0 rgba(216, 144, 48, 0.50),
+          inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      }
+      50% {
+        box-shadow:
+          0 12px 36px rgba(42, 80, 120, 0.22),
+          0 0 0 16px rgba(216, 144, 48, 0),
+          inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      }
+    }
+    @keyframes beiziSunSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ─── 时间轴（完全居中，按介绍卡收起后的画面对齐） ─── */
+    .timeline {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: clamp(28px, 5vh, 58px);
+      z-index: 6;
+      width: min(620px, 60vw);
+      height: 76px;
+      padding: 0 12px 0 50px;
+      display: flex;
+      align-items: center;
+      border: 1px solid rgba(90, 136, 176, 0.22);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow: 0 22px 64px rgba(42, 80, 120, 0.16);
+      backdrop-filter: blur(22px);
+    }
+    .timeline-history-btn {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      width: 32px; height: 32px;
+      border: 1px solid rgba(90, 136, 176, 0.32);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.55);
+      color: rgba(30, 55, 80, 0.78);
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 180ms ease, transform 180ms ease;
+    }
+    .timeline-history-btn:hover { background: rgba(255,255,255,0.85); transform: translateY(-50%) scale(1.06); }
+    .timeline-history-btn svg { display: block; }
+    .timeline-line {
+      position: absolute;
+      top: 33px; right: 42px; left: 42px;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(90, 136, 176, 0.28);
+    }
+    /* 被-1：没历史记录时隐藏线 + 历史按钮（避免盖住文字）*/
+    .timeline.is-empty .timeline-line,
+    .timeline.is-empty .timeline-history-btn { display: none; }
+    /* 被-N3：历史按钮强制可点（之前被 SVG 层 overlay 遮挡）— 保持 absolute 不参与文档流 */
+    .timeline-history-btn { pointer-events: auto !important; z-index: 25; }
+    /* 海星同款：timeline 左侧 padding 给历史按钮腾位置 */
+    .timeline { padding-left: 56px; }
+    .timeline-nodes {
+      position: relative;
+      display: flex;
+      flex: 1;
+      height: 100%;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .timeline-node {
+      position: relative;
+      display: flex; flex-direction: column;
+      justify-content: flex-end; align-items: center;
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      padding: 0 0 10px;
+      color: rgba(30, 55, 80, 0.58);
+      font-size: 12px;
+    }
+    .timeline-node button {
+      position: absolute;
+      top: 29px;
+      width: 20px; height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.96);
+      border-radius: 50%;
+      background: #7aa8c8;
+      box-shadow: 0 3px 12px rgba(42, 80, 120, 0.2);
+      cursor: pointer;
+      transition: transform 180ms ease, background 180ms ease;
+      padding: 0;
+    }
+    .timeline-node button:hover { transform: scale(1.18); }
+    .timeline-node.active button {
+      background: #5a88b0;
+      transform: scale(1.18);
+    }
+    .timeline-node.active { color: rgba(30, 55, 80, 0.92); font-weight: 700; }
+    .timeline-empty {
+      width: 100%;
+      text-align: center;
+      color: rgba(30, 55, 80, 0.38);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+    }
+
+    /* ─── 表单 Modal ─── */
+    .composer, .history-modal {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      z-index: 30;
+      width: min(480px, 90vw);
+      padding: 28px 26px 22px;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(90, 136, 176, 0.28);
+      border-radius: 22px;
+      box-shadow: 0 24px 72px rgba(42, 80, 120, 0.24);
+      backdrop-filter: blur(28px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* composer 打开时暂停所有 SVG mask/transform 长动画，让 composer 输入流畅 */
+    body.beizi-composer-open .stage,
+    body.beizi-composer-open .planet-orb,
+    body.beizi-composer-open #drops-attached,
+    body.beizi-composer-open #puddles {
+      animation-play-state: paused !important;
+    }
+    .composer.open, .history-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .composer .head, .history-modal .head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .composer .head span, .history-modal .head span {
+      color: rgba(30, 55, 80, 0.85);
+      font-size: 14px;
+      letter-spacing: 0.1em;
+    }
+    .composer .close, .history-modal .close {
+      width: 28px; height: 28px;
+      border: 0; border-radius: 50%;
+      background: rgba(90, 136, 176, 0.12);
+      color: rgba(30, 55, 80, 0.65);
+      font-size: 18px; line-height: 1;
+      cursor: pointer;
+    }
+    .composer .close:hover, .history-modal .close:hover { background: rgba(90, 136, 176, 0.22); }
+    .composer textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 12px 14px;
+      border: 1px solid rgba(90, 136, 176, 0.20);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.55);
+      color: rgba(15, 40, 75, 0.92);
+      font-family: "STKaiti", "Kaiti SC", "KaiTi", "楷体", cursive;
+      font-size: 15px;
+      line-height: 1.85;
+      letter-spacing: 0.04em;
+      resize: none;
+      outline: none;
+    }
+    .composer textarea::placeholder { color: rgba(30, 55, 80, 0.32); }
+    .composer .weight-row {
+      display: flex; align-items: center; gap: 8px;
+      margin: 14px 0;
+      color: rgba(30, 55, 80, 0.62);
+      font-size: 12px;
+    }
+    .composer .weight {
+      width: 26px; height: 26px;
+      border: 1px solid rgba(90, 136, 176, 0.30);
+      border-radius: 50%;
+      background: transparent;
+      color: rgba(30, 55, 80, 0.55);
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 180ms ease, color 180ms ease;
+    }
+    .composer .weight:hover { border-color: rgba(90, 136, 176, 0.6); }
+    .composer .weight.active {
+      background: #5a88b0;
+      color: white;
+      border-color: #5a88b0;
+    }
+    .composer .submit {
+      width: 100%;
+      padding: 12px;
+      background: rgba(90, 136, 176, 0.92);
+      color: white;
+      border: 0;
+      border-radius: 10px;
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      cursor: pointer;
+      transition: background 180ms ease;
+    }
+    .composer .submit:hover { background: rgba(90, 136, 176, 1); }
+    .composer .submit:disabled {
+      background: rgba(90, 136, 176, 0.3);
+      cursor: not-allowed;
+    }
+
+    /* ─── 历史 modal ─── */
+    .history-modal .list {
+      max-height: 56vh;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .history-modal .item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      border: 1px solid rgba(90, 136, 176, 0.14);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.45);
+      cursor: pointer;
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+    .history-modal .item:hover {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(90, 136, 176, 0.38);
+    }
+    .history-modal .item.active {
+      background: rgba(90, 136, 176, 0.12);
+      border-color: rgba(90, 136, 176, 0.5);
+    }
+    .history-modal .date {
+      flex: 0 0 60px;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      color: rgba(30, 55, 80, 0.62);
+      padding-top: 2px;
+    }
+    .history-modal .content {
+      flex: 1;
+      font-family: "STKaiti", "Kaiti SC", "KaiTi", cursive;
+      font-size: 13px;
+      line-height: 1.7;
+      color: rgba(15, 40, 75, 0.80);
+      white-space: pre-wrap;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .history-modal .weight-dot {
+      flex: 0 0 auto;
+      display: flex; gap: 3px;
+      padding-top: 6px;
+    }
+    .history-modal .weight-dot span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(90, 136, 176, 0.22);
+    }
+    .history-modal .weight-dot span.on {
+      background: #5a88b0;
+    }
+    .history-modal .empty {
+      text-align: center;
+      padding: 32px 0;
+      color: rgba(30, 55, 80, 0.42);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+    }
+
+    .backdrop {
+      position: absolute; inset: 0; z-index: 20;
+      background: rgba(30, 50, 75, 0.18);
+      backdrop-filter: blur(2px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .backdrop.open { opacity: 1; pointer-events: auto; }
+  </style>
+<script>
+// Visibility pause: 父页面切 tab 时停掉本 iframe 的 RAF/setInterval，避免后台烧 CPU
+(function(){
+  let _raf = window.requestAnimationFrame.bind(window);
+  let _caf = window.cancelAnimationFrame.bind(window);
+  let _setInt = window.setInterval.bind(window);
+  let _clrInt = window.clearInterval.bind(window);
+  let active = true;
+  let pendingRafs = [];
+  let liveIntervals = new Map();
+  let nextId = 1;
+  window.requestAnimationFrame = function(cb){
+    if (active) return _raf(cb);
+    const id = nextId++;
+    pendingRafs.push({cb, id});
+    return id;
+  };
+  window.cancelAnimationFrame = function(id){
+    pendingRafs = pendingRafs.filter(x => x.id !== id);
+    return _caf(id);
+  };
+  window.setInterval = function(cb, ms){
+    const id = _setInt(function(){ if (active) cb(); }, ms);
+    liveIntervals.set(id, true);
+    return id;
+  };
+  window.clearInterval = function(id){
+    liveIntervals.delete(id);
+    return _clrInt(id);
+  };
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.type !== "memory-sparks:visibility") return;
+    const wasActive = active;
+    active = !!e.data.visible;
+    if (!wasActive && active && pendingRafs.length){
+      const q = pendingRafs; pendingRafs = [];
+      q.forEach(({cb}) => _raf(cb));
+    }
+  });
+})();
+</script>
+<!-- MS shared -->
+<link rel="stylesheet" href="../_shared/ms-shared.css?v=20260602f">
+<link rel="stylesheet" href="../_shared/ms-composer.css?v=20260531d">
+<script src="../_shared/ms-config.js?v=r20260603a"></script>
+<script src="../_shared/ms-sound.js?v=1q20260602q"></script>
+<script>window.MS_SOUND && MS_SOUND.init('beizi');</script>
+<script src="../_shared/ms-icons.js?v=20260602f"></script>
+<script src="../_shared/ms-feedback.js?v=20260602k"></script>
+<script src="../_shared/ms-mount.js?v=20260602f"></script>
+<script src="../_shared/ms-list-bridge.js?v=20260530m"></script>
+<script src="../_shared/ms-composer.js?v=20260531d" defer></script>
+</head>
+<body>
+
+  <div class="stage">
+
+    <svg class="scene-svg" viewBox="0 0 2048 1152" preserveAspectRatio="xMidYMid slice">
+      <g id="quilt-layer"></g>
+      <g id="vapor-particles"></g>
+      <g id="puddles" opacity="0">
+        <ellipse cx="700" cy="950" rx="76" ry="14" fill="#a5c4d6" opacity="0.42"/>
+        <ellipse cx="860" cy="965" rx="84" ry="15" fill="#a5c4d6" opacity="0.48"/>
+        <ellipse cx="1024" cy="945" rx="68" ry="13" fill="#a5c4d6" opacity="0.40"/>
+        <ellipse cx="1190" cy="960" rx="78" ry="14" fill="#a5c4d6" opacity="0.45"/>
+        <ellipse cx="1350" cy="952" rx="62" ry="13" fill="#a5c4d6" opacity="0.40"/>
+        <ellipse cx="720" cy="945" rx="46" ry="9" fill="#7aa3c4" opacity="0.42"/>
+        <ellipse cx="875" cy="962" rx="52" ry="10" fill="#7aa3c4" opacity="0.45"/>
+        <ellipse cx="1040" cy="942" rx="40" ry="8" fill="#7aa3c4" opacity="0.40"/>
+        <ellipse cx="1205" cy="958" rx="48" ry="9" fill="#7aa3c4" opacity="0.42"/>
+        <ellipse cx="1365" cy="949" rx="38" ry="8" fill="#7aa3c4" opacity="0.38"/>
+        <ellipse cx="730" cy="948" rx="20" ry="5" fill="#6090b4" opacity="0.42"/>
+        <ellipse cx="885" cy="965" rx="24" ry="6" fill="#6090b4" opacity="0.46"/>
+        <ellipse cx="1045" cy="946" rx="18" ry="5" fill="#6090b4" opacity="0.40"/>
+        <ellipse cx="1210" cy="960" rx="22" ry="6" fill="#6090b4" opacity="0.44"/>
+        <ellipse cx="1370" cy="950" rx="18" ry="5" fill="#6090b4" opacity="0.42"/>
+      </g>
+    </svg>
+
+    <div class="quilt-text" id="quilt-text"></div>
+
+    <button class="replay-btn" id="replay-btn" aria-label="重新晾一次">
+      <span class="replay-icon">↺</span>
+      <span class="replay-label">重新晾一次</span>
+    </button>
+
+    <aside class="intro-card">
+      <div class="planet-orb"></div>
+      <p class="eyebrow">KEYWORD PLANET · ORBIT 01</p>
+      <h1>被子星</h1>
+      <p class="story">
+        被子星上到处都是被子。每户人家门前，都挂着一张自己的被子。<br><br>
+        每当有人伤心难过，被子就会慢慢变湿。人们把被子晾在门口，让阳光和风一点点带走水分——等被子重新变干，伤心也不会一直留在身体里了。
+      </p>
+      <div class="hint-row" id="hint-open-composer">
+        <button class="icon-btn" type="button" tabindex="-1">＋</button>
+        <span>把这件事挂出来晾晒</span>
+      </div>
+    </aside>
+
+    <button class="float-btn" id="float-btn" type="button" aria-label="挂出一床新被子">＋</button>
+
+    <nav class="timeline" aria-label="以往的记录">
+      <button class="timeline-history-btn" id="open-history" type="button" aria-label="查看全部历史" title="查看全部">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18M3 12h18M3 18h18"/>
+        </svg>
+      </button>
+      <div class="timeline-line"></div>
+      <div id="timeline-nodes" class="timeline-nodes"></div>
+    </nav>
+
+    <!-- 表单 Modal -->
+    <div class="backdrop" id="backdrop"></div>
+
+    <!-- 添加界面：交给 ms-composer 统一渲染 -->
+
+    <section class="history-modal" id="history-modal">
+      <div class="head">
+        <span id="history-title">全部记录</span>
+        <button class="close" id="close-history" type="button">×</button>
+      </div>
+      <div class="list" id="history-list"></div>
+    </section>
+
+  </div>
+
+  <script>
+    // ════════ 配置 ════════
+    const config = {
+      leftX: 510, rightX: 1538,
+      bottomY: 752,
+      colors: { wet: '#abcbe8', evap: '#c4d9ec', dry: '#cfdade' },
+    };
+
+    const DEMO_RECORD = {
+      id: '__demo__',
+      content: '可以把悲伤晾晒干。',
+      weight: 3,
+      isDemo: true,
+    };
+
+    const ropePoints = [
+      [307,232],[350,262],[450,291],[600,326],[700,348],[800,357],
+      [850,359],[950,364],[1024,365],[1100,363],[1200,357],[1280,353],
+      [1345,343],[1400,333],[1500,315],[1650,278],[1740,250]
+    ];
+    function ropeY(x) {
+      if (x <= ropePoints[0][0]) return ropePoints[0][1];
+      if (x >= ropePoints[ropePoints.length-1][0]) return ropePoints[ropePoints.length-1][1];
+      for (let i = 0; i < ropePoints.length-1; i++) {
+        const [x1, y1] = ropePoints[i];
+        const [x2, y2] = ropePoints[i+1];
+        if (x1 <= x && x <= x2) return y1 + (x-x1)/(x2-x1) * (y2-y1);
+      }
+      return ropePoints[ropePoints.length-1][1];
+    }
+
+    function makeQuiltPath(sag, contract) {
+      const { leftX, rightX, bottomY } = config;
+      const sideY = (ropeY(leftX) + bottomY) / 2;
+      const midX = (leftX + rightX) / 2;
+      const leftTop = ropeY(leftX);
+      const rightTop = ropeY(rightX);
+      const midTop = ropeY(midX);
+      const cp1X = leftX + (rightX-leftX) * 0.25;
+      const cp2X = leftX + (rightX-leftX) * 0.75;
+      const cp1Y = (leftTop + midTop) / 2 + 2;
+      const cp2Y = (midTop + rightTop) / 2 + 2;
+      return `
+        M ${leftX} ${leftTop}
+        Q ${cp1X} ${cp1Y} ${midX} ${midTop}
+        Q ${cp2X} ${cp2Y} ${rightX} ${rightTop}
+        Q ${rightX+10} ${rightTop+15} ${rightX+12} ${rightTop+35}
+        Q ${rightX+12-contract} ${sideY} ${rightX+12} ${bottomY-20}
+        Q ${rightX+12} ${bottomY-2} ${rightX-6} ${bottomY}
+        Q ${midX} ${bottomY+sag} ${leftX+6} ${bottomY}
+        Q ${leftX-12} ${bottomY-2} ${leftX-12} ${bottomY-20}
+        Q ${leftX-12+contract} ${sideY} ${leftX-12} ${leftTop+35}
+        Q ${leftX-10} ${leftTop+15} ${leftX} ${leftTop} Z
+      `.replace(/\s+/g, ' ').trim();
+    }
+
+    // ════════ 数据 ════════
+    const STORAGE_KEY = 'memory-sparks:beizi-records';
+
+    function loadRecords() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) return arr;
+        }
+      } catch(e) {}
+      return [];   // 不再 fallback demo 数据
+    }
+    function saveRecords(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+
+    let records = loadRecords();
+    let activeId = null;  // 默认无激活，进入演示
+
+    // ════════ SVG 建构 ════════
+    function buildQuilt() {
+      const { leftX, rightX, bottomY, colors } = config;
+      const width = rightX - leftX;
+      const midX = (leftX + rightX) / 2;
+
+      const quiltPath = makeQuiltPath(36, 0);
+
+      const hlX = leftX + 30;
+      const hlTop = ropeY(hlX) + 20;
+      const highlightPath = `
+        M ${hlX} ${hlTop}
+        Q ${hlX-10} ${(hlTop+bottomY)/2} ${hlX+5} ${bottomY-30}
+        L ${hlX-30} ${bottomY-40}
+        Q ${hlX-40} ${(hlTop+bottomY)/2} ${hlX-30} ${hlTop+10} Z
+      `.replace(/\s+/g, ' ').trim();
+
+      let creases = '';
+      let creasesShadow = '';
+      for (let i = 0; i < 5; i++) {
+        const t = (i + 0.5) / 5;
+        const x = leftX + width * t;
+        const yTop = ropeY(x) + 10;
+        const yBot = bottomY - 8;
+        creases += `<path d="M ${x} ${yTop} L ${x} ${yBot}"/>`;
+        creasesShadow += `<path d="M ${x+2} ${yTop+3} L ${x+2} ${yBot-2}"/>`;
+      }
+
+      const pin1X = leftX + width * 0.25;
+      const pin2X = leftX + width * 0.75;
+      const pin1Y = ropeY(pin1X);
+      const pin2Y = ropeY(pin2X);
+
+      const dropCount = Math.max(4, Math.floor(width / 130));
+      let dropsAttached = '';
+      for (let i = 0; i < dropCount; i++) {
+        const t = (i + 0.5) / dropCount;
+        const x = leftX + width * t;
+        const yDrop = bottomY + 12 + Math.sin(t * Math.PI) * 25;
+        dropsAttached += `<ellipse class="drop" data-i="${i}" cx="${x}" cy="${yDrop}" rx="${4.5 + (i%2)*0.5}" ry="${7+(i%2)*1}"/>`;
+      }
+
+      document.getElementById('quilt-layer').innerHTML = `
+        <g id="quilt-group" style="transform-origin: 50% 22%;">
+          <path id="quilt-body" d="${quiltPath}" fill="${colors.wet}"/>
+          <path id="quilt-highlight" d="${highlightPath}" fill="white" opacity="0.14"/>
+          <g id="creases-light" stroke="rgba(255,255,255,0.28)" stroke-width="1.8" stroke-linecap="round" fill="none">${creases}</g>
+          <g id="creases-dark" stroke="rgba(30, 60, 95, 0.10)" stroke-width="1.4" stroke-linecap="round" fill="none">${creasesShadow}</g>
+        </g>
+        <g class="pins">
+          <g transform="translate(${pin1X-15}, ${pin1Y-25})">
+            <rect width="30" height="50" rx="3" fill="#c89868" stroke="#7a5028" stroke-width="1.5"/>
+            <line x1="15" y1="4" x2="15" y2="46" stroke="#7a5028" stroke-width="0.8" opacity="0.55"/>
+            <circle cx="15" cy="7" r="2.2" fill="#7a5028"/>
+          </g>
+          <g transform="translate(${pin2X-15}, ${pin2Y-25})">
+            <rect width="30" height="50" rx="3" fill="#c89868" stroke="#7a5028" stroke-width="1.5"/>
+            <line x1="15" y1="4" x2="15" y2="46" stroke="#7a5028" stroke-width="0.8" opacity="0.55"/>
+            <circle cx="15" cy="7" r="2.2" fill="#7a5028"/>
+          </g>
+        </g>
+        <g id="drops-attached" fill="#6b95b8">${dropsAttached}</g>
+      `;
+    }
+
+    buildQuilt();
+
+    // ════════ GSAP 动画 ════════
+    const params = { sag: 36, contract: 0 };
+    let masterTL = null;
+    let dropTweens = [];
+    let isPlaying = false;
+    let currentlyDemo = false;
+    // 水滴声节流：两记最小间隔（越大越稀），可按手感调
+    let _lastDripT = 0;
+    const MIN_DRIP_GAP_MS = 1100;
+
+    // B1.1：晾晒时间 3 档（10/20/30 秒）；旧 weight 1-5 数据映射到中档
+    function durationForWeight(w) {
+      // w=1 → 10s, w=2 → 20s, w=3 → 30s（新档位）
+      // 兼容旧记录 w=4/5：归 30s；w=0/null：默认 20s
+      if (w === 1) return 10;
+      if (w === 2) return 20;
+      if (w >= 3) return 30;
+      return 20;
+    }
+
+    function syncQuiltDOM() {
+      const body = document.getElementById('quilt-body');
+      if (body) body.setAttribute('d', makeQuiltPath(params.sag, params.contract));
+      const midY = (365 + config.bottomY + params.sag) / 2;
+      const txt = document.getElementById('quilt-text');
+      if (txt) txt.style.top = (midY / 1152 * 100).toFixed(2) + '%';
+    }
+
+    function killAllTweens() {
+      if (masterTL) masterTL.kill();
+      dropTweens.forEach(t => t.kill());
+      dropTweens = [];
+      gsap.killTweensOf('#quilt-group', 'rotation,y,scale');
+    }
+
+    function playDripAtGround() {
+      const now = performance.now();
+      if (now - _lastDripT < MIN_DRIP_GAP_MS) return;
+      const op = Number(gsap.getProperty('#drops-attached', 'opacity')) || 0;
+      if (op > 0.06 && window.MS_SOUND && MS_SOUND.play) {
+        _lastDripT = now;
+        MS_SOUND.play('drip', op);
+      }
+    }
+
+    function startDropTweens(scale) {
+      gsap.utils.toArray('.drop').forEach((drop, i) => {
+        const tw = gsap.timeline({
+          delay: i * 0.25,
+          repeat: -1,
+          repeatDelay: 0.12,
+        });
+        tw.fromTo(drop,
+          { y: 0, opacity: 1 },
+          {
+            y: 200, opacity: 0,
+            duration: 2.5 * Math.sqrt(scale),
+            ease: 'power1.in',
+          }
+        );
+        tw.call(playDripAtGround, null, '>');
+        dropTweens.push(tw);
+      });
+    }
+
+    function playAnimation(record, opts = {}) {
+      const { withIntro = true, loop = false } = opts;
+      const content = record.text || record.content;  // 路 A 统一 text，兼容旧 content
+      const weight = record.weight || 3;
+      const total = durationForWeight(weight);
+      const scale = total / 14;
+      currentlyDemo = !!record.isDemo;
+
+      // 重置元素
+      params.sag = 36; params.contract = 0;
+      gsap.set('#quilt-body', { attr: { fill: config.colors.wet } });
+      gsap.set('#quilt-highlight', { opacity: 0.14 });
+      gsap.set('#creases-light', { opacity: 1 });
+      gsap.set('#creases-dark', { opacity: 1 });
+      gsap.set('#puddles', { opacity: 0 });  // 水池从无到有
+      gsap.set('#drops-attached', { opacity: 1 });
+      gsap.set('#quilt-group', { rotation: 0, y: 0 });
+      gsap.set('.quilt-text', { opacity: 0, filter: 'blur(0)' });
+
+      document.getElementById('quilt-text').innerHTML = content.replace(/\n/g, '<br>');
+      document.getElementById('replay-btn').classList.remove('visible');
+
+      killAllTweens();
+      startDropTweens(scale);
+
+      const T_HOLD_WET = 2.5 * scale;
+      const T_EVAP = 4 * scale;
+      const T_DRY = 5.4 * scale;
+      const T_END = T_HOLD_WET + T_EVAP + T_DRY;
+      const T_TAIL = 2.1 * scale;
+
+      masterTL = gsap.timeline({
+        repeat: loop ? -1 : 0,
+        repeatDelay: loop ? 0.5 : 0,
+        onRepeat: () => {
+          // 演示循环时重置（用于 puddles 等"重新累积"）
+          gsap.set('#puddles', { opacity: 0 });
+          gsap.set('#drops-attached', { opacity: 1 });
+          gsap.set('#creases-light', { opacity: 1 });
+          gsap.set('#creases-dark', { opacity: 1 });
+          gsap.set('#quilt-highlight', { opacity: 0.14 });
+          gsap.set('#quilt-body', { attr: { fill: config.colors.wet } });
+          if (!currentlyDemo) gsap.set('.quilt-text', { opacity: 0, filter: 'blur(0)' });
+          startDropTweens(scale);
+        },
+        onComplete: () => {
+          isPlaying = false;
+          if (!loop) {
+            document.getElementById('replay-btn').classList.add('visible');
+          }
+        }
+      });
+      isPlaying = true;
+
+      // ─── 入场抖动（被子刚挂上，幅度克制避免顶部暴露绳子） ───
+      if (withIntro) {
+        // 声音：挂被子那一刻一记（衣物落下）；演示循环不重复触发
+        if (!loop) masterTL.call(() => { window.MS_SOUND && MS_SOUND.play('hang'); }, null, 0);
+        masterTL.set('#quilt-group', { rotation: -1.2 });
+        masterTL.to('#quilt-group', { rotation: 0.9, duration: 0.18, ease: 'power2.out' });
+        masterTL.to('#quilt-group', { rotation: -0.5, duration: 0.20, ease: 'power2.inOut' });
+        masterTL.to('#quilt-group', { rotation: 0.25, duration: 0.22, ease: 'power2.inOut' });
+        masterTL.to('#quilt-group', { rotation: 0, duration: 0.28, ease: 'power2.out' });
+      }
+
+      // 文字淡入（入场抖动后）
+      masterTL.to('.quilt-text', { opacity: 1, duration: 0.5, ease: 'power1.out' }, '<+=0.1');
+
+      // 标记湿态起始
+      const phaseStart = masterTL.duration();
+
+      // 水滴声跟画面同步：音量由 #drops-attached 的可见度逐帧驱动（见下方 ticker），
+      // 这里不再定点排程，保证「有水珠就有声、水珠淡出声也淡出」物理对齐。
+
+      // ─── 水池逐渐积累（0→1，湿期前半段）───
+      masterTL.to('#puddles', { opacity: 1, duration: T_HOLD_WET * 0.9, ease: 'power1.out' }, phaseStart);
+
+      // 阶段 1: 湿态保持
+      masterTL.to(params, { sag: 36, contract: 0, duration: T_HOLD_WET, onUpdate: syncQuiltDOM }, phaseStart);
+
+      // 阶段 2: 蒸发
+      masterTL.to('#quilt-body', { attr: { fill: config.colors.evap }, duration: T_EVAP, ease: 'power1.inOut' }, phaseStart + T_HOLD_WET);
+      masterTL.to(params, { sag: 8, contract: 8, duration: T_EVAP, ease: 'power1.inOut', onUpdate: syncQuiltDOM }, phaseStart + T_HOLD_WET);
+
+      // 阶段 3: 干透
+      masterTL.to('#quilt-body', { attr: { fill: config.colors.dry }, duration: T_DRY, ease: 'power2.inOut' }, phaseStart + T_HOLD_WET + T_EVAP);
+      masterTL.to(params, { sag: -20, contract: 22, duration: T_DRY, ease: 'power2.inOut', onUpdate: syncQuiltDOM }, phaseStart + T_HOLD_WET + T_EVAP);
+
+      // 干透瞬间一抖（幅度同样收敛）
+      masterTL.to('#quilt-group', { rotation: -0.7, duration: 0.18, ease: 'power2.out' }, phaseStart + T_END);
+      masterTL.to('#quilt-group', { rotation: 0.35, duration: 0.22, ease: 'power2.inOut' }, '>');
+      masterTL.to('#quilt-group', { rotation: 0, duration: 0.4, ease: 'power2.out' }, '>');
+
+      // 干态保持
+      masterTL.to({}, { duration: T_TAIL }, phaseStart + T_END);
+
+      // 其他元素跟随
+      const T_FADE = T_EVAP + T_DRY;
+      masterTL.to('#quilt-highlight', { opacity: 0.05, duration: T_FADE, ease: 'power1.inOut' }, phaseStart + T_HOLD_WET);
+      masterTL.to('#creases-light', { opacity: 0.55, duration: T_FADE, ease: 'power1.inOut' }, phaseStart + T_HOLD_WET);
+      masterTL.to('#creases-dark', { opacity: 0.70, duration: T_FADE, ease: 'power1.inOut' }, phaseStart + T_HOLD_WET);
+      masterTL.to('#puddles', { opacity: 0.08, duration: T_FADE, ease: 'power1.inOut' }, phaseStart + T_HOLD_WET);
+      // 演示模式：文字不淡出（始终可见）；正常记录：文字淡出
+      if (!currentlyDemo) {
+        masterTL.to('.quilt-text', { opacity: 0, filter: 'blur(1.6px)', duration: T_FADE, ease: 'power1.inOut' }, phaseStart + T_HOLD_WET);
+      }
+      masterTL.to('#drops-attached', { opacity: 0, duration: T_EVAP, ease: 'power1.in' }, phaseStart + T_HOLD_WET + T_EVAP * 0.4);
+    }
+
+    // 永久轻摇
+    gsap.to('#quilt-group', {
+      rotation: 0.6,
+      duration: 3,
+      ease: 'sine.inOut',
+      yoyo: true,
+      repeat: -1,
+    });
+
+    // 水汽粒子
+    const MAX_VAPOR = 6;
+    let vaporCount = 0;
+    function spawnVapor() {
+      if (vaporCount >= MAX_VAPOR) return;
+      if (!isPlaying || !masterTL) return;
+      // 演示模式（loop）也算"播放中"，progress 用 totalProgress 看
+      const prog = masterTL.progress();
+      if (prog > 0.55) return;
+
+      const x = config.leftX + Math.random() * (config.rightX - config.leftX);
+      const y = ropeY(x) + 50 + Math.random() * 200;
+      const r = 4 + Math.random() * 3;
+
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      el.setAttribute('cx', x);
+      el.setAttribute('cy', y);
+      el.setAttribute('r', r);
+      el.setAttribute('fill', '#cfe0ec');
+      el.setAttribute('opacity', '0');
+      document.getElementById('vapor-particles').appendChild(el);
+      vaporCount++;
+
+      const dur = 2.8 + Math.random() * 1.4;
+      gsap.to(el, {
+        attr: { cy: y - 180 - Math.random() * 60 },
+        duration: dur,
+        ease: 'power1.out',
+      });
+      gsap.fromTo(el, { opacity: 0 }, {
+        opacity: 0.42,
+        duration: 0.4,
+        onComplete: () => {
+          gsap.to(el, {
+            opacity: 0,
+            duration: dur - 0.4,
+            onComplete: () => { el.remove(); vaporCount--; }
+          });
+        }
+      });
+    }
+    setInterval(spawnVapor, 550);
+
+    // ════════ 时间轴（最多 8 条）════════
+    const TIMELINE_MAX = 8;
+
+    function renderTimeline() {
+      const container = document.getElementById('timeline-nodes');
+      const timelineNav = document.querySelector('.timeline');
+      container.innerHTML = '';
+      // docx 反馈：没记录时整条时间线（包含线条+按钮）不显示
+      if (records.length === 0) {
+        if (timelineNav) timelineNav.style.display = 'none';
+        return;
+      }
+      if (timelineNav) timelineNav.style.display = '';
+      const shown = records.slice(-TIMELINE_MAX);
+      shown.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'timeline-node' + (r.id === activeId ? ' active' : '');
+        item.innerHTML = `
+          <button type="button" aria-label="${r.date}"></button>
+          <span>${r.date}</span>
+        `;
+        item.querySelector('button').addEventListener('click', () => switchRecord(r.id));
+        container.appendChild(item);
+      });
+    }
+
+    function switchRecord(id) {
+      if (id === activeId && isPlaying && !currentlyDemo) return;
+      activeId = id;
+      const r = records.find(x => x.id === id);
+      if (!r) return;
+      renderTimeline();
+      playAnimation(r, { withIntro: true, loop: false });
+    }
+
+    // ════════ 历史 modal ════════
+    const historyModal = document.getElementById('history-modal');
+    const historyList = document.getElementById('history-list');
+    const historyTitle = document.getElementById('history-title');
+
+    function renderHistory() {
+      // 被-4：去掉"悲伤记录"图标 / 标签 —— 标题改成更中性的「全部记录」
+      historyTitle.textContent = `全部记录 · ${records.length} 条`;
+      if (records.length === 0) {
+        historyList.innerHTML = '<div class="empty">还没有挂出过被子</div>';
+        return;
+      }
+      // 倒序（最新在上）
+      const sorted = [...records].reverse();
+      historyList.innerHTML = sorted.map(r => `
+        <div class="item${r.id === activeId ? ' active' : ''}" data-id="${r.id}" style="position:relative;">
+          <div class="date">${r.date}</div>
+          <div class="content">${(r.text || r.content || '').replace(/</g,'&lt;')}</div>
+          <button type="button" class="ms-card-del-btn" data-del-id="${r.id}" style="top:8px;right:8px;" title="删除">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          </button>
+        </div>
+      `).join('');
+      historyList.querySelectorAll('.item').forEach(el => {
+        el.addEventListener('click', (e) => {
+          // 点编辑/删除按钮不切换记录
+          if (e.target.closest('.ms-card-del-btn')) return;
+          if (e.target.closest('.ms-card-edit-btn')) return;
+          switchRecord(el.dataset.id);
+          closeHistory();
+        });
+      });
+      historyList.querySelectorAll('.ms-card-edit-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const rid = btn.dataset.editId;
+          const idx = records.findIndex(x => x.id === rid);
+          if (idx < 0) return;
+          closeHistory();
+          if (window.MS && MS.composer) MS.composer.open(idx);
+        });
+      });
+      historyList.querySelectorAll('.ms-card-del-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const rid = btn.dataset.delId;
+          const ok = typeof window.msConfirm === 'function'
+            ? await window.msConfirm('收起这床被子？', { yes: '收起', no: '保留', danger: true })
+            : window.confirm('收起这床被子？');
+          if (!ok) return;
+          records = records.filter(x => x.id !== rid);
+          saveRecords(records);
+          if (activeId === rid) activeId = records.length ? records[records.length - 1].id : null;
+          renderHistory();
+          renderTimeline();
+          if (activeId) switchRecord(activeId);
+        });
+      });
+    }
+    function openHistory() {
+      renderHistory();
+      historyModal.classList.add('open');
+      document.getElementById('backdrop').classList.add('open');
+    }
+    function closeHistory() {
+      historyModal.classList.remove('open');
+      // ms-composer 自己管自己的 backdrop，这里只在 history 单独关时清掉
+      document.getElementById('backdrop').classList.remove('open');
+    }
+    document.getElementById('open-history').addEventListener('click', openHistory);
+    document.getElementById('close-history').addEventListener('click', closeHistory);
+
+    // ════════ 重播按钮 ════════
+    document.getElementById('replay-btn').addEventListener('click', () => {
+      if (activeId === null) {
+        playAnimation(DEMO_RECORD, { withIntro: false, loop: true });
+      } else {
+        const r = records.find(x => x.id === activeId);
+        if (r) playAnimation(r, { withIntro: true, loop: false });
+      }
+    });
+
+    // ════════ 新建记录 ════════
+    const backdrop = document.getElementById('backdrop');
+
+    // 录入界面：交给 ms-composer 统一渲染
+    function _bootBeiziComposer() {
+      if (!window.MS || !MS.composer) { setTimeout(_bootBeiziComposer, 60); return; }
+      const extraHTML = `
+        <div class="msc-tier-row">
+          <span class="msc-extra-label">晾晒时间</span>
+          <div class="msc-tier-buttons" data-msc-tier="weight">
+            <button type="button" data-w="1">1</button>
+            <button type="button" data-w="2" class="on">2</button>
+            <button type="button" data-w="3">3</button>
+          </div>
+        </div>
+      `;
+      MS.composer.init({
+        planet: 'beizi',
+        storageKey: 'memory-sparks:beizi-records',
+        capabilities: { image: false, video: false, audio: false },
+        textareaPlaceholder: '什么让你难过？',
+        textareaMaxLength: 150,
+        extraHTML,
+        extraInit: (extraEl, editingRec) => {
+          const w = (editingRec?.weight && [1,2,3].includes(editingRec.weight)) ? editingRec.weight : 2;
+          extraEl.querySelectorAll('[data-w]').forEach(b => {
+            b.classList.toggle('on', parseInt(b.dataset.w) === w);
+            b.addEventListener('click', () => {
+              extraEl.querySelectorAll('[data-w]').forEach(x => x.classList.remove('on'));
+              b.classList.add('on');
+            });
+          });
+        },
+        extraGet: (extraEl) => {
+          const active = extraEl.querySelector('[data-w].on');
+          return { weight: active ? parseInt(active.dataset.w) : 2 };
+        },
+        onOpened: () => {
+          document.body.classList.add('beizi-composer-open');
+        },
+        onClosed: () => {
+          document.body.classList.remove('beizi-composer-open');
+        },
+        beforeSave: (payload, editingIdx) => {
+          if (editingIdx == null) {
+            const today = new Date();
+            payload.date = `${today.getMonth()+1}.${today.getDate()}`;
+            payload.createdAt = Date.now();
+          }
+          // 兼容旧数据：把 text 同步写回 content（让没改的读取处仍可工作）
+          if (payload.text) payload.content = payload.text;
+          return payload;
+        },
+        onSaved: (payload, editingIdx) => {
+          records = loadRecords();
+          activeId = payload.id;
+          renderTimeline();
+          if (editingIdx == null) {
+            try { playAnimation(payload, { withIntro: true, loop: false }); } catch (_) {}
+          } else {
+            const updated = records.find(r => r.id === payload.id);
+            if (updated) { try { playAnimation(updated, { withIntro: true, loop: false }); } catch (_) {} }
+          }
+        },
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _bootBeiziComposer);
+    else _bootBeiziComposer();
+
+    // 父 App 列表删除/编辑后同步
+    window.__msReloadAll = function() {
+      records = loadRecords();
+      if (activeId && !records.some(r => r.id === activeId)) {
+        activeId = records.length ? records[records.length - 1].id : null;
+      }
+      renderTimeline();
+      renderHistory();
+      if (activeId) switchRecord(activeId);
+    };
+
+    document.getElementById('float-btn').addEventListener('click', () => {
+      if (window.MS && MS.composer) MS.composer.open();
+    });
+    document.getElementById('hint-open-composer').addEventListener('click', () => {
+      if (window.MS && MS.composer) MS.composer.open();
+    });
+    backdrop.addEventListener('click', () => {
+      if (historyModal.classList.contains('open')) closeHistory();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        // ms-composer 自己处理 ESC
+        if (historyModal.classList.contains('open')) closeHistory();
+      }
+    });
+
+    // ════════ 初始化：默认演示 ════════
+    renderTimeline();
+    playAnimation(DEMO_RECORD, { withIntro: false, loop: true });
+  </script>
+
+<script>
+  // ── Memory Sparks · 统一组件挂载（介绍卡 + 添加按钮） ──
+  // 在 DOM ready 后挂载，避免被原有 init 顺序覆盖
+  (function bootMSShared() {
+    function go() { if (window.MS && window.MS.bootstrap) MS.bootstrap('beizi'); else setTimeout(go, 60); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+  })();
+</script>
+
+</body>
+</html>

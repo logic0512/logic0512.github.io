@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vibe Coding</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* 暖墨黑调色系 — 告别蓝黑 SaaS 风 */
+      --bg:       #0d0a06;   /* 暖墨黑，像印刷油墨 */
+      --surface:  #171410;   /* 稍亮的暖深棕 */
+      --surface2: #211d16;   /* 卡片/窗口背景 */
+      --border:   #2e2820;   /* 暖棕边框 */
+      --border2:  #3d3526;   /* 稍亮的边框，用于分隔 */
+      --accent:   #c4843a;   /* 铜琥珀，不是科技绿 */
+      --accent-dim: rgba(196, 132, 58, 0.15);
+      --text:     #e0d6c2;   /* 温奶油白 */
+      --muted:    #7a7060;   /* 暖中间灰 */
+      --muted2:   #9a8e7a;   /* 稍亮的暖灰 */
+      --radius:   8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg);
+      /* 极淡的暖色晕光，不做成 AI 紫色 mesh */
+      background-image:
+        radial-gradient(ellipse 80% 50% at 15% 35%, rgba(38, 28, 12, 0.55) 0%, transparent 60%);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3 { font-family: 'Archivo', sans-serif; }
+
+    /* ── Layout ─────────────────────────────────────── */
+    .container {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 0 52px;
+    }
+
+    /* ── Header ─────────────────────────────────────── */
+    .site-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 52px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(13, 10, 6, 0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .site-logo {
+      font-family: 'Archivo', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .site-nav {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+    }
+
+    .site-nav a {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+
+    .site-nav a:hover { color: var(--text); }
+
+    /* ── Main ───────────────────────────────────────── */
+    main { padding-top: 64px; }
+
+    /* ── Category Section ───────────────────────────── */
+    .category { padding: 72px 0 0; }
+
+    .category-header {
+      padding: 0 52px 52px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .category-num {
+      font-family: 'Archivo', sans-serif;
+      font-size: 108px;
+      font-weight: 700;
+      line-height: 1;
+      color: transparent;
+      /* 用铜色描边，比白色更有质感 */
+      -webkit-text-stroke: 1px rgba(196, 132, 58, 0.25);
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .category-label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    /* 只在 category header 用一次 eyebrow，全页最多两次 */
+    .category-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .category-title {
+      font-family: 'Archivo', sans-serif;
+      font-size: 34px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.15;
+    }
+
+    /* ── Project Row ────────────────────────────────── */
+    .project-row {
+      padding: 52px 52px;
+      display: grid;
+      /* 30% 项目信息 / 70% 演示窗口，用 grid 避免 flex 百分比数学 */
+      grid-template-columns: 30fr 70fr;
+      gap: 52px;
+      align-items: start;
+      border-top: 1px solid var(--border);
+    }
+
+    .project-row:last-child {
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Project Info ───────────────────────────────── */
+    .project-info { padding-top: 6px; }
+
+    .project-num {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    .project-title {
+      font-family: 'Archivo', sans-serif;
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .project-subtitle {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted2);
+      margin-bottom: 18px;
+      letter-spacing: 0.02em;
+    }
+
+    .project-desc {
+      font-size: 14px;
+      color: #b8ad98;
+      line-height: 1.75;
+      margin-bottom: 24px;
+    }
+
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .tag {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      padding: 3px 9px;
+      border-radius: 3px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(196, 132, 58, 0.22);
+      color: #c4a068;
+    }
+
+    /* 交互提示（一棵树）—— 信息栏里的操作说明 */
+    .interaction-hint {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .interaction-hint .ih-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted2);
+    }
+    .interaction-hint kbd {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 1px solid rgba(196, 132, 58, 0.28);
+      border-radius: 5px;
+      padding: 2px 8px;
+      min-width: 42px;
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+
+    /* 信息栏下方配图 / 动图 */
+    .project-media {
+      margin-top: 22px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .project-media img {
+      width: 100%;
+      display: block;
+    }
+
+    /* App logo（还能活多久）*/
+    .project-logo {
+      margin-top: 22px;
+      width: 84px;
+      height: 84px;
+      border-radius: 19px;
+      border: 1px solid var(--border);
+      display: block;
+      background: #000;
+    }
+
+    /* 信息栏配图/视频底部对齐 —— 整列拉伸到演示高度，媒体沉到底部
+       并上移 42px（演示下方「全屏打开」按钮区高度），使媒体底边与演示窗口底边齐平 */
+    .project-row.bottom-align { align-items: stretch; }
+    .project-row.bottom-align .project-info { display: flex; flex-direction: column; }
+    .project-media.to-bottom,
+    .project-video.to-bottom {
+      margin-top: auto;
+      margin-bottom: 42px;
+      max-width: 280px;
+    }
+
+    /* 演示区底部居中的操作键位提示（一棵树望远镜）*/
+    .demo-keys {
+      position: absolute;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 18px;
+      border-radius: 100px;
+      background: rgba(13, 10, 6, 0.68);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border2);
+      pointer-events: none;
+      z-index: 5;
+      white-space: nowrap;
+    }
+    .demo-keys .dk-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .demo-keys .dk-sep { color: var(--muted); }
+    .demo-keys kbd {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 1px solid rgba(196, 132, 58, 0.32);
+      border-radius: 5px;
+      min-width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Memory Sparks 信息栏下方循环视频（不可点击）*/
+    .project-video {
+      margin-top: 22px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+      line-height: 0;
+    }
+    .project-video video {
+      width: 100%;
+      display: block;
+      pointer-events: none;
+    }
+    /* 透明星球（已抠背景）：无底框，直接浮在页面上 */
+    .project-video.floating {
+      background: none;
+      border: none;
+      overflow: visible;
+      border-radius: 0;
+    }
+
+    /* 架构图缩略图：可点击放大 */
+    .arch-thumb.to-bottom { max-width: 320px; }   /* 竖长图，收窄以便整列底部对齐演示 */
+    .arch-thumb {
+      position: relative;
+      cursor: zoom-in;
+      transition: border-color 0.2s;
+    }
+    .arch-thumb:hover { border-color: var(--accent); }
+    .arch-thumb img { width: 100%; display: block; }
+    .arch-zoom {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--text);
+      background: rgba(13, 10, 6, 0.7);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--border2);
+      border-radius: 100px;
+      padding: 3px 10px;
+      pointer-events: none;
+    }
+
+    /* 放大遮罩（lightbox）*/
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(8, 6, 3, 0.92);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px;
+      overflow: auto;
+      cursor: zoom-out;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: min(100%, 1100px);
+      height: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      box-shadow: 0 30px 90px rgba(0,0,0,0.6);
+    }
+    .lightbox-close {
+      position: fixed;
+      top: 22px;
+      right: 26px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid var(--border2);
+      background: rgba(13, 10, 6, 0.7);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    /* ── Demo Area ──────────────────────────────────── */
+    .demo-area { min-width: 0; }
+
+    /* 浏览器外壳 */
+    .browser-window {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--surface2);
+    }
+
+    .browser-content {
+      position: relative;
+      background: #0a0804;
+      line-height: 0;
+    }
+
+    .browser-content iframe {
+      width: 100%;
+      height: 620px;
+      border: none;
+      display: block;
+    }
+
+    /* 全屏 App（记忆星球）：以完整桌面尺寸渲染，再整体缩放，避免裁切 */
+    .scaled-frame {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      background: #05060a;
+      line-height: 0;
+    }
+    .scaled-frame iframe {
+      border: none;
+      display: block;
+      transform-origin: top left;
+      /* width / height / transform 由 JS 按虚拟桌面尺寸设置 */
+    }
+
+    /* 占位层 */
+    .iframe-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(145deg, #0d0a06 0%, #171410 100%);
+      transition: opacity 0.4s;
+    }
+
+    .placeholder-text {
+      font-size: 11px;
+      color: var(--border2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .demo-actions {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn-fullscreen {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted2);
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+    }
+
+    .btn-fullscreen:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
+
+    .btn-fullscreen svg { width: 12px; height: 12px; }
+
+    /* ── Phone Mockup（还能活多久，唯一竖屏）─────────── */
+    .phone-container {
+      display: flex;
+      /* 竖屏 + 项目信息并排，左侧信息不变，右侧居中手机 */
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .phone-shell {
+      /* iPhone 15 Pro：极窄边框，机身仅比屏幕多约 6px 每边 */
+      width: 292px;   /* 280px 屏幕 + 6px×2 边框 */
+      background: linear-gradient(180deg, #2a2a2c 0%, #1c1c1e 100%);
+      border-radius: 50px;
+      padding: 6px;
+      border: 1px solid #3a3a3c;
+      box-shadow:
+        0 0 0 0.5px #000,
+        inset 0 0 0 1px rgba(255,255,255,0.06),
+        0 40px 100px rgba(0, 0, 0, 0.7),
+        0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Dynamic Island 和 Home Indicator 都在屏幕内部 (app 自带)，外壳不再重复添加 */
+    .phone-notch-bar, .phone-home-bar { display: none; }
+
+    .phone-screen {
+      border-radius: 46px;   /* 外壳 50px - padding 6px = 44px，稍大确保圆角对齐 */
+      overflow: hidden;
+      width: 280px;
+      /* 280/375 = 0.7467，屏幕比例 852/393=2.168，280×2.168=606px */
+      height: 606px;
+      position: relative;
+    }
+
+    .phone-screen iframe {
+      width: 375px;
+      height: 812px;
+      border: none;
+      display: block;
+      transform: scale(0.7467); /* 280/375，等比 */
+      transform-origin: top left;
+    }
+
+    .phone-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1c1c1e;
+      transition: opacity 0.4s;
+    }
+
+    .phone-home-indicator {
+      width: 100px;
+      height: 4px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 2px;
+    }
+
+    /* ── Radio Player ────────────────────────────────── */
+    .radio-player {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .radio-header {
+      padding: 28px 28px 22px;
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .radio-album-art {
+      width: 90px;
+      height: 90px;
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, #1e1a0c, #120f08);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(196, 132, 58, 0.18);
+    }
+
+    .radio-album-art svg {
+      width: 30px;
+      height: 30px;
+      color: var(--accent);
+      opacity: 0.65;
+    }
+
+    .radio-meta {
+      flex: 1;
+      min-width: 0;
+      padding-top: 4px;
+    }
+
+    .radio-episode {
+      font-size: 10px;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+
+    .radio-track-name {
+      font-family: 'Archivo', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .radio-artist {
+      font-size: 12px;
+      color: var(--muted2);
+      line-height: 1.5;
+    }
+
+    .radio-controls-area {
+      padding: 20px 28px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .radio-progress { margin-bottom: 14px; }
+
+    .progress-bar {
+      height: 2px;
+      background: var(--border2);
+      border-radius: 2px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 35%;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .progress-time {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 7px;
+      letter-spacing: 0.04em;
+    }
+
+    .radio-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+    }
+
+    .radio-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+      padding: 6px;
+    }
+
+    .radio-btn:hover { color: var(--text); }
+    .radio-btn svg { display: block; }
+
+    .radio-btn-play {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #0d0a06;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .radio-btn-play:hover {
+      background: #d4943a;
+      transform: scale(1.05);
+    }
+
+    .radio-btn-play svg { display: block; }
+
+    .radio-tracklist { padding: 16px 28px 22px; }
+
+    .tracklist-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .track-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 9px 0;
+      cursor: pointer;
+    }
+
+    .track-item + .track-item { border-top: 1px solid rgba(46, 40, 32, 0.7); }
+    .track-item:hover .track-name { color: var(--text); }
+
+    .track-num {
+      font-size: 11px;
+      color: var(--border2);
+      width: 16px;
+      flex-shrink: 0;
+      text-align: right;
+    }
+
+    .track-item.active .track-num { color: var(--accent); }
+
+    .track-name {
+      flex: 1;
+      font-size: 13px;
+      color: #a89e8a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.2s;
+    }
+
+    .track-item.active .track-name { color: var(--text); font-weight: 500; }
+
+    .track-dj-badge {
+      font-size: 9px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      flex-shrink: 0;
+      letter-spacing: 0.05em;
+    }
+
+    .track-duration {
+      font-size: 11px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    /* ── Reveal Animation ────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* ── Footer ─────────────────────────────────────── */
+    .site-footer {
+      padding: 44px 52px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-text { font-size: 12px; color: var(--muted); }
+    .footer-dot { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <header class="site-header">
+    <a href="#" class="site-logo">Vibe Coding</a>
+    <nav>
+      <ul class="site-nav">
+        <li><a href="#demo">Demo 演示</a></li>
+        <li><a href="#apps">应用开发</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ══════════════════════════════════════════════
+         CATEGORY 01 · DEMO 演示类
+    ═══════════════════════════════════════════════ -->
+    <section class="category" id="demo">
+      <div class="category-header reveal">
+        <span class="category-num">01</span>
+        <div class="category-label">
+          <span class="category-tag">Category</span>
+          <h2 class="category-title">Demo 演示类</h2>
+        </div>
+      </div>
+
+      <!-- 01 · 鸟类百科 -->
+      <div class="project-row reveal">
+        <div class="project-info">
+          <p class="project-num">NO. 01</p>
+          <h2 class="project-title">鸟类百科</h2>
+          <p class="project-subtitle">科普内容 × 触摸屏交互</p>
+          <p class="project-desc">
+            以鸟类为主题的交互科普应用，整体分为两个维度进行演示：（1）通过骨骼结构的组合拼接，以及鸟类的透视图展示，了解鸟类的身体结构特征和各部位的作用；（2）融合多个不同类型的鸟类于大场景中，以此引申介绍生活在不同环境的各类鸟类。
+          </p>
+          <div class="project-tags">
+            <span class="tag">自然科普</span>
+            <span class="tag">触摸屏交互</span>
+            <span class="tag">Agent + Figma</span>
+            <span class="tag">HTML / JS</span>
+          </div>
+        </div>
+        <div class="demo-area">
+          <!-- 1920×1080 固定画布，视口<900 会显示降级页 → 以 16:9 桌面尺寸渲染再缩放 -->
+          <div class="scaled-frame" data-vw="1280" data-vh="720" style="border-radius:var(--radius); border:1px solid var(--border);">
+            <iframe data-src="demos/birds/demo/index.html" title="鸟类百科" loading="lazy"></iframe>
+            <div class="iframe-placeholder"><span class="placeholder-text">Demo Loading</span></div>
+          </div>
+          <div class="demo-actions">
+            <a class="btn-fullscreen" href="demos/birds/demo/index.html" target="_blank">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10 2h4v4M6 14H2v-4M14 6l-5 5M2 10l5-5"/>
+              </svg>
+              全屏打开
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 02 · 一棵树 -->
+      <div class="project-row reveal bottom-align">
+        <div class="project-info">
+          <p class="project-num">NO. 02</p>
+          <h2 class="project-title">一棵树的垂直生态</h2>
+          <p class="project-subtitle">科普内容 × 互动装置</p>
+          <p class="project-desc">
+            展示空间以一棵树为媒介，一个望远镜装置为载体，通过操控望远镜对树上的生物进行观察，从而了解生命的垂直生态分布特色。
+          </p>
+          <div class="project-tags">
+            <span class="tag">自然科普</span>
+            <span class="tag">帧动画组合</span>
+            <span class="tag">装置互动演示</span>
+            <span class="tag">HTML / JS</span>
+          </div>
+          <!-- 配图底部对齐演示窗口 -->
+          <div class="project-media to-bottom">
+            <img src="media/tree-telescope.gif" alt="望远镜装置互动演示" loading="lazy" />
+          </div>
+        </div>
+        <div class="demo-area">
+          <!-- vh/vw 驱动的全视口分层场景 → 以 16:9 桌面尺寸渲染再缩放 -->
+          <div class="scaled-frame" data-vw="1280" data-vh="720" style="border-radius:var(--radius); border:1px solid var(--border);">
+            <iframe data-src="demos/tree/index.html" title="一棵树的垂直生态" loading="lazy"></iframe>
+            <div class="iframe-placeholder"><span class="placeholder-text">Demo Loading</span></div>
+            <!-- 底部居中的操作键位提示（覆盖在演示上，不挡交互）-->
+            <div class="demo-keys">
+              <span class="dk-group"><kbd>↑</kbd><kbd>↓</kbd> 装置纵向移动</span>
+              <span class="dk-sep">·</span>
+              <span class="dk-group"><kbd>←</kbd><kbd>→</kbd> 时间切换</span>
+            </div>
+          </div>
+          <div class="demo-actions">
+            <a class="btn-fullscreen" href="demos/tree/index.html" target="_blank">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10 2h4v4M6 14H2v-4M14 6l-5 5M2 10l5-5"/>
+              </svg>
+              全屏打开
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 03 · 寻找第二个地球 -->
+      <div class="project-row reveal">
+        <div class="project-info">
+          <p class="project-num">NO. 03</p>
+          <h2 class="project-title">寻找第二个地球</h2>
+          <p class="project-subtitle">天文科普 × 互动推理</p>
+          <p class="project-desc">
+            以单观测点望远镜为载体，用「凌星法」寻找系外行星：转动望远镜把恒星对进准星、锁定后等待行星掠过恒星前方，捕捉那一瞬间的光变曲线下凹；再从下凹的深浅与重复周期，反推行星的大小、轨道远近与宜居可能——一步步还原天文学家发现「第二个地球」的真实推理链。
+          </p>
+          <div class="project-tags">
+            <span class="tag">天文科普</span>
+            <span class="tag">凌星法演示</span>
+            <span class="tag">旋钮互动装置演示</span>
+            <span class="tag">HTML / Canvas</span>
+          </div>
+        </div>
+        <div class="demo-area">
+          <!-- 自适应填满视口的圆形望远镜外壳场景 → 以 16:9 桌面尺寸渲染再缩放 -->
+          <div class="scaled-frame" data-vw="1280" data-vh="720" style="border-radius:var(--radius); border:1px solid var(--border);">
+            <iframe data-src="demos/second-earth/index.html" title="寻找第二个地球" loading="lazy"></iframe>
+            <div class="iframe-placeholder"><span class="placeholder-text">Demo Loading</span></div>
+            <!-- 底部居中的操作键位提示 -->
+            <div class="demo-keys">
+              <span class="dk-group"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 转动望远镜对准</span>
+              <span class="dk-sep">·</span>
+              <span class="dk-group"><kbd>Space</kbd> 采集凌星</span>
+              <span class="dk-sep">·</span>
+              <span class="dk-group"><kbd>R</kbd> 换目标</span>
+            </div>
+          </div>
+          <div class="demo-actions">
+            <a class="btn-fullscreen" href="demos/second-earth/index.html" target="_blank">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10 2h4v4M6 14H2v-4M14 6l-5 5M2 10l5-5"/>
+              </svg>
+              全屏打开
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04 · Voidrunner（放在 Demo 演示最后） -->
+      <div class="project-row reveal">
+        <div class="project-info">
+          <p class="project-num">NO. 04</p>
+          <h2 class="project-title">Voidrunner</h2>
+          <p class="project-subtitle">游戏交互演示</p>
+          <p class="project-desc">
+            模拟一款科幻射击游戏的实操界面，完整还原游戏 UI 的操作质感。
+          </p>
+          <div class="project-tags">
+            <span class="tag">游戏原型预告</span>
+            <span class="tag">帧动画组合</span>
+            <span class="tag">HTML / JS</span>
+          </div>
+        </div>
+        <div class="demo-area">
+          <!-- 1920×1080 设计稿（含 vh 单位面板）→ 按原生尺寸渲染再缩放，面板精确归位 -->
+          <div class="scaled-frame" data-vw="1920" data-vh="1080" style="border-radius:var(--radius); border:1px solid var(--border);">
+            <iframe data-src="demos/voidrunner/index.html" title="Voidrunner" loading="lazy" scrolling="no"></iframe>
+            <div class="iframe-placeholder"><span class="placeholder-text">Demo Loading</span></div>
+          </div>
+          <div class="demo-actions">
+            <a class="btn-fullscreen" href="demos/voidrunner/index.html" target="_blank">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10 2h4v4M6 14H2v-4M14 6l-5 5M2 10l5-5"/>
+              </svg>
+              全屏打开
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════════════
+         CATEGORY 02 · 应用开发类
+    ═══════════════════════════════════════════════ -->
+    <section class="category" id="apps">
+      <div class="category-header reveal">
+        <span class="category-num">02</span>
+        <div class="category-label">
+          <span class="category-tag">Category</span>
+          <h2 class="category-title">应用开发类</h2>
+        </div>
+      </div>
+
+      <!-- 05 · 还能活多久 -->
+      <div class="project-row reveal">
+        <div class="project-info">
+          <p class="project-num">NO. 05</p>
+          <h2 class="project-title">还能活多久</h2>
+          <p class="project-subtitle">App</p>
+          <p class="project-desc">
+            一款以倒计时为概念的本地记账工具。通过设置金额，观察和统计个人记录的消费习惯，实时换算出金额什么时候消耗完的类生存挑战工具。
+          </p>
+          <div class="project-tags">
+            <span class="tag">Flutter</span>
+            <span class="tag">iOS 开发</span>
+          </div>
+          <img class="project-logo" src="media/how-much-longer-logo.png" alt="还能活多久 App Logo" loading="lazy" />
+        </div>
+        <!-- 微信版：全屏设计，放入手机 mockup 外壳 -->
+        <div class="phone-container">
+          <div class="phone-shell">
+            <div class="phone-screen">
+              <iframe
+                data-src="apps/how-much-longer/app.html"
+                title="还能活多久"
+                loading="lazy"
+                scrolling="no"
+              ></iframe>
+              <div class="phone-placeholder">
+                <span style="font-size:10px; color: rgba(255,255,255,0.3); letter-spacing:0.1em; text-transform:uppercase;">App Loading</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 06 · 记忆星球 -->
+      <div class="project-row reveal bottom-align">
+        <div class="project-info">
+          <p class="project-num">NO. 06</p>
+          <h2 class="project-title">Memory Sparks</h2>
+          <p class="project-subtitle">Web 应用</p>
+          <p class="project-desc">
+            一款融合多种交互形式的人生记录工具——地图标记、徒步轨迹、情绪记录、日记书写、照片与视频存储，都收纳于同一个空间。它以一段"星球探索"的故事为线索，引导你在记录的过程中，借由交互去觉察自己的情绪与念头，把零散的日常，归档成一份属于自己的人生档案。全部数据以知识库形式保存，支持一键迁移、随身带走；提供 U 盘便携版与本地网页版双形态，均可离线本地使用，记忆始终留在你自己手中。
+          </p>
+          <div class="project-tags">
+            <span class="tag">交互式记录工具</span>
+            <span class="tag">Web 应用 · React</span>
+            <span class="tag">3D 交互可视化 · WebGL / Cesium</span>
+          </div>
+          <!-- 8 颗星球循环视频：已抠黑底透明、自动播放、静音、不可点击，底部对齐演示 -->
+          <div class="project-video floating to-bottom">
+            <video autoplay loop muted playsinline>
+              <source src="media/memory-sparks-planets.webm" type="video/webm" />
+              <source src="media/memory-sparks-planets.mp4" type="video/mp4" />
+            </video>
+          </div>
+        </div>
+        <div class="demo-area">
+          <div class="browser-window">
+            <!-- 以 1440×900 虚拟桌面渲染，JS 整体缩放到窗口宽度 -->
+            <div class="scaled-frame" data-vw="1440" data-vh="900">
+              <iframe data-src="apps/memory-sparks/index.html" title="记忆星球" loading="lazy"></iframe>
+              <div class="iframe-placeholder"><span class="placeholder-text">Demo Loading</span></div>
+            </div>
+          </div>
+          <div class="demo-actions">
+            <a class="btn-fullscreen" href="apps/memory-sparks/index.html" target="_blank">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10 2h4v4M6 14H2v-4M14 6l-5 5M2 10l5-5"/>
+              </svg>
+              全屏打开
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 07 · 私人电台 Claudio -->
+      <div class="project-row reveal bottom-align">
+        <div class="project-info">
+          <p class="project-num">NO. 07</p>
+          <h2 class="project-title">私人电台 Claudio</h2>
+          <p class="project-subtitle">Web 音乐</p>
+          <p class="project-desc">
+            以「一个正在逐步认识你的电台主持人」为核心，Claudio 会在你每次打开的时候，结合当下的状态和听歌偏好，策划一期专属节目——有 DJ 口播、有主题弧线、有选曲逻辑。每跳过一首歌、说一句话，或把一首歌听完，它都在当场更新对你的理解。时间越长，了解越深。
+          </p>
+          <div class="project-tags">
+            <span class="tag">AI 电台</span>
+            <span class="tag">agent 设计</span>
+            <span class="tag">prompt 工程</span>
+          </div>
+          <!-- 架构施工图：点击放大看清，底部对齐演示 -->
+          <div class="project-media to-bottom arch-thumb" onclick="openLightbox('media/radio-architecture.png')" title="点击放大查看架构图">
+            <img src="media/radio-architecture.png" alt="Claudio 架构施工图" loading="lazy" />
+            <span class="arch-zoom">点击放大</span>
+          </div>
+        </div>
+
+        <!-- 真实电台 App：以桌面尺寸渲染再整体缩放，居中展示 -->
+        <div class="demo-area" style="display:flex; flex-direction:column; align-items:center;">
+          <div class="scaled-frame" data-vw="648" data-vh="1010" style="max-width:440px; border-radius:36px;">
+            <iframe data-src="apps/radio/index.html" title="私人电台 Claudio" loading="lazy"></iframe>
+            <div class="iframe-placeholder"><span class="placeholder-text">Radio Loading</span></div>
+          </div>
+          <div class="demo-actions">
+            <a class="btn-fullscreen" href="apps/radio/index.html" target="_blank">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10 2h4v4M6 14H2v-4M14 6l-5 5M2 10l5-5"/>
+              </svg>
+              全屏打开
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span class="footer-text">Vibe Coding <span class="footer-dot">·</span> 持续更新中</span>
+    <span class="footer-text">2025 - 2026</span>
+  </footer>
+
+  <!-- 图片放大遮罩 -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <div class="lightbox-close" aria-label="关闭">&times;</div>
+    <img id="lightbox-img" src="" alt="放大查看" />
+  </div>
+
+  <script>
+    // 图片放大
+    function openLightbox(src) {
+      const lb = document.getElementById('lightbox');
+      document.getElementById('lightbox-img').src = src;
+      lb.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.06 });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // iframe 加载后隐藏占位层
+    document.querySelectorAll('iframe').forEach(frame => {
+      const parent = frame.parentElement;
+      const ph = parent.querySelector('.iframe-placeholder, .phone-placeholder');
+      if (!ph) return;
+      frame.addEventListener('load', () => {
+        ph.style.opacity = '0';
+        ph.style.pointerEvents = 'none';
+      });
+    });
+
+    // 给单个 scaled-frame 定尺寸（挂载前先调用，确保 iframe 一开始就是正确尺寸，
+    // 避免 Cesium/3D 用默认 300×150 初始化 WebGL 导致黑屏）
+    function sizeScaledFrame(frame) {
+      const vw = parseFloat(frame.dataset.vw) || 1440;
+      const vh = parseFloat(frame.dataset.vh) || 900;
+      const iframe = frame.querySelector('iframe');
+      if (!iframe) return;
+      const scale = frame.clientWidth / vw;
+      iframe.style.width  = vw + 'px';
+      iframe.style.height = vh + 'px';
+      iframe.style.transform = 'scale(' + scale + ')';
+      frame.style.height = (vh * scale) + 'px';
+    }
+
+    // 全屏 App：以虚拟桌面尺寸渲染 iframe，按窗口宽度整体缩放（不裁切）
+    function fitScaledFrames() {
+      document.querySelectorAll('.scaled-frame').forEach(sizeScaledFrame);
+    }
+    fitScaledFrames();
+    window.addEventListener('resize', fitScaledFrames);
+    window.addEventListener('load', fitScaledFrames);
+
+    // ── 音频隔离：只让「视野中」的那个 iframe 活着，其余卸载（彻底静音）──
+    (function () {
+      const lazyFrames = Array.from(document.querySelectorAll('iframe[data-src]'));
+      // 观察每个 iframe 的容器（非 transform 的稳定盒子），可见比例更可靠
+      const wrapOf = f => f.parentElement;
+      const ratios = new Map();   // wrapper -> 可见比例
+      let activeFrame = null;
+
+      function mount(frame) {
+        if (!frame.src || frame.src === 'about:blank') {
+          // 缩放型 iframe：先把尺寸/transform 设好，再加载 —— 确保内部
+          // 一开始就拿到正确视口尺寸（否则 Cesium 用 300×150 初始化会黑屏）
+          const sf = frame.closest('.scaled-frame');
+          if (sf) sizeScaledFrame(sf);
+          frame.src = frame.dataset.src;
+          if (sf) requestAnimationFrame(() => sizeScaledFrame(sf));
+        }
+      }
+      function unmount(frame) {
+        if (frame.src && frame.src !== 'about:blank') {
+          frame.src = 'about:blank';   // 清空 = 停掉它的全部音视频
+          const ph = frame.parentElement.querySelector('.iframe-placeholder, .phone-placeholder');
+          if (ph) { ph.style.opacity = '1'; ph.style.pointerEvents = 'none'; }
+        }
+      }
+
+      function reconcile() {
+        // 选可见比例最高、且超过阈值的那个 iframe 作为唯一活跃项
+        let best = null, bestR = 0.4;
+        lazyFrames.forEach(f => {
+          const r = ratios.get(wrapOf(f)) || 0;
+          if (r > bestR) { bestR = r; best = f; }
+        });
+        if (best === activeFrame) return;
+        activeFrame = best;
+        lazyFrames.forEach(f => { f === best ? mount(f) : unmount(f); });
+      }
+
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          ratios.set(e.target, e.isIntersecting ? e.intersectionRatio : 0);
+        });
+        reconcile();
+      }, { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1] });
+
+      lazyFrames.forEach(f => io.observe(wrapOf(f)));
+    })();
+  </script>
+</body>
+</html>

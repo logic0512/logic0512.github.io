@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>治愈星 · 弹窗 8×6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Playfair+Display:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@300;400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0c0810;
+  color: rgba(255, 245, 230, 0.92);
+  font-weight: 300;
+  min-height: 100vh;
+  padding: 52px 32px 96px;
+}
+.container { max-width: 1480px; margin: 0 auto; }
+
+header { text-align: center; margin-bottom: 24px; }
+header h1 {
+  margin: 0 0 14px;
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: 0.32em;
+  padding-left: 0.32em;
+}
+header .principle {
+  display: inline-block;
+  padding: 9px 22px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(245, 220, 168, 0.85);
+  background: rgba(245, 220, 168, 0.08);
+  border: 1px solid rgba(245, 220, 168, 0.22);
+  border-radius: 99px;
+}
+
+.layer-tabs-wrap { text-align: center; margin: 32px 0 28px; }
+.layer-tabs {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 24px;
+  background: rgba(255, 245, 230, 0.06);
+  border: 1px solid rgba(255, 245, 230, 0.10);
+}
+.layer-tabs button {
+  padding: 8px 22px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 245, 230, 0.52);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.layer-tabs button.active {
+  background: rgba(245, 220, 168, 0.18);
+  color: rgba(255, 245, 230, 0.96);
+}
+
+/* ============ section 治愈星氛围（modal 后面真有暖色透） ============ */
+.dir-block {
+  margin-bottom: 28px;
+  padding: 46px 28px 50px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 245, 230, 0.06);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.dir-block[data-layer="gentle"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 247, 230, 0.95), transparent 55%),
+    radial-gradient(circle at 78% 32%, rgba(246, 209, 190, 0.55), transparent 58%),
+    radial-gradient(circle at 50% 90%, rgba(255, 226, 205, 0.28), transparent 58%),
+    linear-gradient(140deg, #f8eee6 0%, #e8c8b8 60%, #d8a890 100%);
+}
+.dir-block[data-layer="companion"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 249, 226, 0.95), transparent 55%),
+    radial-gradient(circle at 78% 32%, rgba(246, 220, 168, 0.58), transparent 58%),
+    radial-gradient(circle at 50% 90%, rgba(240, 200, 177, 0.28), transparent 58%),
+    linear-gradient(140deg, #f7efdf 0%, #e8d8b8 60%, #d8b890 100%);
+}
+.dir-block[data-layer="inspire"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 250, 238, 0.95), transparent 55%),
+    radial-gradient(circle at 78% 32%, rgba(238, 218, 198, 0.45), transparent 58%),
+    radial-gradient(circle at 50% 90%, rgba(248, 226, 204, 0.28), transparent 58%),
+    linear-gradient(140deg, #f8f1ea 0%, #ece2d4 60%, #ddcfba 100%);
+}
+
+.dir-head {
+  position: relative; z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(60, 38, 24, 0.18);
+}
+.dir-head .num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: rgba(80, 52, 38, 0.65);
+}
+.dir-head h3 {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  color: rgba(40, 22, 14, 0.92);
+}
+.dir-head .tag {
+  font-family: "EB Garamond", serif;
+  font-style: italic;
+  font-size: 12px;
+  color: rgba(80, 52, 38, 0.62);
+}
+
+.cases {
+  position: relative; z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  align-items: end;
+}
+.col { display: flex; flex-direction: column; align-items: center; }
+.label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  color: rgba(80, 52, 38, 0.5);
+  margin-bottom: 8px;
+  text-align: center;
+  text-transform: uppercase;
+}
+.stage {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+}
+
+
+/* ============ Modal 形状 ============ */
+.modal {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.modal.shape-image-h  { width: 100%; aspect-ratio: 16/10; }
+.modal.shape-image-v  { width: 60%;  aspect-ratio: 9/16; }
+.modal.shape-video-h  { width: 100%; aspect-ratio: 16/9; }
+.modal.shape-video-v  { width: 60%;  aspect-ratio: 9/16; }
+.modal.shape-audio    { width: 85%;  aspect-ratio: 1/1; }
+.modal.shape-text     { width: 75%;  aspect-ratio: 5/7; }
+
+
+/* ============ 通用媒体 ============ */
+.media-fill { position: absolute; inset: 0; }
+.img-h {
+  width: 100%; height: 100%;
+  background:
+    radial-gradient(circle at 52% 36%, rgba(255, 240, 200, 0.92) 0 6%, transparent 6.5%),
+    radial-gradient(ellipse at 52% 36%, rgba(255, 200, 130, 0.55) 0 18%, transparent 36%),
+    linear-gradient(180deg, #f8c890 0%, #f0a070 30%, #c0707a 55%, #6a4870 80%, #3a2858 100%);
+}
+.img-v {
+  width: 100%; height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 28%, rgba(255, 220, 180, 0.92) 0 22%, transparent 46%),
+    radial-gradient(ellipse at 50% 70%, rgba(60, 40, 50, 0.50) 0 32%, transparent 60%),
+    linear-gradient(180deg, #e8b896 0%, #b07868 38%, #5c4860 100%);
+}
+.img-video-h {
+  width: 100%; height: 100%;
+  background:
+    radial-gradient(circle at 70% 28%, rgba(255, 220, 160, 0.75) 0 14%, transparent 32%),
+    radial-gradient(circle at 28% 72%, rgba(180, 100, 80, 0.55) 0 18%, transparent 40%),
+    linear-gradient(160deg, #f0c098 0%, #b07060 50%, #4a2838 100%);
+}
+.img-video-v {
+  width: 100%; height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(255, 220, 160, 0.82) 0 24%, transparent 48%),
+    radial-gradient(circle at 50% 78%, rgba(120, 70, 60, 0.55) 0 22%, transparent 44%),
+    linear-gradient(180deg, #f5c890 0%, #b87060 50%, #4a2838 100%);
+}
+
+.play-badge {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(20, 12, 22, 0.42);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 250, 240, 0.6);
+  display: grid; place-items: center;
+  z-index: 8;
+}
+.play-badge::before {
+  content: '';
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 8px;
+  border-color: transparent transparent transparent rgba(255, 250, 240, 0.95);
+  margin-left: 2px;
+}
+
+.wave-dots {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; height: 100%;
+  padding: 0 6%;
+}
+.wave-dots span {
+  display: block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wave-dots span.peak { width: 7px; height: 7px; }
+.wave-dots span.dim { opacity: 0.40; }
+
+.gradient-bottom {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 56%;
+  background: linear-gradient(180deg, transparent 0%, rgba(20, 12, 24, 0.42) 60%, rgba(20, 12, 24, 0.88) 100%);
+  z-index: 3;
+}
+
+.r-close {
+  position: absolute;
+  top: 6px; right: 8px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 250, 240, 0.42);
+  background: rgba(40, 24, 32, 0.42);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 250, 240, 0.86);
+  font-size: 9px;
+  display: grid; place-items: center;
+  cursor: pointer;
+  z-index: 30;
+}
+.r-close.on-warm {
+  border-color: rgba(60, 38, 24, 0.32);
+  background: rgba(255, 250, 240, 0.55);
+  color: rgba(60, 38, 24, 0.86);
+}
+
+/* media 类型的统一文字位置 */
+.modal .top-meta {
+  position: absolute; top: 8px; left: 12px; z-index: 12;
+  color: rgba(255, 252, 246, 0.92);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8px;
+  letter-spacing: 0.26em;
+}
+.modal .bottom-text {
+  position: absolute; left: 12px; right: 12px; bottom: 10px; z-index: 12;
+  color: rgba(255, 252, 246, 0.96);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+.modal .bottom-text .title {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic; font-weight: 400;
+  font-size: 16px; line-height: 1.15;
+  margin: 0 0 4px;
+}
+.modal .bottom-text .body {
+  font-size: 10px; line-height: 1.5;
+  margin: 0; opacity: 0.92;
+}
+
+/* audio/text 通用容器 */
+.modal.shape-audio,
+.modal.shape-text {
+  display: flex; flex-direction: column;
+  padding: 16px;
+}
+.modal.shape-audio .meta,
+.modal.shape-text .meta {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8px; letter-spacing: 0.26em;
+  color: rgba(60, 38, 24, 0.62);
+  margin-bottom: 8px;
+}
+.modal.shape-audio .title,
+.modal.shape-text .title {
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic; font-weight: 400;
+  font-size: 16px;
+  color: rgba(40, 22, 14, 0.92);
+  margin: 0 0 10px; line-height: 1.2;
+}
+.modal.shape-audio .wave-wrap {
+  flex: 1; display: flex; align-items: center;
+  margin-bottom: 6px;
+}
+.modal.shape-audio .wave-dots span { background: rgba(80, 52, 38, 0.65); }
+.modal.shape-audio .wave-dots span.dim { background: rgba(80, 52, 38, 0.26); }
+.modal.shape-audio .duration {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px; letter-spacing: 0.18em;
+  color: rgba(60, 38, 24, 0.72);
+  text-align: right;
+}
+.modal.shape-text .body {
+  flex: 1;
+  font-family: "EB Garamond", serif;
+  font-size: 11.5px; line-height: 1.85;
+  color: rgba(40, 22, 14, 0.82);
+  margin: 0;
+}
+
+
+/* =================================================================
+   方向 1 · Liquid Glass — 半透明 + 强 blur + 暖白边
+   ================================================================= */
+.d1 .modal {
+  background: linear-gradient(135deg, rgba(255, 252, 246, 0.30), rgba(255, 246, 232, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(28px) saturate(1.3);
+  -webkit-backdrop-filter: blur(28px) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 0 rgba(80, 52, 38, 0.06),
+    0 22px 56px rgba(20, 10, 28, 0.30);
+}
+
+
+/* =================================================================
+   方向 2 · Vellum Sheet — 米黄羊皮纸 + 暖纸边
+   ================================================================= */
+.d2 .modal {
+  background:
+    radial-gradient(circle at 15% 18%, rgba(255, 245, 220, 0.55), transparent 60%),
+    linear-gradient(160deg, rgba(255, 240, 210, 0.55), rgba(238, 208, 168, 0.36));
+  border: 1px solid rgba(160, 110, 60, 0.32);
+  backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 220, 0.50),
+    inset 0 0 60px rgba(140, 90, 40, 0.08),
+    0 20px 48px rgba(80, 40, 20, 0.28);
+}
+.d2 .bottom-text .title { font-family: "EB Garamond", serif; font-style: italic; font-weight: 500; }
+.d2 .modal.shape-audio .title, .d2 .modal.shape-text .title { font-family: "EB Garamond", serif; font-style: italic; font-weight: 500; }
+.d2 .modal.shape-audio .wave-dots span { background: rgba(140, 70, 30, 0.70); }
+.d2 .modal.shape-audio .wave-dots span.dim { background: rgba(140, 70, 30, 0.30); }
+
+
+/* =================================================================
+   方向 3 · Aurora Mist — 3 色 mesh gradient
+   ================================================================= */
+.d3 .modal {
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(255, 200, 220, 0.45) 0 30%, transparent 60%),
+    radial-gradient(ellipse at 100% 45%, rgba(200, 180, 250, 0.40) 0 35%, transparent 65%),
+    radial-gradient(ellipse at 30% 100%, rgba(255, 230, 170, 0.36) 0 30%, transparent 65%),
+    linear-gradient(160deg, rgba(255, 252, 248, 0.18) 0%, rgba(245, 220, 200, 0.10) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(24px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 22px 56px rgba(40, 16, 40, 0.32),
+    0 0 80px rgba(255, 180, 200, 0.20);
+}
+.d3 .bottom-text .title { font-family: "Playfair Display", serif; font-weight: 300; font-style: italic; }
+.d3 .modal.shape-audio .title, .d3 .modal.shape-text .title { font-family: "Playfair Display", serif; font-style: italic; font-weight: 300; }
+.d3 .modal.shape-audio .wave-dots span { background: rgba(120, 60, 90, 0.55); }
+.d3 .modal.shape-audio .wave-dots span.dim { background: rgba(120, 60, 90, 0.22); }
+
+
+/* =================================================================
+   方向 4 · Floating Ribbon — 不规则圆角（丝带形态）
+   ================================================================= */
+.d4 .modal {
+  background: linear-gradient(135deg, rgba(255, 252, 246, 0.34), rgba(255, 240, 220, 0.18));
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(22px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 22px 56px rgba(20, 10, 28, 0.30);
+}
+.d4 .modal.shape-image-h, .d4 .modal.shape-video-h {
+  border-radius: 38% 62% 36% 64% / 28% 32% 68% 72%;
+}
+.d4 .modal.shape-image-v, .d4 .modal.shape-video-v {
+  border-radius: 48% 52% 42% 58% / 24% 30% 70% 76%;
+}
+.d4 .modal.shape-audio {
+  border-radius: 60% 40% 50% 50% / 50% 60% 40% 50%;
+}
+.d4 .modal.shape-text {
+  border-radius: 44% 56% 38% 62% / 22% 28% 72% 78%;
+}
+
+
+/* =================================================================
+   方向 5 · Edge-Glow Frame — 几乎全透 + 暖光边
+   ================================================================= */
+.d5 .modal {
+  background: rgba(255, 252, 246, 0.04);
+  border: 1.5px solid rgba(255, 220, 160, 0.78);
+  backdrop-filter: blur(2px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 220, 160, 0.18),
+    inset 0 0 20px rgba(255, 220, 160, 0.18),
+    0 0 0 1px rgba(255, 220, 160, 0.32),
+    0 0 30px rgba(255, 220, 160, 0.48),
+    0 0 60px rgba(255, 200, 140, 0.28);
+}
+.d5 .modal.shape-audio,
+.d5 .modal.shape-text { backdrop-filter: blur(1px); }
+
+
+/* =================================================================
+   方向 6 · Soft Shadow Card — 半实色 + 大暖光 outer glow
+   ================================================================= */
+.d6 .modal {
+  background: rgba(255, 250, 240, 0.78);
+  border: 0;
+  border-radius: 14px;
+  box-shadow:
+    0 24px 60px rgba(80, 40, 20, 0.28),
+    0 0 80px 20px rgba(255, 180, 140, 0.32),
+    0 0 120px 40px rgba(255, 200, 160, 0.18);
+}
+.d6 .modal.shape-image-h,
+.d6 .modal.shape-image-v,
+.d6 .modal.shape-video-h,
+.d6 .modal.shape-video-v { border-radius: 14px; }
+.d6 .bottom-text { color: rgba(40, 22, 14, 0.92); text-shadow: none; }
+.d6 .bottom-text .title { font-family: "PingFang SC", sans-serif; font-style: normal; font-weight: 500; }
+.d6 .top-meta { color: rgba(40, 22, 14, 0.62); text-shadow: none; }
+.d6 .modal .gradient-bottom { background: linear-gradient(180deg, transparent 0%, rgba(255, 250, 240, 0.65) 60%, rgba(255, 250, 240, 0.94) 100%); }
+
+
+/* =================================================================
+   方向 7 · Crystalline Facets — clip-path 多边形 + 棱镜彩光
+   ================================================================= */
+.d7 .modal {
+  background:
+    linear-gradient(135deg, rgba(255, 252, 246, 0.28), rgba(255, 240, 220, 0.14)),
+    conic-gradient(from 110deg at 30% 30%, rgba(255, 200, 200, 0.16), rgba(220, 200, 255, 0.16), rgba(200, 240, 255, 0.16), rgba(255, 240, 200, 0.16), rgba(255, 200, 200, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 22px 56px rgba(20, 10, 28, 0.32),
+    0 0 60px rgba(220, 200, 255, 0.16);
+}
+.d7 .modal.shape-image-h, .d7 .modal.shape-video-h {
+  clip-path: polygon(0 0, 100% 0, 100% 78%, 92% 100%, 0 100%);
+  border-radius: 4px;
+}
+.d7 .modal.shape-image-v, .d7 .modal.shape-video-v {
+  clip-path: polygon(0 4%, 100% 0, 100% 96%, 0 100%);
+  border-radius: 4px;
+}
+.d7 .modal.shape-audio {
+  clip-path: polygon(8% 0, 100% 6%, 96% 100%, 0 94%);
+  border-radius: 4px;
+}
+.d7 .modal.shape-text {
+  clip-path: polygon(0 0, 100% 4%, 96% 100%, 4% 96%);
+  border-radius: 4px;
+}
+
+
+/* =================================================================
+   方向 8 · Bokeh Veil — modal 内有虚化光斑
+   ================================================================= */
+.d8 .modal {
+  background:
+    radial-gradient(circle at 25% 28%, rgba(255, 240, 200, 0.35) 0 8%, transparent 12%),
+    radial-gradient(circle at 78% 22%, rgba(255, 220, 180, 0.30) 0 6%, transparent 11%),
+    radial-gradient(circle at 60% 70%, rgba(255, 230, 200, 0.32) 0 9%, transparent 14%),
+    radial-gradient(circle at 12% 82%, rgba(255, 200, 180, 0.28) 0 5%, transparent 10%),
+    linear-gradient(140deg, rgba(50, 22, 32, 0.32), rgba(20, 8, 24, 0.45));
+  border: 1px solid rgba(255, 220, 180, 0.32);
+  backdrop-filter: blur(8px) saturate(1.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 220, 180, 0.35),
+    0 22px 56px rgba(20, 10, 28, 0.55);
+}
+.d8 .bottom-text { color: rgba(255, 248, 230, 0.96); }
+.d8 .modal.shape-audio,
+.d8 .modal.shape-text { color: rgba(255, 248, 230, 0.94); }
+.d8 .modal.shape-audio .meta,
+.d8 .modal.shape-text .meta { color: rgba(255, 220, 180, 0.68); }
+.d8 .modal.shape-audio .title,
+.d8 .modal.shape-text .title { color: rgba(255, 248, 230, 0.96); }
+.d8 .modal.shape-audio .wave-dots span { background: rgba(255, 220, 180, 0.82); }
+.d8 .modal.shape-audio .wave-dots span.dim { background: rgba(255, 220, 180, 0.34); }
+.d8 .modal.shape-audio .duration { color: rgba(255, 220, 180, 0.78); }
+.d8 .modal.shape-text .body { color: rgba(255, 240, 210, 0.82); }
+.d8 .top-meta { color: rgba(255, 240, 210, 0.85); }
+
+
+.legend {
+  margin-top: 16px;
+  padding: 22px 26px;
+  background: rgba(255, 245, 230, 0.04);
+  border: 1px solid rgba(255, 245, 230, 0.08);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.95;
+  letter-spacing: 0.06em;
+  color: rgba(255, 245, 230, 0.66);
+}
+.legend strong {
+  color: rgba(245, 220, 168, 0.95);
+  letter-spacing: 0.18em;
+  display: inline-block;
+  margin-right: 12px;
+}
+
+@media (max-width: 1180px) {
+  .cases { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+<main class="container">
+
+  <header>
+    <h1>治愈星 弹窗</h1>
+    <p class="principle">8 spatial directions · 6 内容形状 · 每个方向视觉 DNA 不同</p>
+  </header>
+
+  <div class="layer-tabs-wrap">
+    <div class="layer-tabs">
+      <button data-layer="gentle" class="active">温柔 · Gentle</button>
+      <button data-layer="companion">陪伴 · Companion</button>
+      <button data-layer="inspire">启发 · Inspire</button>
+    </div>
+  </div>
+
+  <!-- 通用 case 模板用 JS 渲染太重，直接 inline 8 sections -->
+
+  <!-- ============================ 方向 1 Liquid Glass -->
+  <section class="dir-block d1 section-bg" data-layer="gentle">
+    <div class="dir-head"><span class="num">01</span><h3>Liquid Glass</h3><span class="tag">半透明 + 强 blur + 暖白细边</span></div>
+    <div class="cases">
+      <div class="col"><div class="label">横图</div><div class="stage"><div class="modal shape-image-h"><div class="media-fill"><div class="img-h"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·01·23 IMG</div><div class="bottom-text"><h4 class="title">山顶看日落</h4><p class="body">从橙到粉到紫。</p></div></div></div></div>
+      <div class="col"><div class="label">竖图</div><div class="stage"><div class="modal shape-image-v"><div class="media-fill"><div class="img-v"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·12·10</div><div class="bottom-text"><h4 class="title">妈妈打来的电话</h4><p class="body">就是想听你。</p></div></div></div></div>
+      <div class="col"><div class="label">视频横</div><div class="stage"><div class="modal shape-video-h"><div class="media-fill"><div class="img-video-h"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·04·04 01:23</div><div class="bottom-text"><h4 class="title">孩子的第一声哭</h4><p class="body">整个房间松一口气。</p></div></div></div></div>
+      <div class="col"><div class="label">视频竖</div><div class="stage"><div class="modal shape-video-v"><div class="media-fill"><div class="img-video-v"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·03·15</div><div class="bottom-text"><h4 class="title">朋友的猫</h4><p class="body">又胖了一点。</p></div></div></div></div>
+      <div class="col"><div class="label">音频</div><div class="stage"><div class="modal shape-audio"><button class="r-close on-warm">×</button><div class="meta">25·02·08</div><h4 class="title">听见雨打在窗</h4><div class="wave-wrap"><div class="wave-dots" data-wave></div></div><div class="duration">07 : 12</div></div></div></div>
+      <div class="col"><div class="label">纯文字</div><div class="stage"><div class="modal shape-text"><button class="r-close on-warm">×</button><div class="meta">26·05·06</div><h4 class="title">被认真听完</h4><p class="body">没有建议，没有评价，只是被认真听完。心里有一块石头慢慢松开。</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- ============================ 方向 2 Vellum Sheet -->
+  <section class="dir-block d2 section-bg" data-layer="gentle">
+    <div class="dir-head"><span class="num">02</span><h3>Vellum Sheet</h3><span class="tag">米黄羊皮纸 + 暖纸边 + 微纹理</span></div>
+    <div class="cases">
+      <div class="col"><div class="label">横图</div><div class="stage"><div class="modal shape-image-h"><div class="media-fill"><div class="img-h"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·01·23 IMG</div><div class="bottom-text"><h4 class="title">山顶看日落</h4><p class="body">从橙到粉到紫。</p></div></div></div></div>
+      <div class="col"><div class="label">竖图</div><div class="stage"><div class="modal shape-image-v"><div class="media-fill"><div class="img-v"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·12·10</div><div class="bottom-text"><h4 class="title">妈妈打来的电话</h4><p class="body">就是想听你。</p></div></div></div></div>
+      <div class="col"><div class="label">视频横</div><div class="stage"><div class="modal shape-video-h"><div class="media-fill"><div class="img-video-h"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·04·04 01:23</div><div class="bottom-text"><h4 class="title">孩子的第一声哭</h4><p class="body">整个房间松一口气。</p></div></div></div></div>
+      <div class="col"><div class="label">视频竖</div><div class="stage"><div class="modal shape-video-v"><div class="media-fill"><div class="img-video-v"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·03·15</div><div class="bottom-text"><h4 class="title">朋友的猫</h4><p class="body">又胖了一点。</p></div></div></div></div>
+      <div class="col"><div class="label">音频</div><div class="stage"><div class="modal shape-audio"><button class="r-close on-warm">×</button><div class="meta">25·02·08</div><h4 class="title">听见雨打在窗</h4><div class="wave-wrap"><div class="wave-dots" data-wave></div></div><div class="duration">07 : 12</div></div></div></div>
+      <div class="col"><div class="label">纯文字</div><div class="stage"><div class="modal shape-text"><button class="r-close on-warm">×</button><div class="meta">26·05·06</div><h4 class="title">被认真听完</h4><p class="body">没有建议，没有评价，只是被认真听完。心里有一块石头慢慢松开。</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- ============================ 方向 3 Aurora Mist -->
+  <section class="dir-block d3 section-bg" data-layer="gentle">
+    <div class="dir-head"><span class="num">03</span><h3>Aurora Mist</h3><span class="tag">3 色 mesh gradient · 梦幻极光</span></div>
+    <div class="cases">
+      <div class="col"><div class="label">横图</div><div class="stage"><div class="modal shape-image-h"><div class="media-fill"><div class="img-h"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·01·23 IMG</div><div class="bottom-text"><h4 class="title">山顶看日落</h4><p class="body">从橙到粉到紫。</p></div></div></div></div>
+      <div class="col"><div class="label">竖图</div><div class="stage"><div class="modal shape-image-v"><div class="media-fill"><div class="img-v"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·12·10</div><div class="bottom-text"><h4 class="title">妈妈打来的电话</h4><p class="body">就是想听你。</p></div></div></div></div>
+      <div class="col"><div class="label">视频横</div><div class="stage"><div class="modal shape-video-h"><div class="media-fill"><div class="img-video-h"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·04·04 01:23</div><div class="bottom-text"><h4 class="title">孩子的第一声哭</h4><p class="body">整个房间松一口气。</p></div></div></div></div>
+      <div class="col"><div class="label">视频竖</div><div class="stage"><div class="modal shape-video-v"><div class="media-fill"><div class="img-video-v"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·03·15</div><div class="bottom-text"><h4 class="title">朋友的猫</h4><p class="body">又胖了一点。</p></div></div></div></div>
+      <div class="col"><div class="label">音频</div><div class="stage"><div class="modal shape-audio"><button class="r-close on-warm">×</button><div class="meta">25·02·08</div><h4 class="title">听见雨打在窗</h4><div class="wave-wrap"><div class="wave-dots" data-wave></div></div><div class="duration">07 : 12</div></div></div></div>
+      <div class="col"><div class="label">纯文字</div><div class="stage"><div class="modal shape-text"><button class="r-close on-warm">×</button><div class="meta">26·05·06</div><h4 class="title">被认真听完</h4><p class="body">没有建议，没有评价，只是被认真听完。心里有一块石头慢慢松开。</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- ============================ 方向 4 Floating Ribbon -->
+  <section class="dir-block d4 section-bg" data-layer="gentle">
+    <div class="dir-head"><span class="num">04</span><h3>Floating Ribbon</h3><span class="tag">不规则圆角（丝带 / 水滴形态）</span></div>
+    <div class="cases">
+      <div class="col"><div class="label">横图</div><div class="stage"><div class="modal shape-image-h"><div class="media-fill"><div class="img-h"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·01·23 IMG</div><div class="bottom-text"><h4 class="title">山顶看日落</h4><p class="body">从橙到粉到紫。</p></div></div></div></div>
+      <div class="col"><div class="label">竖图</div><div class="stage"><div class="modal shape-image-v"><div class="media-fill"><div class="img-v"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·12·10</div><div class="bottom-text"><h4 class="title">妈妈打来的电话</h4><p class="body">就是想听你。</p></div></div></div></div>
+      <div class="col"><div class="label">视频横</div><div class="stage"><div class="modal shape-video-h"><div class="media-fill"><div class="img-video-h"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·04·04 01:23</div><div class="bottom-text"><h4 class="title">孩子的第一声哭</h4><p class="body">整个房间松一口气。</p></div></div></div></div>
+      <div class="col"><div class="label">视频竖</div><div class="stage"><div class="modal shape-video-v"><div class="media-fill"><div class="img-video-v"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·03·15</div><div class="bottom-text"><h4 class="title">朋友的猫</h4><p class="body">又胖了一点。</p></div></div></div></div>
+      <div class="col"><div class="label">音频</div><div class="stage"><div class="modal shape-audio"><button class="r-close on-warm">×</button><div class="meta">25·02·08</div><h4 class="title">听见雨打在窗</h4><div class="wave-wrap"><div class="wave-dots" data-wave></div></div><div class="duration">07 : 12</div></div></div></div>
+      <div class="col"><div class="label">纯文字</div><div class="stage"><div class="modal shape-text"><button class="r-close on-warm">×</button><div class="meta">26·05·06</div><h4 class="title">被认真听完</h4><p class="body">没有建议，没有评价，只是被认真听完。心里有一块石头慢慢松开。</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- ============================ 方向 5 Edge-Glow Frame -->
+  <section class="dir-block d5 section-bg" data-layer="gentle">
+    <div class="dir-head"><span class="num">05</span><h3>Edge-Glow Frame</h3><span class="tag">几乎全透 + 仅外圈 1.5px 暖光边</span></div>
+    <div class="cases">
+      <div class="col"><div class="label">横图</div><div class="stage"><div class="modal shape-image-h"><div class="media-fill"><div class="img-h"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·01·23 IMG</div><div class="bottom-text"><h4 class="title">山顶看日落</h4><p class="body">从橙到粉到紫。</p></div></div></div></div>
+      <div class="col"><div class="label">竖图</div><div class="stage"><div class="modal shape-image-v"><div class="media-fill"><div class="img-v"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·12·10</div><div class="bottom-text"><h4 class="title">妈妈打来的电话</h4><p class="body">就是想听你。</p></div></div></div></div>
+      <div class="col"><div class="label">视频横</div><div class="stage"><div class="modal shape-video-h"><div class="media-fill"><div class="img-video-h"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·04·04 01:23</div><div class="bottom-text"><h4 class="title">孩子的第一声哭</h4><p class="body">整个房间松一口气。</p></div></div></div></div>
+      <div class="col"><div class="label">视频竖</div><div class="stage"><div class="modal shape-video-v"><div class="media-fill"><div class="img-video-v"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·03·15</div><div class="bottom-text"><h4 class="title">朋友的猫</h4><p class="body">又胖了一点。</p></div></div></div></div>
+      <div class="col"><div class="label">音频</div><div class="stage"><div class="modal shape-audio"><button class="r-close on-warm">×</button><div class="meta">25·02·08</div><h4 class="title">听见雨打在窗</h4><div class="wave-wrap"><div class="wave-dots" data-wave></div></div><div class="duration">07 : 12</div></div></div></div>
+      <div class="col"><div class="label">纯文字</div><div class="stage"><div class="modal shape-text"><button class="r-close on-warm">×</button><div class="meta">26·05·06</div><h4 class="title">被认真听完</h4><p class="body">没有建议，没有评价，只是被认真听完。心里有一块石头慢慢松开。</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- ============================ 方向 6 Soft Shadow Card -->
+  <section class="dir-block d6 section-bg" data-layer="gentle">
+    <div class="dir-head"><span class="num">06</span><h3>Soft Shadow Card</h3><span class="tag">半实色米白 + 大暖光 outer glow</span></div>
+    <div class="cases">
+      <div class="col"><div class="label">横图</div><div class="stage"><div class="modal shape-image-h"><div class="media-fill"><div class="img-h"></div></div><div class="gradient-bottom"></div><button class="r-close on-warm">×</button><div class="top-meta">24·01·23 IMG</div><div class="bottom-text"><h4 class="title">山顶看日落</h4><p class="body">从橙到粉到紫。</p></div></div></div></div>
+      <div class="col"><div class="label">竖图</div><div class="stage"><div class="modal shape-image-v"><div class="media-fill"><div class="img-v"></div></div><div class="gradient-bottom"></div><button class="r-close on-warm">×</button><div class="top-meta">25·12·10</div><div class="bottom-text"><h4 class="title">妈妈打来的电话</h4><p class="body">就是想听你。</p></div></div></div></div>
+      <div class="col"><div class="label">视频横</div><div class="stage"><div class="modal shape-video-h"><div class="media-fill"><div class="img-video-h"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close on-warm">×</button><div class="top-meta">24·04·04 01:23</div><div class="bottom-text"><h4 class="title">孩子的第一声哭</h4><p class="body">整个房间松一口气。</p></div></div></div></div>
+      <div class="col"><div class="label">视频竖</div><div class="stage"><div class="modal shape-video-v"><div class="media-fill"><div class="img-video-v"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close on-warm">×</button><div class="top-meta">25·03·15</div><div class="bottom-text"><h4 class="title">朋友的猫</h4><p class="body">又胖了一点。</p></div></div></div></div>
+      <div class="col"><div class="label">音频</div><div class="stage"><div class="modal shape-audio"><button class="r-close on-warm">×</button><div class="meta">25·02·08</div><h4 class="title">听见雨打在窗</h4><div class="wave-wrap"><div class="wave-dots" data-wave></div></div><div class="duration">07 : 12</div></div></div></div>
+      <div class="col"><div class="label">纯文字</div><div class="stage"><div class="modal shape-text"><button class="r-close on-warm">×</button><div class="meta">26·05·06</div><h4 class="title">被认真听完</h4><p class="body">没有建议，没有评价，只是被认真听完。心里有一块石头慢慢松开。</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- ============================ 方向 7 Crystalline Facets -->
+  <section class="dir-block d7 section-bg" data-layer="gentle">
+    <div class="dir-head"><span class="num">07</span><h3>Crystalline Facets</h3><span class="tag">clip-path 多边形 + 棱镜彩光</span></div>
+    <div class="cases">
+      <div class="col"><div class="label">横图</div><div class="stage"><div class="modal shape-image-h"><div class="media-fill"><div class="img-h"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·01·23 IMG</div><div class="bottom-text"><h4 class="title">山顶看日落</h4><p class="body">从橙到粉到紫。</p></div></div></div></div>
+      <div class="col"><div class="label">竖图</div><div class="stage"><div class="modal shape-image-v"><div class="media-fill"><div class="img-v"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·12·10</div><div class="bottom-text"><h4 class="title">妈妈打来的电话</h4><p class="body">就是想听你。</p></div></div></div></div>
+      <div class="col"><div class="label">视频横</div><div class="stage"><div class="modal shape-video-h"><div class="media-fill"><div class="img-video-h"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·04·04 01:23</div><div class="bottom-text"><h4 class="title">孩子的第一声哭</h4><p class="body">整个房间松一口气。</p></div></div></div></div>
+      <div class="col"><div class="label">视频竖</div><div class="stage"><div class="modal shape-video-v"><div class="media-fill"><div class="img-video-v"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·03·15</div><div class="bottom-text"><h4 class="title">朋友的猫</h4><p class="body">又胖了一点。</p></div></div></div></div>
+      <div class="col"><div class="label">音频</div><div class="stage"><div class="modal shape-audio"><button class="r-close on-warm">×</button><div class="meta">25·02·08</div><h4 class="title">听见雨打在窗</h4><div class="wave-wrap"><div class="wave-dots" data-wave></div></div><div class="duration">07 : 12</div></div></div></div>
+      <div class="col"><div class="label">纯文字</div><div class="stage"><div class="modal shape-text"><button class="r-close on-warm">×</button><div class="meta">26·05·06</div><h4 class="title">被认真听完</h4><p class="body">没有建议，没有评价，只是被认真听完。心里有一块石头慢慢松开。</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- ============================ 方向 8 Bokeh Veil -->
+  <section class="dir-block d8 section-bg" data-layer="gentle">
+    <div class="dir-head"><span class="num">08</span><h3>Bokeh Veil</h3><span class="tag">modal 内有虚化光斑 · 像窗外的光透过来</span></div>
+    <div class="cases">
+      <div class="col"><div class="label">横图</div><div class="stage"><div class="modal shape-image-h"><div class="media-fill"><div class="img-h"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·01·23 IMG</div><div class="bottom-text"><h4 class="title">山顶看日落</h4><p class="body">从橙到粉到紫。</p></div></div></div></div>
+      <div class="col"><div class="label">竖图</div><div class="stage"><div class="modal shape-image-v"><div class="media-fill"><div class="img-v"></div></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·12·10</div><div class="bottom-text"><h4 class="title">妈妈打来的电话</h4><p class="body">就是想听你。</p></div></div></div></div>
+      <div class="col"><div class="label">视频横</div><div class="stage"><div class="modal shape-video-h"><div class="media-fill"><div class="img-video-h"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">24·04·04 01:23</div><div class="bottom-text"><h4 class="title">孩子的第一声哭</h4><p class="body">整个房间松一口气。</p></div></div></div></div>
+      <div class="col"><div class="label">视频竖</div><div class="stage"><div class="modal shape-video-v"><div class="media-fill"><div class="img-video-v"></div></div><div class="play-badge"></div><div class="gradient-bottom"></div><button class="r-close">×</button><div class="top-meta">25·03·15</div><div class="bottom-text"><h4 class="title">朋友的猫</h4><p class="body">又胖了一点。</p></div></div></div></div>
+      <div class="col"><div class="label">音频</div><div class="stage"><div class="modal shape-audio"><button class="r-close">×</button><div class="meta">25·02·08</div><h4 class="title">听见雨打在窗</h4><div class="wave-wrap"><div class="wave-dots" data-wave></div></div><div class="duration">07 : 12</div></div></div></div>
+      <div class="col"><div class="label">纯文字</div><div class="stage"><div class="modal shape-text"><button class="r-close">×</button><div class="meta">26·05·06</div><h4 class="title">被认真听完</h4><p class="body">没有建议，没有评价，只是被认真听完。心里有一块石头慢慢松开。</p></div></div></div>
+    </div>
+  </section>
+
+
+  <div class="legend">
+    <p><strong>8 个方向 · 视觉 DNA</strong></p>
+    <p style="margin-top: 8px;">
+      01 <strong style="margin-right:0">Liquid Glass</strong> 半透明 + 强 blur + 暖白细边<br>
+      02 <strong style="margin-right:0">Vellum Sheet</strong> 米黄羊皮纸 + 暖纸边<br>
+      03 <strong style="margin-right:0">Aurora Mist</strong> 3 色 mesh gradient<br>
+      04 <strong style="margin-right:0">Floating Ribbon</strong> 不规则圆角（丝带）<br>
+      05 <strong style="margin-right:0">Edge-Glow Frame</strong> 几乎全透 + 仅外圈暖光边<br>
+      06 <strong style="margin-right:0">Soft Shadow Card</strong> 半实色 + 大暖光 outer glow<br>
+      07 <strong style="margin-right:0">Crystalline Facets</strong> clip-path 多边形 + 棱镜彩光<br>
+      08 <strong style="margin-right:0">Bokeh Veil</strong> modal 内虚化光斑
+    </p>
+    <p style="margin-top: 10px; opacity: 0.7;">
+      6 case 内容形状（所有方向不变）：横图 16:10 / 竖图 9:16 / 视频横 16:9 / 视频竖 9:16 / 音频 1:1 / 纯文字 5:7
+    </p>
+  </div>
+
+</main>
+
+<script>
+const tabs = document.querySelectorAll('.layer-tabs button');
+const sections = document.querySelectorAll('.section-bg');
+tabs.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    sections.forEach(s => s.dataset.layer = btn.dataset.layer);
+  });
+});
+
+document.querySelectorAll('[data-wave]').forEach((el, idx) => {
+  const n = 24;
+  for (let i = 0; i < n; i++) {
+    const phase = (i + idx * 2) * 0.42;
+    const amp = Math.abs(Math.sin(phase)) * 0.6 + Math.abs(Math.sin(phase * 1.7)) * 0.4;
+    const span = document.createElement('span');
+    if (amp > 0.55) span.classList.add('peak');
+    if (amp < 0.30) span.classList.add('dim');
+    el.appendChild(span);
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>7 颗星 · 加编辑功能 UX 提案</title>
+<style>
+  :root {
+    --bg: #080c16;
+    --surface: #131b2c;
+    --surface-2: #1a2238;
+    --border: rgba(255,255,255,0.1);
+    --gold: #ffd070;
+    --green: #8fd47b;
+    --red: #ff8a8a;
+    --blue: #78bcff;
+    --text: #e8edf5;
+    --text-mute: rgba(232,237,245,0.55);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 44px clamp(20px, 5vw, 60px);
+    max-width: 1080px;
+    margin: 0 auto;
+    line-height: 1.75;
+  }
+  h1 { font-size: 26px; font-weight: 400; }
+  h1 .sub { color: var(--text-mute); font-size: 13px; margin-left: 12px; }
+  .lead {
+    background: var(--surface);
+    border-left: 3px solid var(--gold);
+    padding: 16px 22px;
+    margin: 18px 0 30px;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  h2 {
+    font-size: 17px;
+    color: var(--gold);
+    margin: 40px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.04em;
+  }
+  .planet-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin: 16px 0;
+    border: 1px solid var(--border);
+  }
+  .planet-card.metaphor-ok    { border-left: 4px solid var(--green); }
+  .planet-card.metaphor-mild  { border-left: 4px solid var(--gold); }
+  .planet-card.metaphor-bad   { border-left: 4px solid var(--red); }
+
+  .planet-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .planet-head .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .planet-head .name {
+    font-size: 17px;
+    font-weight: 500;
+  }
+  .planet-head .meta {
+    font-size: 11px;
+    color: var(--text-mute);
+    letter-spacing: 0.06em;
+    margin-left: auto;
+  }
+  .planet-card h3 {
+    font-size: 13px;
+    color: var(--gold);
+    margin: 14px 0 6px;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .planet-card p {
+    font-size: 13.5px;
+    color: rgba(232,237,245,0.78);
+    margin: 4px 0;
+  }
+  .planet-card strong { color: var(--text); }
+
+  .ux-flow {
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 8px 0;
+    font-size: 12.5px;
+    color: rgba(232,237,245,0.78);
+    line-height: 1.85;
+  }
+  .ux-flow .step {
+    display: inline-block;
+    background: rgba(255,208,112,0.16);
+    color: var(--gold);
+    padding: 1px 8px;
+    border-radius: 99px;
+    font-size: 10.5px;
+    margin-right: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .verdict {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .verdict.go      { background: rgba(143,212,123,0.10); color: var(--green); }
+  .verdict.mild    { background: rgba(255,208,112,0.10); color: var(--gold); }
+  .verdict.skip    { background: rgba(255,138,138,0.10); color: var(--red); }
+  .verdict .icon {
+    font-size: 16px;
+  }
+
+  table.choice {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 24px;
+    font-size: 13.5px;
+  }
+  table.choice th, table.choice td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.choice th {
+    background: rgba(255,255,255,0.04);
+    color: var(--gold);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  table.choice td.go { color: var(--green); }
+  table.choice td.skip { color: var(--red); }
+</style>
+</head>
+<body>
+
+<h1>7 颗星 · 加「编辑」功能 UX 提案 <span class="sub">每颗具体加什么、改成什么样</span></h1>
+
+<div class="lead">
+  每颗星的录入隐喻不一样，"编辑"也得跟这个隐喻搭得上。<br>
+  下面 7 颗每颗都列：<b>① 现在录入是什么 ② 编辑加在哪 ③ 点了编辑会发生什么 ④ 隐喻顺不顺</b><br>
+  最后我用绿/黄/红三档建议：哪些直接加、哪些有别扭、哪些建议不加。
+</div>
+
+<!-- ═════ beizi ═════ -->
+<div class="planet-card metaphor-ok">
+  <div class="planet-head">
+    <span class="dot" style="background:#8eb8d4;color:#8eb8d4"></span>
+    <span class="name">被子星</span>
+    <span class="meta">悲伤 · 把这件事挂出来晾晒</span>
+  </div>
+
+  <h3>现在录入是什么</h3>
+  <p>写一段悲伤的话 + 选 1-5 颗水滴权重（越多越湿） → 被子被挂上晾衣绳 → 阳光风吹"晾干"动画 → 文字渐隐</p>
+
+  <h3>编辑加在哪</h3>
+  <p>历史 modal 的列表项右上角 — 现在已经有删除小垃圾桶，旁边再加<strong>一支小铅笔</strong>（鼠标 hover 看到）</p>
+
+  <h3>点了编辑后</h3>
+  <div class="ux-flow">
+    <span class="step">1</span> 历史 modal 关闭 →
+    <span class="step">2</span> 写作 composer 打开，预填上这条原本的文字 + 选中原本的水滴数 →
+    <span class="step">3</span> 用户改完点「再晾一次」按钮（按钮文案从「挂出来」变成「再晾一次」）→
+    <span class="step">4</span> 那床被子重新挂上去 + 走一次晾干动画 → toast「已更新」
+  </div>
+
+  <div class="verdict go">
+    <span class="icon">✓</span> <span><b>隐喻贴合</b>：被子可以被反复晾，"再晾一次" 比"修改"更对味。<b>推荐做。</b></span>
+  </div>
+</div>
+
+<!-- ═════ flower ═════ -->
+<div class="planet-card metaphor-ok">
+  <div class="planet-head">
+    <span class="dot" style="background:#e08aba;color:#e08aba"></span>
+    <span class="name">花星</span>
+    <span class="meta">爱 · 把这份爱意种下去</span>
+  </div>
+
+  <h3>现在录入是什么</h3>
+  <p>选花种（玫瑰=爱情 / 康乃馨=亲情 / 茉莉=友情 / 矮牵牛=陪伴 / 天竺葵=关心）+ 写一段话 + 选 1-5 朵权重 → 花圃里长出一朵花</p>
+
+  <h3>编辑加在哪</h3>
+  <p>点开任意一朵花弹出的 popup 上 — 现有「删除」按钮旁加<strong>「修剪」按钮</strong>（用花剪图标更对味）</p>
+
+  <h3>点了编辑后</h3>
+  <div class="ux-flow">
+    <span class="step">1</span> popup 关闭 →
+    <span class="step">2</span> composer 打开，预填花种、文字、朵数 →
+    <span class="step">3</span> 用户可改花种（玫瑰→康乃馨）或文字 →
+    <span class="step">4</span> 提交后那朵花的<strong>品种/颜色直接变化</strong>（同位置不挪窝）→ toast
+  </div>
+
+  <div class="verdict go">
+    <span class="icon">✓</span> <span><b>隐喻贴合</b>：花可以"修剪、重新种"。<b>推荐做。</b></span>
+  </div>
+</div>
+
+<!-- ═════ hiking ═════ -->
+<div class="planet-card metaphor-ok">
+  <div class="planet-head">
+    <span class="dot" style="background:#7ab048;color:#7ab048"></span>
+    <span class="name">行星</span>
+    <span class="meta">hike · 带回一张路上的照片</span>
+  </div>
+
+  <h3>现在录入是什么</h3>
+  <p>上传照片 + 写标题（"山脊尽头的风"）+ 写地点（"梧桐山"）+ 写描述 + 可选给 4 张照片选不同风格滤镜</p>
+
+  <h3>编辑加在哪</h3>
+  <p>右下角详情卡 — 现在有「删除」按钮和「← →」翻页箭头，加<strong>「重写这一段」按钮</strong></p>
+
+  <h3>点了编辑后</h3>
+  <div class="ux-flow">
+    <span class="step">1</span> 详情卡保持不动 →
+    <span class="step">2</span> 上传 composer 打开，预填地点、标题、描述（照片缩略图也显示，可换可不换）→
+    <span class="step">3</span> 提交后这条照片更新（不挪位置、滤镜也保留）→ toast
+  </div>
+
+  <div class="verdict go">
+    <span class="icon">✓</span> <span><b>隐喻贴合</b>：路边照片回家后整理文字是常态。<b>推荐做。</b></span>
+  </div>
+</div>
+
+<!-- ═════ healing ═════ -->
+<div class="planet-card metaphor-ok">
+  <div class="planet-head">
+    <span class="dot" style="background:#f5c840;color:#f5c840"></span>
+    <span class="name">治愈星</span>
+    <span class="meta">治愈 · 放一颗微光进来</span>
+  </div>
+
+  <h3>现在录入是什么</h3>
+  <p>写标题（"被认真听完"）+ 描述 + 上传图/语音/视频 + 选 1-5 度温度（越暖光晕越大）</p>
+
+  <h3>编辑加在哪</h3>
+  <p>点开微光的 reader 详情卡 — 现有「删除」按钮旁加<strong>「再写一笔」按钮</strong></p>
+
+  <h3>点了编辑后</h3>
+  <div class="ux-flow">
+    <span class="step">1</span> reader 关闭 →
+    <span class="step">2</span> composer 打开，预填标题、文字、温度（媒体如有则显示原图，可换）→
+    <span class="step">3</span> 提交后这颗微光的<strong>光晕大小可能变化</strong>（温度改了）→ toast
+  </div>
+
+  <div class="verdict go">
+    <span class="icon">✓</span> <span><b>隐喻贴合</b>：被治愈的瞬间可以反复回想、补充细节。<b>推荐做。</b></span>
+  </div>
+</div>
+
+<!-- ═════ starry ═════ -->
+<div class="planet-card metaphor-ok">
+  <div class="planet-head">
+    <span class="dot" style="background:#f0d870;color:#f0d870"></span>
+    <span class="name">繁星</span>
+    <span class="meta">成就 · 点亮一颗星</span>
+  </div>
+
+  <h3>现在录入是什么</h3>
+  <p>写成就标题（"完成第一次长线整理"）+ 描述 + 上传图/视频 + 选权重（决定星星大小+亮度）</p>
+
+  <h3>编辑加在哪</h3>
+  <p>achievementCard 详情卡 — 现有「熄灭这颗星」按钮旁加<strong>「擦亮一点」按钮</strong></p>
+
+  <h3>点了编辑后</h3>
+  <div class="ux-flow">
+    <span class="step">1</span> achievementCard 关闭 →
+    <span class="step">2</span> composer 打开，预填标题、描述、权重 →
+    <span class="step">3</span> 提交后这颗星<strong>亮度/大小可能变化</strong>（权重改了）→ toast
+  </div>
+
+  <div class="verdict go">
+    <span class="icon">✓</span> <span><b>隐喻贴合</b>：星星会被你的回顾擦得更亮。<b>推荐做。</b></span>
+  </div>
+</div>
+
+<!-- ═════ tree ═════ -->
+<div class="planet-card metaphor-mild">
+  <div class="planet-head">
+    <span class="dot" style="background:#5a8a5a;color:#5a8a5a"></span>
+    <span class="name">树星</span>
+    <span class="meta">孤独 · 写下这段独处</span>
+  </div>
+
+  <h3>现在录入是什么</h3>
+  <p>写一段独处文字 + 选权重 → 系统自动提取 2-5 个关键词（"凌晨/海边/麻辣烫"）→ 这些关键词变成叶子飘到树上</p>
+
+  <h3>编辑加在哪</h3>
+  <p>leafCard 详情卡 — 现有「飘落」按钮旁加<strong>「再补几笔」按钮</strong></p>
+
+  <h3>点了编辑后</h3>
+  <div class="ux-flow">
+    <span class="step">1</span> leafCard 关闭 →
+    <span class="step">2</span> composer 打开，预填文字 + 权重 →
+    <span class="step">3</span> 提交后系统<strong>重新提取关键词</strong> → 原本的几片叶子<strong>淡出，新关键词的叶子重新长出来</strong>动画
+  </div>
+
+  <div class="verdict mild">
+    <span class="icon">!</span> <span><b>稍有别扭</b>：改文字 → 关键词重算 → 叶子全换。技术能做，但用户改 1 个字可能整片叶子飘走重生，体验会"过激"。<br>
+    <b>建议</b>：要做，但加一个提示「修改文字会让这条的叶子重新长一遍」。</span>
+  </div>
+</div>
+
+<!-- ═════ sea ═════ -->
+<div class="planet-card metaphor-bad">
+  <div class="planet-head">
+    <span class="dot" style="background:#198ed0;color:#198ed0"></span>
+    <span class="name">海星</span>
+    <span class="meta">烦恼 · 写下烦恼，看海水把它带走</span>
+  </div>
+
+  <h3>现在录入是什么</h3>
+  <p>写烦恼文字 + 选权重 → 文字"写在沙滩上" → 海水冲走动画 → 文字消失，沙滩干净</p>
+
+  <h3>编辑加在哪</h3>
+  <p>底部 timeline 节点 — 现在已经长按 600ms 触发删除，再加编辑就要做<strong>"长按→弹两个选项（重写/删除）"</strong></p>
+
+  <h3>点了编辑后</h3>
+  <div class="ux-flow">
+    <span class="step">1</span> timeline 节点长按弹小菜单 →
+    <span class="step">2</span> 点「重写」→ composer 打开，预填文字 + 权重 →
+    <span class="step">3</span> 提交后那条记录更新 → 重播海水冲走动画
+  </div>
+
+  <div class="verdict skip">
+    <span class="icon">✗</span> <span><b>隐喻冲突</b>：烦恼"已经被海水带走"，回头编辑等于"把已经放下的事捞回来再放下" — 反而打破了"海星帮你忘"的核心。<br>
+    <b>建议</b>：不加编辑功能。如果用户写错了，可以删了再写新的，更贴合"放下"的隐喻。</span>
+  </div>
+</div>
+
+<!-- ═════ 选择表 ═════ -->
+<h2>你来选 · 给我个清单</h2>
+
+<table class="choice">
+<thead>
+  <tr>
+    <th>星</th>
+    <th>编辑按钮文案</th>
+    <th>我的建议</th>
+    <th>预计工时</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>被子星</td><td>再晾一次</td><td class="go">✓ 推荐做</td><td>30 min</td></tr>
+  <tr><td>花星</td><td>修剪 / 改种</td><td class="go">✓ 推荐做</td><td>30 min</td></tr>
+  <tr><td>行星</td><td>重写这一段</td><td class="go">✓ 推荐做</td><td>40 min</td></tr>
+  <tr><td>治愈星</td><td>再写一笔</td><td class="go">✓ 推荐做</td><td>30 min</td></tr>
+  <tr><td>繁星</td><td>擦亮一点</td><td class="go">✓ 推荐做</td><td>30 min</td></tr>
+  <tr><td>树星</td><td>再补几笔</td><td>! 有别扭，要加</td><td>45 min（叶子重生动画）</td></tr>
+  <tr><td>海星</td><td>—</td><td class="skip">✗ 不建议加</td><td>—</td></tr>
+</tbody>
+</table>
+
+<p style="margin-top: 16px; color: rgba(232,237,245,0.78); font-size: 13.5px;">
+  <b>全做 5 颗（不含海/树）</b>：约 3 小时<br>
+  <b>全做 6 颗（不含海）</b>：约 4 小时<br>
+  <b>都加（含海）</b>：约 4.5 小时，但海星会打破隐喻
+</p>
+
+<hr style="border:0;border-top:1px solid var(--border);margin:40px 0 24px;">
+<p style="text-align:center;color:var(--text-mute);font-size:12px;">
+  分析依据：8 颗 iframe 的 composer 字段 + record 数据结构 + design-system 隐喻
+</p>
+
+</body>
+</html>

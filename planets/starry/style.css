@@ -1,0 +1,776 @@
+:root {
+  --ink: #dbe8ff;
+  --ink-soft: rgba(219, 232, 255, 0.68);
+  --glass: rgba(14, 24, 43, 0.58);
+  --glass-strong: rgba(10, 18, 34, 0.78);
+  --glass-border: rgba(219, 232, 255, 0.22);
+  --star: #f7fbff;
+  --gold: #ffd891;
+  --blue: #78bcff;
+  --shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Segoe UI", sans-serif;
+  background: #050814;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+.star-page,
+.star-stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.star-stage {
+  background: #050914;
+}
+
+.star-stage::before,
+.star-stage::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  content: "";
+  pointer-events: none;
+}
+
+.star-stage::before {
+  opacity: 0.22;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 1px, transparent 1px 8px);
+  mix-blend-mode: screen;
+}
+
+.star-stage::after {
+  background:
+    linear-gradient(90deg, rgba(2, 6, 15, 0.28), transparent 28%, transparent 74%, rgba(1, 4, 11, 0.18)),
+    linear-gradient(180deg, rgba(1, 4, 12, 0.16), transparent 30%, transparent 72%, rgba(1, 5, 12, 0.22));
+}
+
+.scene-background {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(180deg, rgba(1, 3, 10, 0.08), rgba(1, 4, 11, 0.24)),
+    url("../../assets/starry/starry-background-candidate-wide-20260603.png");
+  background-position: center center;
+  background-size: cover;
+  filter: saturate(0.98) contrast(1.02);
+  pointer-events: none;
+}
+
+/* ── 设计系统对齐：繁星卡片 ── */
+.intro-card {
+  position: absolute;
+  top: clamp(28px, 4vh, 52px);
+  left: clamp(24px, 3.5vw, 48px);
+  z-index: 8;
+  width: min(360px, 31vw);
+  padding: 22px;
+  border: 1px solid rgba(240, 216, 112, 0.18);
+  border-radius: 24px;
+  color: rgba(215, 205, 180, 0.90);
+  background: rgba(5, 12, 28, 0.55);
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  transition: padding 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* planet orb — 真实繁星图，screen 混合去黑底 */
+.planet-orb {
+  position: relative;
+  width: 88%;
+  aspect-ratio: 1;
+  margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.planet-orb img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+}
+
+/* card 折叠 */
+.card-fold {
+  overflow: hidden;
+  max-height: 600px;
+  opacity: 1;
+  transition:
+    max-height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.30s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.intro-card.collapsed .card-fold { max-height: 0; opacity: 0; }
+.intro-card.collapsed { cursor: pointer; padding: 14px 22px 16px; }
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: rgba(215, 205, 180, 0.45);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  transition: margin-bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.intro-card.collapsed .eyebrow { margin-bottom: 4px; }
+
+.intro-card h1 {
+  margin: 0 0 12px;
+  color: rgba(240, 230, 200, 0.95);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  transition:
+    font-size 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.intro-card.collapsed h1 { font-size: 19px; margin-bottom: 0; }
+
+.story {
+  margin: 0 0 18px;
+  color: rgba(215, 205, 180, 0.72);
+  font-size: 13px;
+  line-height: 2.0;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
+.hint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(240, 216, 112, 0.72);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  user-select: none;
+}
+.hint-row:hover { opacity: 0.82; }
+
+.icon-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* ── 浮动按钮（设计系统统一规格：右下 54×54） ── */
+.floating-add {
+  position: fixed;
+  right: 52px;
+  bottom: 44px;
+  z-index: 20;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 1px solid rgba(240, 216, 112, 0.50);
+  border-radius: 50%;
+  color: rgba(240, 216, 112, 0.92);
+  background: rgba(18, 31, 54, 0.55);
+  font-size: 22px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.floating-add:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+}
+
+.achievement-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: auto;
+}
+
+.achievement-star {
+  position: absolute;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  margin: -14px;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: none;
+  transform: scale(1);
+  transition: transform 160ms ease;
+}
+
+.achievement-star::before,
+.achievement-star::after {
+  position: absolute;
+  content: "";
+  border-radius: 50%;
+}
+
+.achievement-star::before {
+  top: 50%;
+  left: 50%;
+  width: calc(var(--core) * 1px);
+  height: calc(var(--core) * 1px);
+  background:
+    radial-gradient(circle, #ffffff 0 20%, rgba(245, 250, 255, 0.95) 32%, rgba(162, 207, 255, 0.42) 58%, transparent 74%);
+  box-shadow:
+    0 0 calc(var(--glow) * 0.55px) rgba(255, 255, 255, calc(0.46 + var(--bright-alpha) * 0.28)),
+    0 0 calc(var(--glow) * 1.5px) rgba(117, 184, 255, calc(0.18 + var(--bright-alpha) * 0.34)),
+    0 0 calc(var(--glow) * 2.6px) rgba(255, 216, 145, calc(var(--bright-alpha) * 0.16));
+  transform: translate(-50%, -50%);
+  animation: starPulse calc(4.2s + var(--delay) * 1s) ease-in-out infinite;
+  /* B：GPU 层提示——闪烁纯走显卡，光晕 box-shadow 只渲染一次，星多时更稳 */
+  will-change: transform, opacity;
+}
+/* C：任意弹窗/模态打开期间暂停星星呼吸 + 添加按钮光环
+   → 毛玻璃背后变静止，不再逐帧重算闪动（弹窗开关卡顿的根源）。
+   注意：呼吸动画在 ::before 上，必须挂到 ::before，挂到 .achievement-star 无效。 */
+body.modal-open .achievement-star::before,
+body.modal-open .ms-add-fab,
+body.modal-open .ms-add-fab::before {
+  animation-play-state: paused !important;
+}
+/* composer 打开时同理（此时星层已 display:none，双保险）*/
+body.starry-composer-open .achievement-star::before,
+body.starry-composer-open .ms-add-fab,
+body.starry-composer-open .ms-add-fab::before {
+  animation-play-state: paused !important;
+}
+
+/* composer 打开时浏览器跳过所有星空层渲染
+   - #achievementLayer：含所有星星，每颗带光晕 box-shadow
+   - .star-stage::before/::after：repeating-linear-gradient + mix-blend-mode (CPU 密集)
+   - 这些 paint 让 textarea reflow 时被反复重算 → 输入文字卡
+   composer 自身的 backdrop blur 22px 已经把背景遮成模糊一片，display:none 用户视觉上感知不到 */
+body.starry-composer-open #achievementLayer,
+body.ms-composer-open #achievementLayer {
+  display: none !important;
+}
+body.starry-composer-open .star-stage::before,
+body.starry-composer-open .star-stage::after,
+body.ms-composer-open .star-stage::before,
+body.ms-composer-open .star-stage::after {
+  display: none !important;
+}
+
+.achievement-star::after {
+  top: 50%;
+  left: 50%;
+  width: calc(var(--glow) * 1.55px);
+  height: calc(var(--glow) * 1.55px);
+  border: 1px solid rgba(173, 210, 255, 0.22);
+  background: radial-gradient(circle, rgba(130, 191, 255, 0.18), transparent 62%);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.56);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.achievement-star:hover,
+.achievement-star.active {
+  transform: scale(1.08);
+}
+
+.achievement-star:hover::after,
+.achievement-star.active::after {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+@keyframes starPulse {
+  0%, 100% { opacity: 0.72; transform: translate(-50%, -50%) scale(0.88); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+}
+
+/* ── 模态窗格（统一规格：按卡片状态居中） ── */
+:root {
+  --card-left: clamp(24px, 3.5vw, 48px);
+  --card-w: min(360px, 31vw);
+  --card-gap: 32px;
+  --right-shift: 0px; /* composer 默认就居中 */
+}
+
+.achievement-card,
+.composer {
+  position: fixed;
+  top: 50%;
+  left: calc(50% + var(--right-shift));
+  transform: translate(-50%, -50%) scale(0.97);
+  z-index: 100;
+  max-height: 82vh;
+  overflow-y: auto;
+  border: 1px solid rgba(240, 216, 112, 0.22);
+  border-radius: 24px;
+  color: rgba(236, 244, 255, 0.94);
+  background: rgba(5, 12, 28, 0.92);
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.58);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease,
+    left 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.achievement-card.open,
+.composer.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+body.card-collapsed .achievement-card,
+body.card-collapsed .composer { left: 50%; }
+
+/* 遮罩：点击关闭 composer / achievement-card */
+#backdrop {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.24s, visibility 0.24s;
+  cursor: pointer;
+}
+body.modal-open #backdrop { opacity: 1; visibility: visible; }
+
+.achievement-card {
+  width: min(420px, 92vw);
+  padding: 0;
+}
+
+.achievement-card.with-media {
+  width: min(460px, 92vw);
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.card-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgba(219, 232, 255, 0.14);
+  border-radius: 50%;
+  color: rgba(219, 232, 255, 0.68);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.card-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.card-date {
+  margin: 0 0 8px;
+  color: rgba(255, 216, 145, 0.78);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.achievement-card h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+#cardText {
+  margin: 0;
+  color: rgba(219, 232, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.delete-star {
+  margin-top: 16px;
+  padding: 8px 0 0;
+  border-top: 1px solid rgba(219, 232, 255, 0.12);
+  color: rgba(255, 171, 156, 0.82);
+  background: transparent;
+  font-size: 13px;
+  text-align: left;
+}
+
+.delete-star:hover {
+  color: #ffd3ca;
+}
+
+.card-media {
+  display: none;
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(219, 232, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.achievement-card.with-media .card-media {
+  display: block;
+}
+
+.card-media img,
+.card-media video {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.composer {
+  width: min(420px, 92vw);
+  padding: 22px;
+}
+
+.composer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.composer-head button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: rgba(219, 232, 255, 0.72);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.composer input,
+.composer textarea {
+  width: 100%;
+  margin: 0 0 12px;
+  padding: 14px 15px;
+  border: 1px solid rgba(219, 232, 255, 0.14);
+  border-radius: 12px;
+  outline: 0;
+  color: rgba(236, 244, 255, 0.94);
+  background: rgba(4, 10, 22, 0.42);
+}
+
+.composer textarea {
+  resize: none;
+}
+
+.composer input::placeholder,
+.composer textarea::placeholder {
+  color: rgba(219, 232, 255, 0.42);
+}
+
+.composer input:focus,
+.composer textarea:focus {
+  border-color: rgba(122, 187, 255, 0.5);
+  box-shadow: 0 0 0 4px rgba(122, 187, 255, 0.12);
+}
+
+.media-picker {
+  display: block;
+  margin: 2px 0 14px;
+  padding: 13px 15px;
+  border: 1px dashed rgba(219, 232, 255, 0.22);
+  border-radius: 12px;
+  color: rgba(219, 232, 255, 0.62);
+  background: rgba(4, 10, 22, 0.36);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.media-picker input {
+  display: none;
+}
+
+.range-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 4px 0 16px;
+}
+
+.range-grid label {
+  display: grid;
+  gap: 8px;
+  color: rgba(219, 232, 255, 0.64);
+  font-size: 12px;
+}
+
+.range-grid input {
+  width: 100%;
+  accent-color: #ffd891;
+}
+
+.submit-achievement {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 12px;
+  color: #07101f;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff3c2, #76beff);
+  box-shadow: 0 16px 34px rgba(118, 190, 255, 0.18);
+}
+
+@media (max-width: 900px) {
+  .intro-card {
+    top: 18px;
+    left: 18px;
+    width: calc(100% - 36px);
+    max-height: 38vh;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  .planet-orb {
+    display: none;
+  }
+
+  .intro-card h1 {
+    font-size: 22px;
+  }
+
+  .story {
+    margin: 0 0 14px;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+
+  .floating-add {
+    right: 24px;
+    top: auto;
+    bottom: 28px;
+  }
+
+  .composer,
+  .achievement-card {
+    right: 18px;
+    left: 18px;
+    top: auto;
+    bottom: 100px;
+    width: auto;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════
+   点星弹窗 · rcard（参照云星，居中显示，支持图/文/视频 + 横竖）
+   ════════════════════════════════════════════════════════════ */
+.rcard {
+  --c-bg: rgba(9, 17, 36, 0.90);
+  --c-text: rgba(236, 244, 255, 0.92);
+  --c-mute: rgba(212, 222, 240, 0.58);
+  --c-accent: #f0d870;
+  --c-border: rgba(240, 216, 112, 0.26);
+  position: fixed;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -46%);
+  z-index: 200;
+  background: var(--c-bg);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  backdrop-filter: blur(16px) saturate(1.1);
+  border: 1px solid var(--c-border);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  overflow: hidden;
+  max-width: calc(100vw - 24px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.26s ease, transform 0.26s ease;
+}
+.rcard.show { opacity: 1; transform: translate(-50%, -50%); pointer-events: auto; }
+.rcard-inner { display: flex; flex-direction: column; }
+
+.rcard.rc--text         { width: 312px; }
+.rcard.rc--media-h      { width: 340px; }
+.rcard.rc--media-v      { width: 264px; }
+.rcard.rc--text-media-h { width: 340px; }
+.rcard.rc--text-media-v { width: 404px; }
+.rcard.rc--text-media-v .rcard-inner { flex-direction: row; }
+
+.rc-body { padding: 20px 22px 6px; }
+.rc-text {
+  font-size: 15px; line-height: 1.92; color: var(--c-text); letter-spacing: .02em;
+  white-space: pre-wrap; word-break: break-word;
+  display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+}
+.rcard.rc--text         .rc-text { -webkit-line-clamp: 9; }
+.rcard.rc--text-media-h .rc-text { -webkit-line-clamp: 5; }
+.rcard.rc--text-media-v .rc-text { -webkit-line-clamp: 8; }
+
+.rc-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 22px 15px; }
+.rc-date {
+  font-size: 11px; color: var(--c-mute); letter-spacing: .14em; font-variant-numeric: tabular-nums;
+  display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0;
+}
+.rc-date::before { content: ''; width: 6px; height: 6px; border-radius: 50%; border: 1.4px solid var(--c-accent); opacity: .8; flex: none; }
+.rc-acts { display: flex; align-items: center; gap: 8px; flex: none; }
+.rc-edit, .rc-del {
+  font-family: inherit; font-size: 11px; letter-spacing: .08em;
+  background: none; border: 1px solid var(--c-border); border-radius: 11px;
+  padding: 4px 12px; cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.rc-edit { color: var(--c-accent); }
+.rc-edit:hover { background: rgba(240, 216, 112, 0.14); }
+.rc-del { color: rgba(228, 180, 170, 0.85); border-color: rgba(228, 160, 150, 0.30); }
+.rc-del:hover { background: rgba(228, 120, 110, 0.16); color: rgba(255, 210, 200, 0.95); }
+
+/* 媒体区（图 / 视频几何一致）*/
+.rc-media { position: relative; width: 100%; background: linear-gradient(135deg, #16203c, #0c1426); overflow: hidden; }
+.rc-media img, .rc-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rc-media.h { aspect-ratio: 3/2; }
+.rc-media.v { aspect-ratio: 3/4; }
+.rcard.rc--text-media-v .rc-media { width: 166px; flex: 0 0 166px; aspect-ratio: auto; align-self: stretch; }
+.rcard.rc--text-media-v .rc-right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.rcard.rc--text-media-v .rc-foot { margin-top: auto; }
+.rc-media .grad { position: absolute; inset: auto 0 0 0; height: 46%; background: linear-gradient(to top, rgba(2, 5, 14, 0.65), transparent); pointer-events: none; }
+
+.rc-on-date {
+  position: absolute; left: 13px; bottom: 11px; z-index: 2; color: #fff; font-size: 11px;
+  letter-spacing: .14em; font-variant-numeric: tabular-nums; text-shadow: 0 1px 6px rgba(0, 0, 0, .6);
+  display: flex; align-items: center; gap: 6px;
+}
+.rc-on-date::before { content: ''; width: 6px; height: 6px; border-radius: 50%; border: 1.4px solid rgba(255, 255, 255, .85); }
+.rc-on-acts { position: absolute; right: 12px; bottom: 10px; z-index: 2; display: flex; gap: 8px; }
+.rc-on-acts .rc-edit, .rc-on-acts .rc-del {
+  color: #fff; background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.4);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.rc-on-acts .rc-edit:hover, .rc-on-acts .rc-del:hover { background: rgba(255, 255, 255, 0.3); }
+
+.rc-badge {
+  position: absolute; left: 11px; top: 11px; z-index: 2; font-size: 10.5px; color: #fff;
+  background: rgba(2, 5, 14, 0.6); border-radius: 10px; padding: 2px 8px; letter-spacing: .06em;
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.rc-badge svg { width: 11px; height: 11px; }
+
+/* 视频播放按钮 */
+.rc-play {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 3;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(8, 14, 30, 0.5); border: 1.5px solid rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: transform .15s, background .15s;
+}
+.rc-play:hover { transform: translate(-50%, -50%) scale(1.08); background: rgba(8, 14, 30, 0.65); }
+.rc-play svg { width: 22px; height: 22px; margin-left: 3px; fill: #fff; }
+/* 播放中：隐藏所有覆盖层，只留原生控件 */
+.rc-media.playing .grad,
+.rc-media.playing .rc-on-date,
+.rc-media.playing .rc-on-acts,
+.rc-media.playing .rc-play,
+.rc-media.playing .rc-badge { display: none; }
+
+.rcard-x {
+  position: absolute; top: 11px; right: 13px; z-index: 4;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 14, 30, 0.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border: 1px solid rgba(240, 216, 112, 0.3); color: rgba(240, 230, 200, 0.9);
+  font-size: 15px; line-height: 1; cursor: pointer; opacity: .85; transition: opacity .15s;
+}
+.rcard-x:hover { opacity: 1; }
+
+@media (max-width: 600px) {
+  .rcard.rc--text, .rcard.rc--media-h, .rcard.rc--media-v,
+  .rcard.rc--text-media-h, .rcard.rc--text-media-v { width: min(360px, calc(100vw - 24px)); }
+  .rcard.rc--text-media-v .rcard-inner { flex-direction: column; }
+  .rcard.rc--text-media-v .rc-media { width: 100%; flex: none; aspect-ratio: 3/4; }
+}
+
+/* 录入面板「大小 / 亮度」滑块：并排 + 收窄，靠左摆，不再铺满整行（繁星专属）*/
+.msc-backdrop[data-planet="starry"] .msc-slider-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 36px;
+}
+.msc-backdrop[data-planet="starry"] .msc-slider-group .msc-slider-row {
+  flex: 0 1 240px;
+  min-width: 200px;
+  max-width: 280px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   录入后新星：流星划入（头 + 拖尾 + 落点光爆）
+   ════════════════════════════════════════════════════════════ */
+.star-meteor { position: absolute; left: 0; top: 0; z-index: 60; pointer-events: none; will-change: transform; }
+.star-meteor .m-head {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0 26%, rgba(255,246,214,0.95) 42%, rgba(255,216,130,0.5) 66%, transparent 78%);
+}
+.star-meteor .m-trail {
+  position: absolute; top: 0; left: 0; transform: translate(-100%, -50%); transform-origin: right center;
+  height: 3px; border-radius: 3px;
+  background: linear-gradient(to left, rgba(255,236,180,0.95), rgba(255,216,130,0.45) 40%, transparent 100%);
+  filter: blur(0.3px);
+}
+.star-burst {
+  position: absolute; left: 0; top: 0; width: 16px; height: 16px; border-radius: 50%;
+  transform: translate(-50%, -50%); pointer-events: none; z-index: 60;
+  border: 2px solid rgba(255,236,180,0.7);
+}
+
+/* 添加按钮：金色向外扩散的发光呼吸，提示「点这里记录」（参照 行星/被子/云星，不改图标）*/
+.ms-add-fab { animation: starryFabPulse 2.8s ease-in-out infinite; }
+.ms-add-fab:hover { animation-play-state: paused; }
+@keyframes starryFabPulse {
+  0%, 100% {
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.48),
+      0 0 0 0 rgba(240, 216, 112, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  50% {
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.48),
+      0 0 0 15px rgba(240, 216, 112, 0),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+}

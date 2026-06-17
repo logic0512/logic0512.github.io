@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>繁星 · 收获星球原型</title>
+  <link rel="stylesheet" href="style.css?v=20260603e">
+  <script src="/assets/vendor/gsap/gsap.min.js"></script>
+  <script src="/assets/vendor/gsap/MotionPathPlugin.min.js"></script>
+  <script>if (typeof gsap !== 'undefined' && typeof MotionPathPlugin !== 'undefined') gsap.registerPlugin(MotionPathPlugin);</script>
+<script>
+// Visibility pause: 父页面切 tab 时停掉本 iframe 的 RAF/setInterval，避免后台烧 CPU
+(function(){
+  let _raf = window.requestAnimationFrame.bind(window);
+  let _caf = window.cancelAnimationFrame.bind(window);
+  let _setInt = window.setInterval.bind(window);
+  let _clrInt = window.clearInterval.bind(window);
+  let active = true;
+  let pendingRafs = [];      // {cb, id}
+  let liveIntervals = new Map();
+  let nextId = 1;
+  window.requestAnimationFrame = function(cb){
+    if (active) return _raf(cb);
+    const id = nextId++;
+    pendingRafs.push({cb, id});
+    return id;
+  };
+  window.cancelAnimationFrame = function(id){
+    pendingRafs = pendingRafs.filter(x => x.id !== id);
+    return _caf(id);
+  };
+  window.setInterval = function(cb, ms){
+    const id = _setInt(function(){ if (active) cb(); }, ms);
+    liveIntervals.set(id, true);
+    return id;
+  };
+  window.clearInterval = function(id){
+    liveIntervals.delete(id);
+    return _clrInt(id);
+  };
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.type !== "memory-sparks:visibility") return;
+    const wasActive = active;
+    active = !!e.data.visible;
+    if (!wasActive && active && pendingRafs.length){
+      const q = pendingRafs; pendingRafs = [];
+      q.forEach(({cb}) => _raf(cb));
+    }
+  });
+})();
+</script>
+<!-- MS shared -->
+<link rel="stylesheet" href="../_shared/ms-shared.css?v=20260602f">
+<link rel="stylesheet" href="../_shared/ms-composer.css?v=20260531d">
+<script src="../_shared/ms-config.js?v=20260606x"></script>
+<script src="../_shared/ms-sound.js?v=20260604i"></script>
+<script>window.MS_SOUND && MS_SOUND.init('starry');</script>
+<script src="../_shared/ms-icons.js?v=20260602f"></script>
+<script src="../_shared/ms-feedback.js?v=20260530m"></script>
+<script src="../_shared/ms-mount.js?v=20260602f"></script>
+<script src="../_shared/ms-list-bridge.js?v=20260530m"></script>
+<script src="../_shared/ms-media-vault.js?v=20260605s"></script>
+<script src="../_shared/ms-media-store.js?v=20260606c"></script>
+<script src="../_shared/ms-composer.js?v=20260605l" defer></script>
+</head>
+<body>
+  <main class="star-page" aria-label="繁星交互原型">
+    <section class="star-stage" aria-label="繁星内部场景">
+      <div class="scene-background" aria-hidden="true"></div>
+      <div id="achievementLayer" class="achievement-layer" aria-label="收获星星"></div>
+
+      <aside class="intro-card" aria-label="繁星介绍">
+        <div class="card-fold">
+          <div class="planet-orb" aria-hidden="true">
+            <img src="../../assets/planets/starry.png" alt="">
+          </div>
+        </div>
+        <p class="eyebrow">KEYWORD PLANET · ORBIT 06</p>
+        <h1>繁星</h1>
+        <div class="card-fold">
+          <p class="story">
+            在繁星上，人们会把自己的收获说给夜空听。每一次成长、完成和小小的成就，都会变成一颗新的星，留在抬头就能看见的地方。
+          </p>
+          <div class="hint-row">
+            <button class="icon-button" type="button" aria-hidden="true" tabindex="-1">✦</button>
+            <span>把这份收获，变成一颗星</span>
+          </div>
+        </div>
+      </aside>
+
+      <button id="floatingAdd" class="floating-add" type="button" aria-label="新增收获">
+        <span>✦</span>
+      </button>
+
+      <!-- 添加界面：交给 ms-composer 统一渲染 -->
+
+      <div id="backdrop" aria-hidden="true"></div>
+
+      <!-- 点星弹窗：交给 rcard 系统按内容形态渲染（图/文/视频/横竖），居中显示 -->
+      <div id="rcard" class="rcard" aria-live="polite">
+        <button class="rcard-x" id="rcard-x" type="button" aria-label="关闭">×</button>
+        <div class="rcard-inner" id="rcard-inner"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="main.js?v=20260605zg"></script>
+
+<script>
+  // ── Memory Sparks · 统一组件挂载（介绍卡 + 添加按钮） ──
+  // 在 DOM ready 后挂载，避免被原有 init 顺序覆盖
+  (function bootMSShared() {
+    function go() { if (window.MS && window.MS.bootstrap) MS.bootstrap('starry'); else setTimeout(go, 60); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+  })();
+</script>
+
+</body>
+</html>

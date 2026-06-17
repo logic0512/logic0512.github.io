@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>关键词星球修订报告 · 2026-05-31</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@200;300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Sans SC", "Source Han Sans SC", -apple-system, "PingFang SC", sans-serif;
+    font-weight: 300;
+    color: #2a2a30;
+    background: linear-gradient(180deg, #faf7f2 0%, #f0e8dc 100%);
+    min-height: 100vh;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 64px 32px 120px;
+  }
+  h1 { font-size: 32px; font-weight: 500; letter-spacing: 0.08em; margin-bottom: 8px; color: #1a1a25; }
+  .subtitle { font-size: 13px; letter-spacing: 0.24em; color: #888; margin-bottom: 48px; text-transform: uppercase; }
+  h2 {
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    color: #1a1a25;
+    margin: 60px 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  h3 {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: #2a2a30;
+    margin: 28px 0 12px;
+  }
+  p, li { font-size: 14px; color: #3a3a45; }
+  .meta {
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 14px;
+    padding: 22px 26px;
+    margin: 24px 0 32px;
+    backdrop-filter: blur(20px);
+  }
+  .meta strong { color: #1a1a25; font-weight: 500; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 28px 0 0;
+  }
+  .stat {
+    background: rgba(255,255,255,0.7);
+    border-radius: 12px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+  .stat .n { font-size: 26px; font-weight: 500; color: #1a1a25; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 11px; letter-spacing: 0.2em; color: #888; margin-top: 4px; text-transform: uppercase; }
+  .stat.done .n { color: #2e8b40; }
+  .stat.pending .n { color: #b87a30; }
+  .stat.todo .n { color: #888; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 13.5px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    vertical-align: top;
+  }
+  th { font-weight: 500; letter-spacing: 0.08em; color: #555; font-size: 11.5px; text-transform: uppercase; }
+  td.id { font-family: "SF Mono", monospace; font-size: 11.5px; color: #888; white-space: nowrap; width: 70px; }
+  td.status { white-space: nowrap; width: 80px; font-size: 11.5px; letter-spacing: 0.08em; font-weight: 500; }
+  td.status.done { color: #2e8b40; }
+  td.status.pending { color: #b87a30; }
+  td.status.todo { color: #aaa; }
+  td.status.q { color: #b54848; }
+  .planet-card {
+    background: rgba(255,255,255,0.55);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 14px;
+    padding: 22px 26px;
+    margin: 16px 0;
+  }
+  .planet-card h3 { margin-top: 0; }
+  .planet-card .summary { font-size: 13px; color: #555; margin-bottom: 14px; }
+  .legend {
+    display: flex;
+    gap: 18px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: #666;
+    margin: 20px 0 12px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.done { background: #2e8b40; }
+  .dot.pending { background: #b87a30; }
+  .dot.todo { background: #aaa; }
+  .dot.q { background: #b54848; }
+  code {
+    font-family: "SF Mono", monospace;
+    font-size: 12px;
+    background: rgba(0,0,0,0.04);
+    padding: 2px 5px;
+    border-radius: 4px;
+  }
+  ul { padding-left: 22px; margin: 8px 0 14px; }
+  li { margin: 4px 0; }
+  blockquote {
+    background: rgba(255, 230, 180, 0.32);
+    border-left: 3px solid #d8a040;
+    padding: 12px 18px;
+    margin: 14px 0;
+    font-size: 13px;
+    color: #6a4a10;
+    border-radius: 4px;
+  }
+  a { color: #4a6890; text-decoration: none; border-bottom: 1px solid rgba(74, 104, 144, 0.3); }
+  a:hover { border-bottom-color: #4a6890; }
+  .group-header {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    color: #888;
+    margin: 22px 0 6px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>关键词星球修订报告</h1>
+<div class="subtitle">v3 · 2026-05-31 · 全量进度</div>
+
+<div class="meta">
+  <p><strong>背景</strong>：本轮修订共 64 项任务，来源是用户原 docx 反馈（39 项）+ 5 月 31 日新增反馈（21 项）+ 阶段一二三本身的 4 项。</p>
+  <p style="margin-top:8px"><strong>原则</strong>：用户原话「全部要落实，不能有遗漏」。完成项 / 待续项 / 不确定项分别标注。</p>
+  <p style="margin-top:8px"><strong>核心成果</strong>：</p>
+  <ul>
+    <li>建立 v2 统一卡片系统（消息页 8 模板 + 4 色变量 + 展开浮层）</li>
+    <li>建立 v3 通用添加界面 <code>ms-composer</code>，7 颗星全部接入</li>
+    <li>数据契约统一（<code>recordStore</code>），双向广播同步</li>
+    <li>砍掉「未命名标题」「权重打分」两个旧概念</li>
+  </ul>
+</div>
+
+<div class="stats">
+  <div class="stat done"><div class="n" id="done-n">—</div><div class="l">已完成</div></div>
+  <div class="stat pending"><div class="n" id="pending-n">—</div><div class="l">部分完成</div></div>
+  <div class="stat todo"><div class="n" id="todo-n">—</div><div class="l">待办</div></div>
+  <div class="stat"><div class="n" id="q-n">—</div><div class="l">待用户回答</div></div>
+</div>
+
+<div class="legend">
+  <span><i class="dot done"></i> 已完成</span>
+  <span><i class="dot pending"></i> 部分完成 / 框架已就位</span>
+  <span><i class="dot todo"></i> 待做</span>
+  <span><i class="dot q"></i> 不确定，需用户回答</span>
+</div>
+
+<h2>阶段一 / 二 / 三 总览（全部完成）</h2>
+<table>
+  <thead><tr><th>ID</th><th>内容</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="id">阶段一</td><td>建立 64 项总任务单 <code>memory-sparks/todo.md</code></td><td class="status done">完成</td></tr>
+    <tr><td class="id">P-001</td><td>删 V2 顶部「场景/列表」mode-toggle（不再盖 App 原 tab）</td><td class="status done">完成</td></tr>
+    <tr><td class="id">P-002</td><td>恢复 App 原 <code>.planet-list-btn</code> / <code>.planet-back-btn</code> + V2 走 postMessage 弹 iframe 内 composer</td><td class="status done">完成</td></tr>
+    <tr><td class="id">P-002b</td><td>修 V2 背景透明（看到星图穿透）— 加 CSS import + React Portal 到 body</td><td class="status done">完成</td></tr>
+    <tr><td class="id">P-003</td><td>通用 composer 设计（朋友圈式：文字主体 + 媒体按需补充）</td><td class="status done">完成</td></tr>
+    <tr><td class="id">P-004</td><td>demo HTML <a href="../app/public/composer-design-v3.html">composer-design-v3.html</a></td><td class="status done">完成</td></tr>
+    <tr><td class="id">P-005</td><td>用户拍板：方向 v3 + 字体 A（思源黑体）</td><td class="status done">完成</td></tr>
+  </tbody>
+</table>
+
+<h2>阶段四 · 通用 composer 全面接入</h2>
+<p class="summary">7 颗星 iframe 全部接入 <code>_shared/ms-composer.{css,js}</code>，CDP 自验 7/7 通过。</p>
+
+<table>
+<thead><tr><th>星</th><th>输入能力</th><th>+ 按钮</th><th>配色（data-planet）</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>云星</td><td>文字 + 图</td><td><code>#btn-add</code></td><td>米白纸 / 深紫字 / 雾紫</td><td class="status done">✓ 通过</td></tr>
+<tr><td>繁星</td><td>文字 + 图 + 视频</td><td><code>#floatingAdd</code></td><td>深海蓝纸 / 暖金字</td><td class="status done">✓ 通过</td></tr>
+<tr><td>花星</td><td>文字 + 图 + 选花种类</td><td><code>#fab</code></td><td>雪桃白纸 / 深酒红 / 玫红</td><td class="status done">✓ 通过（扩展 5 花选择）</td></tr>
+<tr><td>被子</td><td>只文字</td><td><code>#float-btn</code></td><td>浅蓝纸 / 深蓝字</td><td class="status done">✓ 通过</td></tr>
+<tr><td>海星</td><td>只文字</td><td><code>#writeTrigger</code></td><td>米黄纸 / 深蓝字 / 海蓝</td><td class="status done">✓ 通过</td></tr>
+<tr><td>树星</td><td>只文字</td><td><code>#addTrigger</code></td><td>淡绿纸 / 深森林字</td><td class="status done">✓ 通过</td></tr>
+<tr><td>行星</td><td>文字 + 图（不限张数）</td><td><code>#sceneUpload</code></td><td>淡草绿纸 / 深绿字</td><td class="status done">✓ 通过</td></tr>
+</tbody>
+</table>
+
+<h2>64 项任务清单 · 逐项状态</h2>
+
+<div class="group-header">被子星</div>
+<table>
+<thead><tr><th>ID</th><th>反馈</th><th>状态</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="id">P-010</td><td>没历史记录时历史条线条隐藏（被-1）</td><td class="status todo">待做</td><td>iframe 内 CSS 改动</td></tr>
+<tr><td class="id">P-011</td><td>「晾晒时间」显示 1、2、3（被-2）</td><td class="status todo">待做</td><td>iframe 内文案改动</td></tr>
+<tr><td class="id">P-012</td><td>列表页点击添加内容黑屏（被-3）</td><td class="status done">完成</td><td>V2 + ms-composer 自动解决</td></tr>
+<tr><td class="id">P-013</td><td>「悲伤记录」图标去掉（被-4）</td><td class="status todo">待做</td><td>iframe 内图标元素删除</td></tr>
+<tr><td class="id">P-014</td><td>砍「未命名」标题（被-5）</td><td class="status done">完成</td><td>V2 UnifiedCard 不渲染标题 + ms-composer 无标题字段</td></tr>
+<tr><td class="id">P-015</td><td>交互页添加内容卡顿（被-6）</td><td class="status done">完成</td><td>ms-composer 直接渲染，无重操作</td></tr>
+<tr><td class="id">P-016</td><td>交互页背景尺寸 / 全屏两侧黑边（被-N1）</td><td class="status q">待确认</td><td>需用户提供具体复现路径</td></tr>
+<tr><td class="id">P-017</td><td>列表加内容历史条出现但点了没反应 + 被子上不映射（被-N2）</td><td class="status pending">框架就位</td><td>同步契约已通：ms-composer 保存 → records-saved → V2 重读 + iframe __msReloadAll</td></tr>
+<tr><td class="id">P-018</td><td>交互页历史条缩略窗口点了没反应（被-N3）</td><td class="status todo">待做</td><td>iframe 内 history 按钮 click 处理</td></tr>
+</tbody>
+</table>
+
+<div class="group-header">行星</div>
+<table>
+<thead><tr><th>ID</th><th>反馈</th><th>状态</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="id">P-020</td><td>空状态时右侧内容框隐藏（行-1）</td><td class="status todo">待做</td></tr>
+<tr><td class="id">P-021</td><td>交互页点添加图片页面卡死（行-2）</td><td class="status done">完成</td><td>原 composer 被替换为 ms-composer，无卡死</td></tr>
+<tr><td class="id">P-022</td><td>填写页不要标题，只留地名和内容（行-3）</td><td class="status pending">部分完成</td><td>ms-composer 无标题 ✓；地名字段需 extraFields 补</td></tr>
+<tr><td class="id">P-023</td><td>列表页添加内容背景变黑（行-4）</td><td class="status done">完成</td><td>V2 + ms-composer 解决</td></tr>
+<tr><td class="id">P-024</td><td>添加照片失败没反应（行-5）</td><td class="status done">完成</td><td>ms-composer 用 FileReader 读 dataURL，可靠</td></tr>
+<tr><td class="id">P-025</td><td>图片不限张数（行-6 修订）</td><td class="status done">完成</td><td>ms-composer image input 加 multiple 属性，无上限</td></tr>
+<tr><td class="id">P-026</td><td>列表添加样式没和交互页统一（行-N1）</td><td class="status done">完成</td><td>列表 + / iframe + 都触发 ms-composer，完全一致</td></tr>
+<tr><td class="id">P-027</td><td>列表写「图文可选」但不能只传图文（行-N2）</td><td class="status done">完成</td><td>ms-composer 默认允许只图、只文、图+文</td></tr>
+<tr><td class="id">P-028</td><td>输入规则修正：只允许传图或图+文，走交互页样式（行-N3）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-029</td><td>同步崩了：列表 → 切回交互页新内容丢失（行-N4）</td><td class="status pending">框架就位</td><td>recordStore 单源 + 双向广播；需 CDP 端到端验证</td></tr>
+</tbody>
+</table>
+
+<div class="group-header">花星</div>
+<table>
+<thead><tr><th>ID</th><th>反馈</th><th>状态</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="id">P-030</td><td>星球过渡动画抖动（花-1）</td><td class="status todo">待做</td></tr>
+<tr><td class="id">P-031</td><td>卡片直接展示正文，不要「未命名」（花-2）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-032</td><td>下方装饰图案删去（花-3）</td><td class="status todo">待做</td></tr>
+<tr><td class="id">P-033</td><td>简化花朵信息页（花-4）</td><td class="status todo">待做</td></tr>
+<tr><td class="id">P-034</td><td>列表点击添加后卡死（花-5）</td><td class="status done">完成</td><td>ms-composer 替代旧 composer，无卡死</td></tr>
+<tr><td class="id">P-035</td><td>删除内容时花还在但卡片删了（花-6）</td><td class="status pending">框架就位</td><td>recordStore.deleteRecord → broadcastToIframes → 花星 __msReloadAll；需场景同步删花朵 mesh</td></tr>
+<tr><td class="id">P-036</td><td>交互页卡顿（花-N1）</td><td class="status pending">框架就位</td><td>ms-composer 渲染轻；交互页其他卡顿待排查</td></tr>
+<tr><td class="id">P-037</td><td>添加页重做（花-N2）</td><td class="status done">完成</td><td>v3 ms-composer 全新设计</td></tr>
+<tr><td class="id">P-038</td><td>列表页图文录入跑不通（花-N3）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-039</td><td>列表页加内容时没法选「是什么花」（花-N4）</td><td class="status done">完成</td><td>extraFields 扩展槽 + 5 种花网格选择</td></tr>
+</tbody>
+</table>
+
+<div class="group-header">海星</div>
+<table>
+<thead><tr><th>ID</th><th>反馈</th><th>状态</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="id">P-040</td><td>列表页只显示内容，不要「未命名」（海-1）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-041</td><td>历史条 / 卡片页未同步（海-2）</td><td class="status pending">框架就位</td><td>同步契约已通，需场景层接住</td></tr>
+<tr><td class="id">P-042</td><td>列表点卡片跳星图卡顿（海-3）</td><td class="status done">完成</td><td>V2 点卡片弹 ExpandCardModal，不再跳转</td></tr>
+<tr><td class="id">P-043</td><td>添加样式按交互页统一（海-N1）</td><td class="status done">完成</td></tr>
+</tbody>
+</table>
+
+<div class="group-header">云星</div>
+<table>
+<thead><tr><th>ID</th><th>反馈</th><th>状态</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="id">P-050</td><td>云朵库图形不对（云-1）</td><td class="status todo">待做</td><td>iframe 内云朵几何修复</td></tr>
+<tr><td class="id">P-051</td><td>可左右拖拽（云-2）</td><td class="status todo">待做</td></tr>
+<tr><td class="id">P-052</td><td>删除云朵也能上下飘（云-3）</td><td class="status todo">待做</td></tr>
+<tr><td class="id">P-053</td><td>新增云慢慢飘 + 起始左侧（云-4）</td><td class="status todo">待做</td></tr>
+<tr><td class="id">P-054</td><td>列表不出现标题（云-5）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-055</td><td>列表修改不保存 / 不更新到交互页（云-6）</td><td class="status pending">框架就位</td></tr>
+<tr><td class="id">P-056</td><td>列表加内容背景丢失（云-7）</td><td class="status done">完成</td><td>V2 用 React Portal 渲染到 body，背景始终在</td></tr>
+<tr><td class="id">P-057</td><td>添加样式按交互页统一（云-N1）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-058</td><td>添加页重做支持图文（云-N2）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-059</td><td>列表图文录入跑不通（云-N3）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-060</td><td>列表和交互页不同步（云-N4）</td><td class="status pending">框架就位</td></tr>
+</tbody>
+</table>
+
+<div class="group-header">繁星</div>
+<table>
+<thead><tr><th>ID</th><th>反馈</th><th>状态</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="id">P-070</td><td>交互页添加内容卡顿（繁-1）</td><td class="status done">完成</td><td>ms-composer 轻量</td></tr>
+<tr><td class="id">P-071</td><td>添加去掉主题，只留内容 + 图 + 视频（繁-2）</td><td class="status done">完成</td><td>ms-composer 无主题字段</td></tr>
+<tr><td class="id">P-072</td><td>卡片只留内容，图/视频参考治愈星模板（繁-3）</td><td class="status done">完成</td><td>V2 UnifiedCard 用 type 自动选模板</td></tr>
+<tr><td class="id">P-073</td><td>列表加内容背景丢失 + 不出窗口（繁-4）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-074</td><td>列表删卡片，星星不消失（繁-5）</td><td class="status pending">框架就位</td><td>deleteRecord → broadcastToIframes → starry main.js renderAchievements 应该响应</td></tr>
+<tr><td class="id">P-075</td><td>录入星星后强制弹内容卡 → 应该落位就停（繁-6）</td><td class="status done">完成</td><td>已确认 main.js 注释「落位就停，不弹卡」，且 ms-composer 流程也不会触发卡弹出</td></tr>
+<tr><td class="id">P-076</td><td>添加样式重做（繁-N1）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-077</td><td>完全卡死录不进（繁-N2）</td><td class="status done">完成</td><td>ms-composer 完整替换旧 composer</td></tr>
+</tbody>
+</table>
+
+<div class="group-header">树星</div>
+<table>
+<thead><tr><th>ID</th><th>反馈</th><th>状态</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="id">P-080</td><td>消息页卡片不要标题（树-1）</td><td class="status done">完成</td></tr>
+<tr><td class="id">P-081</td><td>消息页点卡片黑屏（树-2）</td><td class="status done">完成</td><td>V2 + ExpandCardModal 替代</td></tr>
+<tr><td class="id">P-082</td><td>列表页无法编辑修改（树-3）</td><td class="status done">完成</td><td>V2 卡片右上 ✎ 编辑入口</td></tr>
+<tr><td class="id">P-083</td><td>列表和交互页未同步（树-4）</td><td class="status pending">框架就位</td></tr>
+<tr><td class="id">P-084</td><td>切页弹窗没关，回来还显示（树-5）</td><td class="status done">完成</td><td>close-popups 广播扩展到 ms-composer + 所有 .msc-backdrop</td></tr>
+<tr><td class="id">P-085</td><td>添加样式按交互页统一（树-N1）</td><td class="status done">完成</td></tr>
+</tbody>
+</table>
+
+<h2>剩余工作建议优先级</h2>
+<ol>
+  <li><strong>验证同步</strong>（CDP 端到端跑通：交互页加 → 列表层立刻显示 → 列表层删 → iframe 场景立刻删除）</li>
+  <li><strong>iframe 场景内 bug</strong>（按用户最痛优先）：
+    <ul>
+      <li>云星：云朵库图形（云-1）+ 左右拖拽（云-2）+ 上下飘（云-3）+ 起始位置（云-4）— 共 4 项</li>
+      <li>被子：晾晒时间「1、2、3」（被-2）+ 悲伤图标删（被-4）+ 历史条线隐藏（被-1）— 共 3 项</li>
+      <li>花星：装饰图删（花-3）+ 简化信息页（花-4）+ 过渡动画（花-1）— 共 3 项</li>
+      <li>行星：空状态右栏隐藏（行-1）+ 地名字段（行-3）— 共 2 项</li>
+    </ul>
+  </li>
+  <li><strong>报告补充</strong>：本次 CDP 截图共 30+ 张已存在 <code>/tmp/v2-verify/shots/</code>，可后续整合进报告</li>
+</ol>
+
+<h2>不确定 / 需用户回答</h2>
+<blockquote>
+<strong>P-016 被子-N1</strong> 「交互页背景被调了尺寸，全屏后两侧黑边」— 我无法在本地复现，需要你给出：
+<ul>
+<li>具体在哪一刻看到（进入被子刚加载？切到列表再回来？）</li>
+<li>屏幕分辨率 / 浏览器</li>
+</ul>
+</blockquote>
+
+<h2>使用方式</h2>
+<ul>
+  <li>用真实浏览器（隐身窗口避免缓存）打开 <code>http://localhost:5174/#planets</code></li>
+  <li>进任意一颗星 → 点右上 + → 体验新通用 composer</li>
+  <li>切到「消息页」（点 list 按钮）→ 看 V2 卡片渲染 + 点卡片展开浮层</li>
+  <li>对比 demo HTML：<a href="../app/public/composer-design-v3.html">composer-design-v3.html</a></li>
+</ul>
+
+<script>
+// 自动统计
+const rows = document.querySelectorAll('table tbody tr');
+let d=0, p=0, t=0, q=0;
+rows.forEach(r => {
+  const s = r.querySelector('td.status');
+  if (!s) return;
+  if (s.classList.contains('done')) d++;
+  else if (s.classList.contains('pending')) p++;
+  else if (s.classList.contains('q')) q++;
+  else t++;
+});
+document.getElementById('done-n').textContent = d;
+document.getElementById('pending-n').textContent = p;
+document.getElementById('todo-n').textContent = t;
+document.getElementById('q-n').textContent = q;
+</script>
+</div>
+</body>
+</html>

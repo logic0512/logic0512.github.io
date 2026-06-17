@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>被子星 · SVG 被子调节器</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%; margin: 0;
+      overflow: hidden;
+      background: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    }
+    body { display: flex; align-items: center; justify-content: center; }
+
+    .stage {
+      position: relative;
+      width: min(100vw, calc(100vh * 16 / 9));
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: url('../../assets/beizi/scene_nopins.png') center / cover no-repeat;
+    }
+    .scene-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    .quilt-text {
+      position: absolute;
+      left: 50%; top: 44%;
+      transform: translate(-50%, -50%);
+      width: 28%;
+      max-width: 460px;
+      color: rgba(15, 40, 75, 0.85);
+      font-family: "STKaiti", "Kaiti SC", "KaiTi", "楷体", cursive;
+      font-size: clamp(14px, 1.3vw, 19px);
+      line-height: 2.0;
+      letter-spacing: 0.06em;
+      text-align: left;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* ─── 调节面板 ─── */
+    .tuner {
+      position: fixed;
+      top: 12px; right: 12px;
+      z-index: 100;
+      width: 340px;
+      padding: 14px 16px;
+      background: rgba(20, 20, 30, 0.92);
+      color: #d8d8e0;
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      font-size: 12px;
+      backdrop-filter: blur(10px);
+    }
+    .tuner h2 {
+      margin: 0 0 10px;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.1em; color: #ffd060;
+    }
+    .row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .row label {
+      flex: 0 0 90px;
+      color: #a8a8b8;
+      font-size: 11px;
+    }
+    .row input[type=range] { flex: 1; height: 4px; }
+    .row .val {
+      flex: 0 0 60px;
+      text-align: right;
+      font-family: ui-monospace, Menlo, monospace;
+      color: #ffd060;
+      font-size: 11px;
+    }
+    .tuner button {
+      width: 100%; padding: 8px;
+      margin-top: 6px;
+      background: #ffd060;
+      color: #1a1a1a;
+      border: 0; border-radius: 6px;
+      font-weight: 600; cursor: pointer;
+      font-size: 12px;
+    }
+    .tuner button:hover { background: #ffdc80; }
+    .tuner .secondary {
+      background: rgba(255,255,255,0.08);
+      color: #d8d8e0;
+    }
+    .tuner .secondary:hover { background: rgba(255,255,255,0.16); }
+    .output {
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 6px;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 10.5px;
+      color: #98c098;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+    .hint {
+      color: #888; font-size: 10.5px;
+      line-height: 1.5; margin-top: 6px;
+    }
+    .hint kbd {
+      background: rgba(255,255,255,0.12);
+      padding: 1px 4px; border-radius: 3px;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 10px;
+    }
+    .group-title {
+      color: #ffd060;
+      margin: 8px 0 6px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+
+    <svg class="scene-svg" viewBox="0 0 2048 1152" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <filter id="handDrawn" x="-3%" y="-3%" width="106%" height="106%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="2" seed="5" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+        <filter id="handDrawnSoft" x="-2%" y="-2%" width="104%" height="104%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="2" seed="9" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+      </defs>
+
+      <!-- 动态被子层（JS 重建）-->
+      <g id="quilt-layer"></g>
+
+      <!-- 静态地面水渍（不跟随被子调整）-->
+      <g class="puddles" id="puddles-layer" filter="url(#handDrawnSoft)"></g>
+    </svg>
+
+    <div class="quilt-text" id="quilt-text">
+      今天去医院看奶奶。<br>
+      她睁开眼看见我，<br>
+      眼睛亮了一下，<br>
+      又熄了。<br>
+      她已经不认得我了。
+    </div>
+  </div>
+
+  <!-- ─── 调节面板 ─── -->
+  <div class="tuner">
+    <h2>SVG 被子调节器</h2>
+
+    <div class="group-title">被子横向范围</div>
+    <div class="row">
+      <label>左边 X</label>
+      <input type="range" id="leftX" min="300" max="900" step="5" value="500">
+      <span class="val" id="leftX-v">500</span>
+    </div>
+    <div class="row">
+      <label>右边 X</label>
+      <input type="range" id="rightX" min="1148" max="1750" step="5" value="1548">
+      <span class="val" id="rightX-v">1548</span>
+    </div>
+
+    <div class="group-title">被子下沿</div>
+    <div class="row">
+      <label>底 Y</label>
+      <input type="range" id="bottomY" min="600" max="900" step="2" value="760">
+      <span class="val" id="bottomY-v">760</span>
+    </div>
+    <div class="row">
+      <label>中央下垂</label>
+      <input type="range" id="sag" min="0" max="40" step="1" value="15">
+      <span class="val" id="sag-v">15</span>
+    </div>
+
+    <div class="group-title">配色</div>
+    <div class="row">
+      <label>主色调</label>
+      <input type="color" id="quiltColor" value="#7d9fbc" style="flex:1;height:28px;">
+      <span class="val" id="quiltColor-v">#7d9fbc</span>
+    </div>
+
+    <div class="group-title">文字</div>
+    <div class="row">
+      <label>文字 Y</label>
+      <input type="range" id="textY" min="30" max="60" step="0.5" value="44">
+      <span class="val" id="textY-v">44%</span>
+    </div>
+
+    <button id="copy">复制 SVG 数值</button>
+    <button id="reset" class="secondary">重置默认</button>
+
+    <div class="output" id="output"></div>
+
+    <div class="hint">
+      · 拖动滑块实时调整<br>
+      · 被子两端、夹子、印章、折痕、水珠都自动按比例分布<br>
+      · 数值保存到 localStorage
+    </div>
+  </div>
+
+  <script>
+    // ─── 绳子曲线（已实测）───
+    const ropePoints = [
+      [307, 232], [350, 262], [450, 291], [600, 326],
+      [700, 348], [800, 357], [850, 359], [950, 364],
+      [1024, 365], [1100, 363], [1200, 357], [1280, 353],
+      [1345, 343], [1400, 333], [1500, 315], [1650, 278],
+      [1740, 250]
+    ];
+    function ropeY(x) {
+      if (x <= ropePoints[0][0]) return ropePoints[0][1];
+      if (x >= ropePoints[ropePoints.length-1][0]) return ropePoints[ropePoints.length-1][1];
+      for (let i = 0; i < ropePoints.length-1; i++) {
+        const [x1, y1] = ropePoints[i];
+        const [x2, y2] = ropePoints[i+1];
+        if (x1 <= x && x <= x2) {
+          const t = (x - x1) / (x2 - x1);
+          return y1 + t * (y2 - y1);
+        }
+      }
+      return ropePoints[ropePoints.length-1][1];
+    }
+
+    // ─── 重建被子 ───
+    function rebuildQuilt() {
+      const leftX = parseInt(document.getElementById('leftX').value);
+      const rightX = parseInt(document.getElementById('rightX').value);
+      const bottomY = parseInt(document.getElementById('bottomY').value);
+      const sag = parseInt(document.getElementById('sag').value);
+      const color = document.getElementById('quiltColor').value;
+      const textY = parseFloat(document.getElementById('textY').value);
+
+      const width = rightX - leftX;
+      const midX = (leftX + rightX) / 2;
+      const leftTop = ropeY(leftX);
+      const rightTop = ropeY(rightX);
+      const midTop = ropeY(midX);
+      const cp1X = leftX + width * 0.25;
+      const cp2X = leftX + width * 0.75;
+      const cp1Y = (leftTop + midTop) / 2 + 2;
+      const cp2Y = (midTop + rightTop) / 2 + 2;
+
+      // 被子主体 path：顶部多段贝塞尔贴合绳子，两侧+底部圆角
+      const quiltPath = `
+        M ${leftX} ${leftTop}
+        Q ${cp1X} ${cp1Y} ${midX} ${midTop}
+        Q ${cp2X} ${cp2Y} ${rightX} ${rightTop}
+        Q ${rightX+10} ${rightTop+15} ${rightX+12} ${rightTop+35}
+        L ${rightX+12} ${bottomY-20}
+        Q ${rightX+12} ${bottomY-2} ${rightX-6} ${bottomY}
+        Q ${midX} ${bottomY+sag} ${leftX+6} ${bottomY}
+        Q ${leftX-12} ${bottomY-2} ${leftX-12} ${bottomY-20}
+        L ${leftX-12} ${leftTop+35}
+        Q ${leftX-10} ${leftTop+15} ${leftX} ${leftTop} Z
+      `.replace(/\s+/g, ' ').trim();
+
+      // 高光带（被子左侧，约 leftX+30~leftX+80）
+      const hlX = leftX + 30;
+      const hlTop = ropeY(hlX) + 20;
+      const highlightPath = `
+        M ${hlX} ${hlTop}
+        Q ${hlX-10} ${(hlTop+bottomY)/2} ${hlX+5} ${bottomY-30}
+        L ${hlX-30} ${bottomY-40}
+        Q ${hlX-40} ${(hlTop+bottomY)/2} ${hlX-30} ${hlTop+10} Z
+      `.replace(/\s+/g, ' ').trim();
+
+      // 折痕：5 道，等距分布在被子横向范围内
+      let creases = '';
+      let creasesShadow = '';
+      for (let i = 0; i < 5; i++) {
+        const t = (i + 0.5) / 5;  // 0.1, 0.3, 0.5, 0.7, 0.9
+        const x = leftX + width * t;
+        const yTop = ropeY(x) + 10;
+        const yBot = bottomY - 8;
+        creases += `<path d="M ${x} ${yTop} L ${x} ${yBot}"/>`;
+        creasesShadow += `<path d="M ${x+2} ${yTop+3} L ${x+2} ${yBot-2}"/>`;
+      }
+
+      // 印章：在被子顶部左侧 15% 处，y = 绳子位置 + 28
+      const stampX = leftX + width * 0.15;
+      const stampY = ropeY(stampX) + 30;
+
+      // 木夹：在被子顶部 25% / 75%
+      const pin1X = leftX + width * 0.25;
+      const pin2X = leftX + width * 0.75;
+      const pin1Y = ropeY(pin1X);
+      const pin2Y = ropeY(pin2X);
+
+      // 水珠：根据被子宽度自适应（每 130px 一颗）
+      const dropCount = Math.max(4, Math.floor(width / 130));
+      let dropsAttached = '';
+      let dropsFalling = '';
+      for (let i = 0; i < dropCount; i++) {
+        const t = (i + 0.5) / dropCount;
+        const x = leftX + width * t;
+        // 下沿水珠
+        const yDrop = bottomY + 12 + Math.sin(t * Math.PI) * (sag * 0.7);
+        dropsAttached += `<ellipse cx="${x}" cy="${yDrop}" rx="${4.5 + (i%2)*0.5}" ry="${7+(i%2)*1}"/>`;
+        // 下落水珠（一半数量）
+        if (i % 2 === 0 && i > 0 && i < dropCount-1) {
+          const fx = x + (Math.random()-0.5)*30;
+          const fy = bottomY + 50 + Math.random()*50;
+          dropsFalling += `<ellipse cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" rx="${3+(i%3)*0.3}" ry="${5+(i%3)*0.5}"/>`;
+        }
+      }
+
+      // 组装 SVG
+      document.getElementById('quilt-layer').innerHTML = `
+        <g class="quilt-group" filter="url(#handDrawn)">
+          <path d="${quiltPath}" fill="${color}"/>
+          <path d="${highlightPath}" fill="rgba(255,255,255,0.13)"/>
+        </g>
+
+        <g filter="url(#handDrawnSoft)">
+          <g stroke="rgba(255,255,255,0.28)" stroke-width="1.8" stroke-linecap="round" fill="none">
+            ${creases}
+          </g>
+          <g stroke="rgba(30, 60, 95, 0.10)" stroke-width="1.4" stroke-linecap="round" fill="none">
+            ${creasesShadow}
+          </g>
+        </g>
+
+        <g transform="translate(${stampX}, ${stampY})" font-family="STKaiti, KaiTi, cursive" filter="url(#handDrawnSoft)">
+          <text font-size="20" fill="rgba(30, 65, 100, 0.62)">一天</text>
+          <path d="M 56 -6 Q 51 -14 59 -14 Q 62 -14 62 -10 Q 62 -14 65 -14 Q 73 -14 68 -6 Q 64 0 62 4 Q 60 0 56 -6 Z"
+                fill="none" stroke="rgba(30, 65, 100, 0.60)" stroke-width="1.8" stroke-linecap="round"/>
+        </g>
+
+        <g class="pins" filter="url(#handDrawnSoft)">
+          <g transform="translate(${pin1X-15}, ${pin1Y-25})">
+            <rect x="0" y="0" width="30" height="50" rx="3" fill="#c89868" stroke="#7a5028" stroke-width="1.5"/>
+            <line x1="15" y1="4" x2="15" y2="46" stroke="#7a5028" stroke-width="0.8" opacity="0.55"/>
+            <circle cx="15" cy="7" r="2.2" fill="#7a5028"/>
+          </g>
+          <g transform="translate(${pin2X-15}, ${pin2Y-25})">
+            <rect x="0" y="0" width="30" height="50" rx="3" fill="#c89868" stroke="#7a5028" stroke-width="1.5"/>
+            <line x1="15" y1="4" x2="15" y2="46" stroke="#7a5028" stroke-width="0.8" opacity="0.55"/>
+            <circle cx="15" cy="7" r="2.2" fill="#7a5028"/>
+          </g>
+        </g>
+
+        <g class="drops-attached" fill="#6b95b8" filter="url(#handDrawnSoft)">
+          ${dropsAttached}
+        </g>
+        <g class="drops-falling" fill="#6b95b8" opacity="0.72" filter="url(#handDrawnSoft)">
+          ${dropsFalling}
+        </g>
+      `;
+
+      // 文字位置
+      document.getElementById('quilt-text').style.top = textY + '%';
+
+      // 输出当前数值
+      const state = { leftX, rightX, bottomY, sag, color, textY };
+      document.getElementById('output').textContent =
+        `// 被子参数：\n` +
+        `leftX = ${leftX};   // ${(100*leftX/2048).toFixed(2)}%\n` +
+        `rightX = ${rightX}; // ${(100*rightX/2048).toFixed(2)}%\n` +
+        `bottomY = ${bottomY}; // ${(100*bottomY/1152).toFixed(2)}%\n` +
+        `sag = ${sag}px\n` +
+        `color = "${color}"\n` +
+        `textY = ${textY}%`;
+      localStorage.setItem('beizi-svg-tune', JSON.stringify(state));
+
+      // 更新滑块右侧数值显示
+      document.getElementById('leftX-v').textContent = leftX + ' (' + (100*leftX/2048).toFixed(1) + '%)';
+      document.getElementById('rightX-v').textContent = rightX + ' (' + (100*rightX/2048).toFixed(1) + '%)';
+      document.getElementById('bottomY-v').textContent = bottomY + ' (' + (100*bottomY/1152).toFixed(1) + '%)';
+      document.getElementById('sag-v').textContent = sag + 'px';
+      document.getElementById('quiltColor-v').textContent = color;
+      document.getElementById('textY-v').textContent = textY + '%';
+    }
+
+    // 静态水渍（一次性生成）
+    function buildPuddles() {
+      const puddles = `
+        <ellipse cx="700" cy="950" rx="76" ry="14" fill="#a5c4d6" opacity="0.42"/>
+        <ellipse cx="860" cy="965" rx="84" ry="15" fill="#a5c4d6" opacity="0.48"/>
+        <ellipse cx="1024" cy="945" rx="68" ry="13" fill="#a5c4d6" opacity="0.40"/>
+        <ellipse cx="1190" cy="960" rx="78" ry="14" fill="#a5c4d6" opacity="0.45"/>
+        <ellipse cx="1350" cy="952" rx="62" ry="13" fill="#a5c4d6" opacity="0.40"/>
+        <ellipse cx="720" cy="945" rx="46" ry="9" fill="#7aa3c4" opacity="0.42"/>
+        <ellipse cx="875" cy="962" rx="52" ry="10" fill="#7aa3c4" opacity="0.45"/>
+        <ellipse cx="1040" cy="942" rx="40" ry="8" fill="#7aa3c4" opacity="0.40"/>
+        <ellipse cx="1205" cy="958" rx="48" ry="9" fill="#7aa3c4" opacity="0.42"/>
+        <ellipse cx="1365" cy="949" rx="38" ry="8" fill="#7aa3c4" opacity="0.38"/>
+        <ellipse cx="730" cy="948" rx="20" ry="5" fill="#6090b4" opacity="0.42"/>
+        <ellipse cx="885" cy="965" rx="24" ry="6" fill="#6090b4" opacity="0.46"/>
+        <ellipse cx="1045" cy="946" rx="18" ry="5" fill="#6090b4" opacity="0.40"/>
+        <ellipse cx="1210" cy="960" rx="22" ry="6" fill="#6090b4" opacity="0.44"/>
+        <ellipse cx="1370" cy="950" rx="18" ry="5" fill="#6090b4" opacity="0.42"/>
+      `;
+      document.getElementById('puddles-layer').innerHTML = puddles;
+    }
+
+    // 绑定滑块
+    ['leftX','rightX','bottomY','sag','textY','quiltColor'].forEach(id => {
+      document.getElementById(id).addEventListener('input', rebuildQuilt);
+    });
+
+    // 重置
+    const DEFAULT = { leftX: 500, rightX: 1548, bottomY: 760, sag: 15, color: '#7d9fbc', textY: 44 };
+    document.getElementById('reset').addEventListener('click', () => {
+      document.getElementById('leftX').value = DEFAULT.leftX;
+      document.getElementById('rightX').value = DEFAULT.rightX;
+      document.getElementById('bottomY').value = DEFAULT.bottomY;
+      document.getElementById('sag').value = DEFAULT.sag;
+      document.getElementById('quiltColor').value = DEFAULT.color;
+      document.getElementById('textY').value = DEFAULT.textY;
+      rebuildQuilt();
+    });
+
+    // 复制
+    document.getElementById('copy').addEventListener('click', async () => {
+      const text = document.getElementById('output').textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        const btn = document.getElementById('copy');
+        const orig = btn.textContent;
+        btn.textContent = '✓ 已复制！';
+        setTimeout(() => btn.textContent = orig, 1500);
+      } catch(e) { alert('复制失败'); }
+    });
+
+    // 初始化：从 localStorage 或 default
+    try {
+      const saved = JSON.parse(localStorage.getItem('beizi-svg-tune'));
+      if (saved) {
+        document.getElementById('leftX').value = saved.leftX;
+        document.getElementById('rightX').value = saved.rightX;
+        document.getElementById('bottomY').value = saved.bottomY;
+        document.getElementById('sag').value = saved.sag;
+        document.getElementById('quiltColor').value = saved.color;
+        document.getElementById('textY').value = saved.textY;
+      }
+    } catch(e) {}
+    buildPuddles();
+    rebuildQuilt();
+  </script>
+</body>
+</html>

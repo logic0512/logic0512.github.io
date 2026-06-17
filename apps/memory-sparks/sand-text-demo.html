@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沙滩刻字 · 效果对比</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d1019;
+  color: #ddd;
+  font-family: "PingFang SC", "Hiragino Sans GB", "Segoe UI", sans-serif;
+  padding: 44px 20px 80px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 54px;
+}
+.header h1 {
+  font-size: 17px;
+  font-weight: 300;
+  letter-spacing: 0.24em;
+  color: rgba(210, 195, 165, 0.48);
+  margin-bottom: 8px;
+}
+.header p {
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  color: rgba(180, 162, 135, 0.3);
+}
+
+.demos {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+.demo {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 28px 80px rgba(0,0,0,0.55);
+}
+
+/* ── 沙滩舞台 ── */
+.sand-stage {
+  position: relative;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 40px;
+  background:
+    radial-gradient(ellipse at 62% 16%, rgba(255,254,238,0.62), transparent 30%),
+    radial-gradient(ellipse at 16% 82%, rgba(155,195,215,0.12), transparent 28%),
+    linear-gradient(148deg, #faf3e4 0%, #ede0c9 50%, #dce8ee 100%);
+  overflow: hidden;
+}
+
+/* 细沙颗粒感叠加 */
+.sand-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.08'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+/* 沙面波纹线条（装饰） */
+.sand-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      175deg,
+      rgba(180,155,105,0.045) 0 1px,
+      transparent 1px 12px
+    );
+}
+
+/* ── 信息栏 ── */
+.info-bar {
+  background: rgba(12, 14, 20, 0.94);
+  padding: 17px 26px 19px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.m-label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: rgba(165, 145, 108, 0.55);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 5px;
+}
+.m-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(218, 204, 178, 0.88);
+  margin-bottom: 3px;
+}
+.m-tech {
+  font-size: 11px;
+  color: rgba(155, 138, 108, 0.45);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  margin-bottom: 5px;
+}
+.m-desc {
+  font-size: 11.5px;
+  color: rgba(160, 145, 118, 0.52);
+  line-height: 1.7;
+  max-width: 440px;
+  text-align: right;
+}
+
+/* ── 评分标签 ── */
+.score {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.tag-good  { background: rgba(100,180,100,0.12); color: rgba(130,210,130,0.75); }
+.tag-warn  { background: rgba(220,170,80,0.12);  color: rgba(225,185,100,0.7); }
+.tag-bad   { background: rgba(200,90,90,0.12);   color: rgba(215,110,110,0.7); }
+
+/* ── 方案三：CSS 文字 ── */
+.css-sand {
+  font-family: "Kaiti SC", "STKaiti", "Songti SC", "FangSong", serif;
+  font-size: clamp(22px, 3.8vw, 40px);
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  line-height: 1.8;
+  text-align: center;
+  transform: rotate(7deg) skewX(-2deg);
+  transform-origin: center;
+  position: relative;
+  z-index: 1;
+
+  /* 凹陷刻字：深色主体 + 上沿亮 + 下沿暗 + 柔边 */
+  color: rgba(70, 49, 16, 0.76);
+  text-shadow:
+    -0.5px -1.2px 0   rgba(250, 230, 180, 0.88),
+     1px    2px   1px rgba(44,  27,   6, 0.50),
+     0      1.5px 6px rgba(55,  36,  10, 0.20),
+     0      0     9px rgba(238, 208, 148, 0.07);
+  filter: blur(0.38px);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SAND TEXT EFFECT · 沙滩刻字效果对比</h1>
+  <p>同一段文字，三种技术路线的效果呈现</p>
+</div>
+
+<div class="demos">
+
+  <!-- ══════════════════════════════════
+       方案一：SVG Filter
+       feTurbulence + Displacement + 手工光影合成
+  ══════════════════════════════════ -->
+  <div class="demo">
+    <div class="sand-stage">
+      <svg xmlns="http://www.w3.org/2000/svg"
+           viewBox="0 0 720 150"
+           style="overflow:visible; width:100%; max-width:720px; position:relative; z-index:1; display:block;">
+        <defs>
+          <filter id="f1" x="-6%" y="-35%" width="112%" height="170%">
+
+            <!-- ① 沙粒随机噪声：生成沙子的自然纹理底 -->
+            <feTurbulence type="fractalNoise"
+                          baseFrequency="0.046 0.050"
+                          numOctaves="7"
+                          seed="17"
+                          result="grain"/>
+
+            <!-- ② 用噪声扰动字体轮廓：沙刻的边缘不是直线 -->
+            <feDisplacementMap in="SourceGraphic" in2="grain"
+                               scale="2.5"
+                               xChannelSelector="R" yChannelSelector="G"
+                               result="rough"/>
+
+            <!-- ③ 字槽暗影：把文字整体往右下偏移+模糊 → 营造字凹进去的深度感 -->
+            <feOffset in="rough" dx="1.4" dy="2.0" result="offset-dark"/>
+            <feGaussianBlur in="offset-dark" stdDeviation="1.9" result="blur-dark"/>
+            <feColorMatrix in="blur-dark" type="matrix"
+              values="0 0 0 0 0.18
+                      0 0 0 0 0.11
+                      0 0 0 0 0.03
+                      0 0 0 0.70 0"
+              result="groove-shadow"/>
+
+            <!-- ④ 字槽高光：把文字往左上偏移+模糊 → 沙堆边缘被光打亮的那一丝白 -->
+            <feOffset in="rough" dx="-0.9" dy="-1.5" result="offset-light"/>
+            <feGaussianBlur in="offset-light" stdDeviation="1.1" result="blur-light"/>
+            <feColorMatrix in="blur-light" type="matrix"
+              values="0 0 0 0 1.00
+                      0 0 0 0 0.94
+                      0 0 0 0 0.70
+                      0 0 0 0.60 0"
+              result="groove-highlight"/>
+
+            <!-- ⑤ 合并：阴影层 → 文字本体 → 高光层（顺序决定叠放） -->
+            <feMerge>
+              <feMergeNode in="groove-shadow"/>
+              <feMergeNode in="rough"/>
+              <feMergeNode in="groove-highlight"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        <text x="360" y="82"
+              text-anchor="middle"
+              dominant-baseline="middle"
+              font-family="'Kaiti SC','STKaiti','Songti SC','FangSong',serif"
+              font-size="40"
+              font-weight="500"
+              fill="rgba(70, 49, 16, 0.74)"
+              letter-spacing="4"
+              filter="url(#f1)"
+              transform="rotate(7, 360, 82) skewX(-2)">
+          把这些烦恼，交给今天的海风。
+        </text>
+      </svg>
+    </div>
+    <div class="info-bar">
+      <div>
+        <span class="m-label">方案一</span>
+        <div class="m-title">SVG Filter · 沙粒噪声 + 手工光影合成</div>
+        <div class="m-tech">feTurbulence + feDisplacementMap + feColorMatrix</div>
+        <div class="score">
+          <span class="tag tag-good">质感最真实</span>
+          <span class="tag tag-good">无需 JS</span>
+          <span class="tag tag-warn">参数调试费时</span>
+        </div>
+      </div>
+      <p class="m-desc">
+        程序生成随机沙粒纹理，字的轮廓被扰动成不规则形状；
+        分别叠加右下偏移的暗影（字槽深处）和左上偏移的亮光（沙堆受光边缘），
+        组合出真实的"刻进去"立体感。
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       方案二：Canvas
+       分层手绘：阴影 → 主体 → 高光 → 沙粒
+  ══════════════════════════════════ -->
+  <div class="demo">
+    <div class="sand-stage" style="min-height:240px;">
+      <canvas id="cv" style="position:relative;z-index:1;max-width:100%;display:block;"></canvas>
+    </div>
+    <div class="info-bar">
+      <div>
+        <span class="m-label">方案二</span>
+        <div class="m-title">Canvas · 四层手绘叠加</div>
+        <div class="m-tech">shadowBlur + fillText × 3 + noise dots</div>
+        <div class="score">
+          <span class="tag tag-good">最可控</span>
+          <span class="tag tag-good">可加真实纹理图</span>
+          <span class="tag tag-warn">需要写 JS</span>
+          <span class="tag tag-bad">字不可选中</span>
+        </div>
+      </div>
+      <p class="m-desc">
+        依次绘制四层：①字槽深处的暗影（offset 右下+模糊）→ ②主体文字（湿沙深棕）→
+        ③字槽上沿受光高光（offset 左上）→ ④随机沙粒颗粒噪点。
+        可以混入真实沙滩照片纹理，上限最高。
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       方案三：纯 CSS
+       text-shadow 凹陷视觉欺骗
+  ══════════════════════════════════ -->
+  <div class="demo">
+    <div class="sand-stage">
+      <p class="css-sand">把这些烦恼，交给今天的海风。</p>
+    </div>
+    <div class="info-bar">
+      <div>
+        <span class="m-label">方案三</span>
+        <div class="m-title">纯 CSS · text-shadow 凹陷视觉</div>
+        <div class="m-tech">text-shadow × 4 + filter: blur</div>
+        <div class="score">
+          <span class="tag tag-good">5 行搞定</span>
+          <span class="tag tag-good">字可选中</span>
+          <span class="tag tag-bad">纹理背景上容易穿帮</span>
+          <span class="tag tag-bad">无沙粒感</span>
+        </div>
+      </div>
+      <p class="m-desc">
+        用四层 text-shadow 模拟视觉凹陷：左上浅色高光 + 右下暗色阴影 +
+        扩散柔边 + 轻微 filter:blur 做沙子柔边感。
+        最省事，但在复杂纹理背景下视觉效果有限。
+      </p>
+    </div>
+  </div>
+
+</div><!-- /demos -->
+
+
+<script>
+// ── 方案二：Canvas 四层叠绘 ──────────────────────────────────────────
+(function() {
+  const canvas = document.getElementById('cv');
+  const DPR = window.devicePixelRatio || 1;
+  const W = 720, H = 150;
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+
+  const TEXT = '把这些烦恼，交给今天的海风。';
+  const FS   = 40;
+  const FONT = `500 ${FS}px 'Kaiti SC','STKaiti','Songti SC','FangSong',serif`;
+  const cx = W / 2, cy = H / 2 + 6;
+
+  // 旋转 + 倾斜（和 SVG / CSS 保持一致）
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(7 * Math.PI / 180);
+  ctx.transform(1, 0, Math.tan(-2 * Math.PI / 180), 1, 0, 0); // skewX(-2deg)
+  ctx.translate(-cx, -cy);
+
+  ctx.font = FONT;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+
+  // ── 层 1：字槽深处暗影 ──
+  ctx.globalAlpha = 0.46;
+  ctx.fillStyle   = 'rgba(40, 24, 6, 1)';
+  ctx.shadowColor    = 'rgba(36, 20, 4, 0.68)';
+  ctx.shadowBlur     = 7;
+  ctx.shadowOffsetX  = 1.6;
+  ctx.shadowOffsetY  = 2.6;
+  ctx.fillText(TEXT, cx, cy);
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
+
+  // ── 层 2：主体文字（湿沙槽底色）──
+  ctx.globalAlpha = 0.76;
+  ctx.fillStyle   = 'rgba(70, 49, 16, 1)';
+  ctx.fillText(TEXT, cx, cy);
+
+  // ── 层 3：字槽上沿受光高光 ──
+  ctx.globalAlpha    = 0.50;
+  ctx.fillStyle      = 'rgba(250, 228, 175, 1)';
+  ctx.shadowColor    = 'rgba(252, 238, 192, 0.72)';
+  ctx.shadowBlur     = 2.5;
+  ctx.shadowOffsetX  = -0.9;
+  ctx.shadowOffsetY  = -1.6;
+  ctx.fillText(TEXT, cx - 0.9, cy - 1.6);
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
+
+  ctx.restore();
+
+  // ── 层 4：沙粒随机噪点 ──
+  ctx.save();
+  for (let i = 0; i < 1800; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const r = Math.random() * 0.65 + 0.18;
+    ctx.globalAlpha = Math.random() * 0.052 + 0.012;
+    ctx.fillStyle   = Math.random() > 0.5
+      ? 'rgba(244, 220, 162, 1)'
+      : 'rgba(78,  52,  16, 1)';
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>PRD vs 实际 · 179 项裁决评审</title>
+<style>
+  :root {
+    --bg: #1a1620;
+    --surface: #261e2e;
+    --surface-2: #2f2738;
+    --surface-3: #38303f;
+    --line: rgba(255, 240, 200, 0.08);
+    --line-strong: rgba(255, 240, 200, 0.16);
+    --text: #ece2d4;
+    --mute: rgba(220, 200, 175, 0.65);
+    --mute-2: rgba(220, 200, 175, 0.42);
+    --accent: #f5dca8;
+    --good: #8ec694;
+    --warn: #e4c772;
+    --bad: #d88a8a;
+    --info: #8fb5d8;
+    --new: #c4a8d8;
+    --type-mono: "SF Mono", "Menlo", monospace;
+    --type-sans: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--type-sans); font-weight: 300; }
+  body { padding-top: 0; }
+
+  /* ─── 顶部 ─── */
+  .header {
+    padding: 30px 36px 26px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .header-inner { max-width: 1280px; margin: 0 auto; }
+  .header h1 { margin: 0 0 8px; font-size: 22px; font-weight: 500; letter-spacing: 0.1em; color: var(--accent); }
+  .header p { margin: 0 0 6px; font-size: 12.5px; line-height: 1.8; color: var(--mute); }
+  .header code { background: rgba(255,238,200,0.10); padding: 1px 6px; border-radius: 3px; font-family: var(--type-mono); font-size: 11px; color: var(--accent); }
+
+  /* sticky nav */
+  .nav-bar {
+    position: sticky; top: 0;
+    background: rgba(26, 22, 32, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line-strong);
+    z-index: 100;
+    padding: 12px 36px;
+  }
+  .nav-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .nav-inner .stats {
+    font-family: var(--type-mono);
+    font-size: 11.5px;
+    color: var(--mute-2);
+    margin-right: 12px;
+  }
+  .nav-inner .stats strong { color: var(--accent); }
+  .nav-link {
+    padding: 5px 11px;
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--mute);
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 140ms ease;
+  }
+  .nav-link:hover { background: rgba(255, 220, 168, 0.10); color: var(--accent); border-color: var(--line-strong); }
+  .nav-link.has-decisions {
+    color: var(--good);
+    background: rgba(142, 198, 148, 0.12);
+    border-color: rgba(142, 198, 148, 0.32);
+  }
+  .nav-bar .actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+  }
+  .nav-bar button {
+    background: rgba(143, 181, 216, 0.14);
+    color: var(--info);
+    border: 1px solid rgba(143, 181, 216, 0.32);
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11.5px;
+    transition: all 140ms ease;
+  }
+  .nav-bar button:hover { background: rgba(143, 181, 216, 0.24); }
+  .nav-bar button.danger { color: var(--bad); border-color: rgba(216, 138, 138, 0.32); background: rgba(216, 138, 138, 0.10); }
+  .nav-bar button.danger:hover { background: rgba(216, 138, 138, 0.20); }
+
+  /* ─── Section ─── */
+  .sections {
+    max-width: 1280px;
+    margin: 24px auto 80px;
+    padding: 0 36px;
+  }
+  .section {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .section-head {
+    padding: 18px 24px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-head:hover { background: var(--surface-3); }
+  .section-head .num {
+    font-family: "EB Garamond", "Cormorant Garamond", "Georgia", serif;
+    font-style: italic;
+    font-size: 22px;
+    color: rgba(245, 200, 120, 0.55);
+    min-width: 28px;
+  }
+  .section-head .title-block { flex: 1; }
+  .section-head h2 { margin: 0; font-size: 16px; font-weight: 500; letter-spacing: 0.06em; color: var(--accent); }
+  .section-head .meta { font-size: 10.5px; color: var(--mute-2); margin-top: 2px; font-family: var(--type-mono); }
+  .section-head .progress {
+    font-family: var(--type-mono);
+    font-size: 11px;
+    color: var(--mute-2);
+    padding: 4px 9px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 99px;
+  }
+  .section-head .progress strong { color: var(--accent); }
+  .section-head .copy-btn {
+    background: rgba(143, 181, 216, 0.14);
+    color: var(--info);
+    border: 1px solid rgba(143, 181, 216, 0.32);
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  .section-head .copy-btn.copied { color: var(--good); border-color: rgba(142, 198, 148, 0.5); }
+  .section-head .chev {
+    color: var(--mute-2);
+    font-family: var(--type-mono);
+    font-size: 14px;
+    transition: transform 200ms ease;
+  }
+  .section.collapsed .chev { transform: rotate(-90deg); }
+  .section.collapsed .section-body { display: none; }
+
+  /* ─── 单项卡 ─── */
+  .section-body { padding: 14px 22px 22px; }
+  .item {
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255, 240, 200, 0.05);
+  }
+  .item:last-child { border-bottom: 0; }
+
+  .item-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .item-head .id {
+    font-family: var(--type-mono);
+    font-size: 11px;
+    color: var(--mute);
+    background: rgba(255, 240, 200, 0.06);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+  .tag {
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+  .tag.ok { background: rgba(142, 198, 148, 0.18); color: var(--good); }
+  .tag.partial { background: rgba(228, 199, 114, 0.18); color: var(--warn); }
+  .tag.major { background: rgba(216, 138, 138, 0.18); color: var(--bad); }
+  .tag.new { background: rgba(180, 140, 220, 0.18); color: var(--new); }
+  .tag.unknown { background: rgba(160, 160, 160, 0.18); color: #b0b0b0; }
+  .item-head .decision-summary {
+    margin-left: auto;
+    font-family: var(--type-mono);
+    font-size: 10.5px;
+    color: var(--good);
+    background: rgba(142, 198, 148, 0.10);
+    padding: 2px 8px;
+    border-radius: 3px;
+    display: none;
+  }
+  .item.decided .item-head .decision-summary { display: inline-block; }
+  .item.decided { background: rgba(142, 198, 148, 0.03); }
+
+  .item-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 8px 16px;
+    margin-bottom: 6px;
+    align-items: start;
+  }
+  .item-row .label {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--mute-2);
+    text-transform: uppercase;
+    padding-top: 3px;
+  }
+  .item-row .value { font-size: 13px; line-height: 1.65; color: var(--text); }
+  .item-row .value.prd { color: rgba(245, 220, 168, 0.85); }
+  .item-row .value.actual { color: rgba(220, 200, 175, 0.85); }
+
+  /* 控件 */
+  .item-controls {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 8px 16px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255, 240, 200, 0.06);
+  }
+  .decision-select {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .decision-btn {
+    padding: 4px 11px;
+    border-radius: 4px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--mute);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11.5px;
+    transition: all 140ms ease;
+  }
+  .decision-btn:hover { background: rgba(255, 220, 168, 0.08); color: var(--accent); border-color: rgba(245, 220, 168, 0.32); }
+  .decision-btn.active.revert { background: rgba(216, 138, 138, 0.20); color: var(--bad); border-color: var(--bad); }
+  .decision-btn.active.adopt { background: rgba(142, 198, 148, 0.20); color: var(--good); border-color: var(--good); }
+  .decision-btn.active.both { background: rgba(180, 140, 220, 0.20); color: var(--new); border-color: var(--new); }
+  .decision-btn.active.defer { background: rgba(228, 199, 114, 0.20); color: var(--warn); border-color: var(--warn); }
+  .decision-btn.active.skip { background: rgba(160,160,160,0.18); color:#bdbdbd; border-color:#888;}
+
+  .note-textarea {
+    width: 100%;
+    background: var(--surface-3);
+    border: 1px solid var(--line-strong);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    min-height: 44px;
+  }
+  .note-textarea:focus { outline: none; border-color: var(--accent); }
+  .note-textarea.has-content { background: rgba(245, 220, 168, 0.05); border-color: rgba(245, 220, 168, 0.32); }
+
+  /* Filter buttons */
+  .filter-bar {
+    margin-bottom: 6px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.18);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--mute-2);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filter-bar .filt {
+    padding: 3px 9px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 140ms ease;
+    color: var(--mute);
+    font-family: inherit;
+    font-size: 11px;
+    background: transparent;
+  }
+  .filter-bar .filt:hover { background: rgba(255,220,168,0.08); color: var(--accent); }
+  .filter-bar .filt.active { background: rgba(255,220,168,0.16); color: var(--accent); border-color: var(--accent); }
+
+  .item.hidden { display: none; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(140%);
+    padding: 10px 22px;
+    background: var(--surface-2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 99px;
+    font-size: 12px;
+    z-index: 999;
+    transition: transform 280ms ease;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <h1>PRD vs 实际 · 179 项裁决评审</h1>
+    <p>数据源：<code>2026-05-20-keyword-planets-prd.md v1.4</code> · 实际 iframe <code>v=20260601x</code> · git baseline <code>ecd71c0</code></p>
+    <p>每项给出 <strong style="color:var(--accent)">PRD 描述</strong> / <strong style="color:var(--accent)">实际状态</strong> / <strong style="color:var(--accent)">偏离类型</strong>。请你在每行选择 <span style="color:var(--bad)">改回 PRD</span> / <span style="color:var(--good)">替换 PRD</span> / <span style="color:var(--new)">两版并存</span> / <span style="color:var(--warn)">待定</span>，必要时填备注。所有决策 + 备注自动保存到浏览器（刷新不丢）。每节顶部「复制本节」按钮可一键导出反馈给我。</p>
+  </div>
+</div>
+
+<div class="nav-bar">
+  <div class="nav-inner">
+    <span class="stats">总进度 <strong id="globalDoneCount">0</strong>/<strong>179</strong></span>
+    <a class="nav-link" href="#beizi">被子</a>
+    <a class="nav-link" href="#hiking">行星</a>
+    <a class="nav-link" href="#healing">治愈★</a>
+    <a class="nav-link" href="#flower">花</a>
+    <a class="nav-link" href="#sea">海</a>
+    <a class="nav-link" href="#starry">繁</a>
+    <a class="nav-link" href="#cloud">云</a>
+    <a class="nav-link" href="#tree">树</a>
+    <a class="nav-link" href="#common">共性</a>
+    <div class="actions">
+      <button onclick="expandAll(true)">展开全部</button>
+      <button onclick="expandAll(false)">折叠全部</button>
+      <button onclick="copyDecided()">复制已裁决</button>
+      <button class="danger" onclick="resetAll()">重置全部</button>
+    </div>
+  </div>
+</div>
+
+<div class="sections" id="sections"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────────
+// 179 项数据
+// ──────────────────────────────────────────────
+const SECTIONS = [
+  {
+    key: 'beizi', num: '1', title: '被子星（悲伤）',
+    prdRef: 'PRD §2.8', fileRef: 'public/planets/beizi/index.html',
+    items: [
+      { id: 'BZ-01', status: 'ok', prd: '视觉形式：晾晒的被子，水分滴落 + 蒸发', actual: 'SVG 被子 + 绳子 + 水滴（.drop）+ 重力模拟' },
+      { id: 'BZ-02', status: 'partial', prd: '背景渐变 #8eb8d4 → #e4ddd4（浅蓝灰天空渐变）', actual: 'body: #c8d8e6 + PNG 背景图' },
+      { id: 'BZ-03', status: 'ok', prd: '卡片背景 rgba(255,255,255,0.58)', actual: '一致 rgba(255,255,255,0.58)' },
+      { id: 'BZ-04', status: 'ok', prd: '卡片阴影 rgba(42,80,120,0.16)', actual: '一致' },
+      { id: 'BZ-05', status: 'partial', prd: '文字色 rgba(30,55,80,0.85)', actual: '实际 0.92（更深）' },
+      { id: 'BZ-06', status: 'ok', prd: '浮按钮边框 rgba(90,136,176,0.48)', actual: '一致' },
+      { id: 'BZ-07', status: 'partial', prd: '添加按钮 §1.2.1：右上 top:88px right:48px, 56×56 圆形', actual: '.float-btn 52px，位置用 clamp 浮动（非固定 88px）' },
+      { id: 'BZ-08', status: 'major', prd: '列表入口 §1.2.2：右上紧邻添加按钮下方 top:156px right:48px, 4 格网格图标', actual: 'iframe 内无该按钮（走父 App lm2-list-btn）+ 自己有 .timeline-history-btn 左侧时间轴' },
+      { id: 'BZ-09', status: 'ok', prd: '故事文（PRD 与 ms-config.js 完整一致）', actual: '一致' },
+      { id: 'BZ-10', status: 'ok', prd: 'emptyHint「把这件事挂出来晾晒」', actual: '一致' },
+      { id: 'BZ-11', status: 'ok', prd: '被子上显示文字内容 + 底部水珠 + 文字淡出 = 晾干', actual: '实际实现' },
+      { id: 'BZ-12', status: 'unknown', prd: '「重播」图标（↺）点击重新滴水', actual: '❓ 待验证' },
+      { id: 'BZ-13', status: 'unknown', prd: '晾干时间驱动（3 天）+ 重量影响速度', actual: '❓ 实际策略未确认' },
+      { id: 'BZ-14', status: 'partial', prd: '列表 composer：题目 / 日期 / 文字 / 湿度（伤心多深）/ 保存按钮"晾上去"', actual: 'ms-composer + textareaMaxLength 150 + extraHTML "晾晒时间" 1/2/3' },
+      { id: 'BZ-15', status: 'new', prd: '列表卡 ① 纯文字（大引号 + 楷体居中）', actual: 'V2 UnifiedCard text 模板（左侧细线 + 居中），不同设计语言' },
+      { id: 'BZ-16', status: 'major', prd: '【未完成】没历史记录时历史条线条隐藏（todo P-010）', actual: '❌ 未修' },
+      { id: 'BZ-17', status: 'ok', prd: '【未完成】"晾晒时间"显示数字 1/2/3（P-011）', actual: '✅ 已是数字（已对齐 PRD）' },
+      { id: 'BZ-18', status: 'major', prd: '【未完成】"悲伤记录"图标去掉（P-013）', actual: '❌ 未修' },
+      { id: 'BZ-19', status: 'unknown', prd: '【未完成】交互页背景被改、两侧黑边（P-016）', actual: '❓' },
+      { id: 'BZ-20', status: 'major', prd: '【未完成】历史条加内容后被子上不映射（P-017）', actual: '❌ 未修' },
+    ]
+  },
+  {
+    key: 'hiking', num: '2', title: '行星（hike）',
+    prdRef: 'PRD §2.3', fileRef: 'public/planets/hiking/index.html',
+    items: [
+      { id: 'HK-01', status: 'ok', prd: '视觉形式：风格化滤镜相框博物馆', actual: 'canvas album 3D 相框浮动 + 地景 GLB' },
+      { id: 'HK-02', status: 'major', prd: '背景渐变 #f4fde8 → #6ab030（浅绿到深绿）', actual: '实际 #050805 极深绿黑 + 多层渐变（完全不同）' },
+      { id: 'HK-03', status: 'major', prd: '卡片背景 rgba(255,255,255,0.60) 亮色', actual: '实际 rgba(8,25,12,0.55) 深色玻璃（整套深色化）' },
+      { id: 'HK-04', status: 'major', prd: '文字色 rgba(22,68,8,0.85) 墨绿', actual: '实际 rgba(230,250,215,0.95) 浅绿白（反色）' },
+      { id: 'HK-05', status: 'major', prd: '添加按钮 §1.2.1：右上圆形 56×56', actual: '实际 .scene-upload 椭圆胶囊形，位置 left/top % 浮动' },
+      { id: 'HK-06', status: 'major', prd: '列表入口 §1.2.2：右上 4 格图标', actual: '实际底部 .thumb-strip 缩略图条 + iframe 内无 4 格按钮' },
+      { id: 'HK-07', status: 'ok', prd: '故事文', actual: '一致' },
+      { id: 'HK-08', status: 'ok', prd: 'emptyHint「带回一张路上的照片」', actual: '一致' },
+      { id: 'HK-09', status: 'ok', prd: '纯文字记录不显示在画廊（仅图记录）', actual: '上传必须有照片才能保存（强制）' },
+      { id: 'HK-10', status: 'ok', prd: '4 滤镜：原图 / 森林油画 / 柔光厚涂 / 青绿山水', actual: '一致（__buildPhotoVariants）' },
+      { id: 'HK-11', status: 'major', prd: '添加按钮接 ms-composer（隐含规范）', actual: '行星仍用原生 composer-panel — 8 颗星唯一例外' },
+      { id: 'HK-12', status: 'partial', prd: '列表 composer schema：照片 / 标题 / 地点 / 日期 / 路上的故事 / 保存"放进相册"', actual: '仍有标题字段（docx 反馈要砍掉）' },
+      { id: 'HK-13', status: 'ok', prd: '列表卡 ⑦ 横屏图+文', actual: 'V2 UnifiedCard image-text-h' },
+      { id: 'HK-14', status: 'major', prd: '【未完成】空状态右侧框隐藏（P-020）', actual: '❌ 未修' },
+      { id: 'HK-15', status: 'major', prd: '【未完成】填写页砍标题，只留地名+内容（P-022）', actual: '❌ 未修' },
+      { id: 'HK-16', status: 'major', prd: '【未完成】添加照片失败没反应（P-024）', actual: '❌ 未修' },
+      { id: 'HK-17', status: 'major', prd: '【未完成】图片不限张数（取消 4 张上限）（P-025）', actual: '❌ 未修' },
+      { id: 'HK-18', status: 'unknown', prd: '【未完成】交互页点添加图片页面卡死（P-021）', actual: '❓ 待验证' },
+      { id: 'HK-19', status: 'partial', prd: '【未完成】列表 → 切回交互页新内容丢失（P-029）', actual: '🟡 部分修' },
+      { id: 'HK-20', status: 'major', prd: '【未完成】输入规则：只允许图 或 图+文（P-028）', actual: '❌ 未修' },
+    ]
+  },
+  {
+    key: 'healing', num: '3 ★', title: '治愈星（治愈）',
+    prdRef: 'PRD §2.6 · 最近 7 轮会话彻底重做视觉', fileRef: 'public/planets/healing/index.html',
+    items: [
+      { id: 'HL-01', status: 'ok', prd: '视觉形式：3D 沉浸式媒体空间（yuyuzi PORTFOLIO 风格）', actual: '✅ Three.js 3D 卡片云 + 4 个 ORBIT_RINGS × 12 slot × 3 layer' },
+      { id: 'HL-02', status: 'major', prd: '背景：深紫黑宇宙 #030008 + 金色光晕 radial', actual: 'body #2b2440 + 3D scene 暖米色调（SCENE_PALETTE 3 层 base）' },
+      { id: 'HL-03', status: 'major', prd: '卡片：rgba(28,6,55,0.55) 深紫 + 暖黄文字 rgba(235,215,185,0.90)', actual: '实际 rgba(248,240,230,0.82) 浅奶米 + 暖咖栗字 rgb(96,70,56) — 完全反向' },
+      { id: 'HL-04', status: 'major', prd: 'accent #f5c840 金色', actual: '实际 #a06848 暖咖' },
+      { id: 'HL-05', status: 'major', prd: '浮按钮 rgba(245,200,64,0.52) 金色边框', actual: '实际 rgba(120,90,70,0.32) 暖棕' },
+      { id: 'HL-06', status: 'ok', prd: '故事文', actual: '一致' },
+      { id: 'HL-07', status: 'ok', prd: 'emptyHint「放进来一个美好的时刻」', actual: '一致' },
+      { id: 'HL-08', status: 'partial', prd: '添加按钮 §1.2.1：右上 56×56 圆形 + 金色边框 + 微光图标', actual: 'ms-mount FAB（位置对，但暖咖栗色不是金色）' },
+      { id: 'HL-09', status: 'new', prd: '列表入口 §1.2.2', actual: '走父 App lm2-list-btn，iframe 内 .add 隐藏（V2 接入）' },
+      { id: 'HL-10', status: 'ok', prd: '卡片有远近 / 大小 / 角度的随机变化，重量越高越大越近', actual: '✅ ORBIT_RINGS 4 环 + anchorScale + warmthScale + jitter（量化实现）' },
+      { id: 'HL-11', status: 'ok', prd: '不同媒体不同卡（图/视频/音频）', actual: '✅ SHAPE_DIM 6 种（image-h/v / video-h/v / audio / text）+ 动态 aspect 测量' },
+      { id: 'HL-12', status: 'ok', prd: '视角可拖动环顾四周', actual: '✅ + 滚轮改 fov 缩放 + 上下方向键切层' },
+      { id: 'HL-13', status: 'partial', prd: '点击卡片原地放大播放', actual: '实际点开 reader 浮窗（不是"原地放大"是"中央 reader"）' },
+      { id: 'HL-14', status: 'new', prd: '卡片样式：图文 / 视频 / 音频 PRD 没规范具体长什么样', actual: '🆕 磨砂玻璃 + 3 层 SCENE_PALETTE.card 色调流动 + 左侧细线（文字）+ 圆播放按钮（音频/视频）' },
+      { id: 'HL-15', status: 'partial', prd: 'composer 字段：可选照片 / 标题 / 日期 / 文字 / 温暖度', actual: 'ms-composer：image+video+audio 全开 + textareaMaxLength 200 + 3 层选择（温柔/陪伴/启发，不是温暖度 1-5）' },
+      { id: 'HL-16', status: 'partial', prd: '列表 composer 保存按钮文案"让它发光"', actual: 'ms-composer 默认按钮' },
+      { id: 'HL-17', status: 'ok', prd: '介绍卡 .ms-orb 容器（标准样式：暗色底 + 圆角矩形 + 透明 PNG）', actual: '一致（最近撤回了无边框改动对齐其他星）' },
+      { id: 'HL-18', status: 'major', prd: '介绍卡动画 msIntroDrop（从上掉下）', actual: '❌ 用户反馈"治愈不是从上掉下"待修' },
+      { id: 'HL-19', status: 'new', prd: '反向修复列表：3D 卡片放大 ×1.7（1.32 → 2.25）+ ring 12 + jitter 0.14 完全不重叠', actual: '🆕 PRD 未规范，最近做的' },
+      { id: 'HL-20', status: 'new', prd: 'reader 删除按钮：stacking 遮挡修复（错 39）', actual: '🆕 PRD 未规范' },
+      { id: 'HL-21', status: 'new', prd: '卡片字号 ×2.25 + 删装饰引号', actual: '🆕 用户反馈后改的' },
+      { id: 'HL-22', status: 'new', prd: '列表加完自动切回 3D', actual: '🆕 用户最新反馈实现' },
+      { id: 'HL-23', status: 'new', prd: 'composer 三层胶囊按钮（温柔/陪伴/启发）', actual: '🆕 PRD 未规范' },
+      { id: 'HL-24', status: 'new', prd: '列表页背景：gentle 渐变 #f8eee6 → #dfb8a8 → #8e6858', actual: '🆕 PRD 未规范，最近做的' },
+    ]
+  },
+  {
+    key: 'flower', num: '4', title: '花星（爱）',
+    prdRef: 'PRD §2.1', fileRef: 'public/planets/flower/index.html',
+    items: [
+      { id: 'FL-01', status: 'ok', prd: '视觉形式：3D 花园场景，俯视，网格状区块', actual: 'Three.js 3D 花园 + 动态花簇生长（GLB 加载）' },
+      { id: 'FL-02', status: 'partial', prd: '背景渐变 #fde8f2 → #d470a4 粉玫瑰 + 顶部白光晕', actual: '多层 radial + linear，#fff3f4 → #f8d8c0 浅粉到杏色（偏色）' },
+      { id: 'FL-03', status: 'ok', prd: '卡片 rgba(255,248,252,0.68)', actual: '一致' },
+      { id: 'FL-04', status: 'partial', prd: '文字 rgba(88,10,38,0.85)', actual: '实际 0.92' },
+      { id: 'FL-05', status: 'ok', prd: 'accent #c03870', actual: '一致' },
+      { id: 'FL-06', status: 'major', prd: '添加按钮 §1.2.1：右上 56×56 圆', actual: '.float-btn 54px 右下 bottom:44 right:52（位置错）' },
+      { id: 'FL-07', status: 'new', prd: '列表入口 §1.2.2', actual: 'iframe 内无该按钮（V2 接入）' },
+      { id: 'FL-08', status: 'ok', prd: '故事文', actual: '一致' },
+      { id: 'FL-09', status: 'ok', prd: 'emptyHint「把爱意种下去」', actual: '一致' },
+      { id: 'FL-10', status: 'ok', prd: '5 种花 + 寓意（红玫瑰/康乃馨/矮牵牛/茉莉/天竺葵）', actual: '5 种花选择' },
+      { id: 'FL-11', status: 'partial', prd: '添加流程：选花种 → 内容 → 重量 → 位置 → 生长动效', actual: 'ms-composer：花种 + 文字 + textareaMaxLength 100，无"选位置"步骤' },
+      { id: 'FL-12', status: 'unknown', prd: '花簇大小由情感重量决定', actual: '❓ 待验证' },
+      { id: 'FL-13', status: 'unknown', prd: '拖动花簇', actual: '❓ 待验证' },
+      { id: 'FL-14', status: 'ok', prd: '列表卡 ① 纯文字', actual: 'V2 UnifiedCard text' },
+      { id: 'FL-15', status: 'partial', prd: '列表 composer schema：关系或对象 / 日期 / 文字 / 花开多盛 / 按钮"让它开"', actual: 'ms-composer + 花种选择（字段映射）' },
+      { id: 'FL-16', status: 'major', prd: '【未完成】星球过渡动画抖动（P-030）', actual: '❌ 未修' },
+      { id: 'FL-17', status: 'major', prd: '【未完成】下方装饰图案删去（P-032）', actual: '❌ 未修' },
+      { id: 'FL-18', status: 'major', prd: '【未完成】简化花朵弹窗：只留花名+内容+日期，删朵数+标题（P-033）', actual: '❌ 未修' },
+      { id: 'FL-19', status: 'partial', prd: '【未完成】列表页加内容卡死（P-034）', actual: '🟡 框架就位' },
+      { id: 'FL-20', status: 'major', prd: '【未完成】删除花还在卡片删了不同步（P-035）', actual: '❌ 未修' },
+      { id: 'FL-21', status: 'major', prd: '【未完成】列表页加内容没法选花种（P-039）', actual: '❌ 未修' },
+    ]
+  },
+  {
+    key: 'sea', num: '5', title: '海星（烦恼）',
+    prdRef: 'PRD §2.2', fileRef: 'public/planets/sea/index.html',
+    items: [
+      { id: 'SE-01', status: 'ok', prd: '视觉形式：上沙下海 SVG 波浪分割 + 文字被带走', actual: 'SVG 沙滩 + 潮水动画 + 烦恼文字 mask（worryText）' },
+      { id: 'SE-02', status: 'partial', prd: '背景上沙 #fbf5e6 / 下海 #198ed0 → #1070b0', actual: '#fbf6e8 → #d9ecf1（米白）+ 海水 #25a9df → #07579f（渐变中段加了浅蓝）' },
+      { id: 'SE-03', status: 'ok', prd: '卡片 rgba(251,245,230,0.76) 沙色', actual: '一致' },
+      { id: 'SE-04', status: 'partial', prd: '文字 rgba(10,45,75,0.85)', actual: '实际 0.92' },
+      { id: 'SE-05', status: 'major', prd: '浮按钮边框 rgba(255,255,255,0.55) 白色 + 按钮文字白色（PRD 特殊规则）', actual: 'rgba(25,142,208,0.48) 蓝色边框（没用白边特殊规则）' },
+      { id: 'SE-06', status: 'ok', prd: 'accent #198ed0', actual: '一致' },
+      { id: 'SE-07', status: 'ok', prd: '故事文', actual: '一致' },
+      { id: 'SE-08', status: 'ok', prd: 'emptyHint「写下烦恼，看海水把它带走」', actual: '一致' },
+      { id: 'SE-09', status: 'partial', prd: '添加按钮 §1.2.1 位置', actual: '.write-trigger 圆形，位置 TBD（待验证）' },
+      { id: 'SE-10', status: 'new', prd: '列表入口 §1.2.2', actual: 'iframe 内 .timeline-history-btn + V2 父 App' },
+      { id: 'SE-11', status: 'unknown', prd: '默认显示干净沙滩（带走最近一条后状态）', actual: '❓ 待验证' },
+      { id: 'SE-12', status: 'unknown', prd: '「查看以往的烦恼」切换 + 重播海水', actual: '❓ 待验证' },
+      { id: 'SE-13', status: 'partial', prd: '添加 composer：题目 / 日期 / 文字 / 烦恼有多重 / 按钮"交给潮水"', actual: 'ms-composer，无"烦恼有多重"额外 UI' },
+      { id: 'SE-14', status: 'ok', prd: '列表卡 ① 纯文字', actual: 'V2 UnifiedCard text' },
+      { id: 'SE-15', status: 'partial', prd: '【未完成】列表只显示内容（A1 共性）', actual: '🟡 部分修' },
+      { id: 'SE-16', status: 'major', prd: '【未完成】历史条 ⇄ 卡片页删除不同步（P-041）', actual: '❌ 未修' },
+      { id: 'SE-17', status: 'major', prd: '【未完成】列表点卡跳转星图卡顿（P-042）', actual: '❌ 未修' },
+      { id: 'SE-18', status: 'partial', prd: '【未完成】添加样式按交互页统一（P-043）', actual: '🟡 部分修' },
+    ]
+  },
+  {
+    key: 'starry', num: '6', title: '繁星（成就）',
+    prdRef: 'PRD §2.7', fileRef: 'public/planets/starry/index.html',
+    items: [
+      { id: 'ST-01', status: 'ok', prd: '视觉形式：星球 + 环绕星群（仰望星空）', actual: 'canvas + GSAP MotionPath 星群轨道动画' },
+      { id: 'ST-02', status: 'partial', prd: '背景 #020610 极暗星空 + 底部山脊剪影 clip-path', actual: '#05051c 深蓝 + 无山脊剪影（缺底部山脊）' },
+      { id: 'ST-03', status: 'ok', prd: '卡片 rgba(5,12,28,0.55)', actual: '一致' },
+      { id: 'ST-04', status: 'partial', prd: '文字 rgba(215,205,180,0.90)', actual: '实际 0.95' },
+      { id: 'ST-05', status: 'ok', prd: 'accent #f0d870 金色 + 浮按钮金色', actual: '一致' },
+      { id: 'ST-06', status: 'ok', prd: '故事文', actual: '一致' },
+      { id: 'ST-07', status: 'ok', prd: 'emptyHint「记下一个闪光时刻」', actual: '一致' },
+      { id: 'ST-08', status: 'partial', prd: '添加按钮 §1.2.1：右上 56×56', actual: '.floating-add 圆形 ✦，位置 TBD' },
+      { id: 'ST-09', status: 'new', prd: '列表入口 §1.2.2', actual: 'iframe 内无（走 V2 父 App）' },
+      { id: 'ST-10', status: 'ok', prd: '星星大小由情感重量决定（1-5 对应不同大小）', actual: '✅' },
+      { id: 'ST-11', status: 'ok', prd: '星星围绕星球缓慢公转', actual: '✅ GSAP MotionPath' },
+      { id: 'ST-12', status: 'ok', prd: '新星从远处飞来加入轨道', actual: '✅' },
+      { id: 'ST-13', status: 'new', prd: 'composer 字段：可选照片 / 成就 / 日期 / 故事 / 闪光程度 / 按钮"让它发亮"', actual: 'ms-composer：image+video 全开（PRD 没说视频）+ textareaMaxLength 150 + 滑动条（亮度+大小）' },
+      { id: 'ST-14', status: 'ok', prd: '列表卡 ⑤⑦（图 / 横图+文）', actual: 'V2 UnifiedCard 适配' },
+      { id: 'ST-15', status: 'partial', prd: '【未完成】交互页加内容卡顿（P-070）', actual: '🟡 错 36 用 display:none 修了' },
+      { id: 'ST-16', status: 'ok', prd: '【未完成】添加去掉主题填写（P-071）', actual: '✅ 已砍' },
+      { id: 'ST-17', status: 'partial', prd: '【未完成】卡片只留内容（A1 共性）', actual: '🟡 部分修' },
+      { id: 'ST-18', status: 'partial', prd: '【未完成】列表背景丢失 + 不出添加窗口（P-073）', actual: '🟡 框架就位' },
+      { id: 'ST-19', status: 'major', prd: '【未完成】删卡片后列表星星不消失（P-074）', actual: '❌ 未修' },
+      { id: 'ST-20', status: 'major', prd: '【未完成】录入星星后强制弹内容（P-075）', actual: '❌ 未修（PRD 没说要弹，应该不弹）' },
+      { id: 'ST-21', status: 'major', prd: '【未完成】添加样式重做（P-076）', actual: '❌ 未修' },
+    ]
+  },
+  {
+    key: 'cloud', num: '7', title: '云星（自由）',
+    prdRef: 'PRD §2.5', fileRef: 'public/planets/cloud/index.html',
+    items: [
+      { id: 'CL-01', status: 'major', prd: '视觉形式：第一视角云层穿梭（ATMOS 风格）', actual: 'SVG 装饰云 + 记录云（非第一视角，2D 不是 FPV）' },
+      { id: 'CL-02', status: 'partial', prd: '背景紫粉橙渐变 #d8c8ee → #f0d0b5 + 多层径向光晕', actual: '多层 radial-gradient + linear-gradient #d8c8ee → #f8d8c0（接近但偏暖）' },
+      { id: 'CL-03', status: 'major', prd: '卡片 rgba(255,252,250,0.62)', actual: '实际 rgba(245,240,252,0.48) 浅紫雾（PRD 是米白）' },
+      { id: 'CL-04', status: 'partial', prd: '文字 rgba(40,30,80,0.85)', actual: '实际 0.92' },
+      { id: 'CL-05', status: 'partial', prd: 'accent #5070a8', actual: 'ms-config 是 #7888c0' },
+      { id: 'CL-06', status: 'ok', prd: '浮按钮边框 rgba(80,112,168,0.48)', actual: '一致' },
+      { id: 'CL-07', status: 'major', prd: '添加按钮 §1.2.1：右上 56×56', actual: '.btn-add 圆形 右下 bottom:38 right:44（位置错）' },
+      { id: 'CL-08', status: 'major', prd: '列表入口 §1.2.2', actual: '拖拽云朵 + page-hint「还有 N 朵」（完全不同设计）' },
+      { id: 'CL-09', status: 'ok', prd: '故事文', actual: '一致' },
+      { id: 'CL-10', status: 'ok', prd: 'emptyHint「把这个念头放进云里」', actual: '一致' },
+      { id: 'CL-11', status: 'major', prd: '第一视角 FPV 移动 + 视角可拖动 + 滚轮前后', actual: '❌ 俯视 SVG 拖拽' },
+      { id: 'CL-12', status: 'unknown', prd: '默认显示近 3 个月 + 时间轴回退按月/季度', actual: '❓ 待验证' },
+      { id: 'CL-13', status: 'unknown', prd: '靠近云朵 → 边缘出现文字摘要', actual: '❓' },
+      { id: 'CL-14', status: 'partial', prd: 'composer 字段：日期 / 念头 / 轻盈度 / 按钮"放进云里"', actual: 'ms-composer：image 开 + textareaMaxLength 500 + 自定义日期格式（年月）' },
+      { id: 'CL-15', status: 'ok', prd: '列表卡 ① 纯文字', actual: 'V2 UnifiedCard text' },
+      { id: 'CL-16', status: 'major', prd: '【未完成】云朵库图形不对（P-050，用户最激烈反馈）', actual: '❌ 未修，高优先' },
+      { id: 'CL-17', status: 'major', prd: '【未完成】云朵在屏幕边缘看不全 → 画面可左右拖（P-051）', actual: '❌ 未修' },
+      { id: 'CL-18', status: 'major', prd: '【未完成】删除动画方向：应该上下飘（P-052）', actual: '❌ 未修' },
+      { id: 'CL-19', status: 'major', prd: '【未完成】新增云缺动画 + 新内容在左旧的往右（P-053）', actual: '❌ 未修' },
+      { id: 'CL-20', status: 'partial', prd: '【未完成】列表修改不保存（P-055）', actual: '🟡 部分' },
+      { id: 'CL-21', status: 'partial', prd: '【未完成】列表加内容背景变成星图背景（P-056）', actual: '🟡 框架就位' },
+    ]
+  },
+  {
+    key: 'tree', num: '8', title: '树星（孤独）',
+    prdRef: 'PRD §2.4', fileRef: 'public/planets/tree/index.html',
+    items: [
+      { id: 'TR-01', status: 'partial', prd: '视觉形式：文字生长树（白底浅绿色文字树）', actual: '深绿底（不是白底）+ 粒子叶 + GSAP DrawSVG 年轮（反色）' },
+      { id: 'TR-02', status: 'partial', prd: '背景极暗绿黑 #010302 → #030a06 + 底部深绿径向光', actual: '#050500 极暗 + 粒子（无明显径向光）' },
+      { id: 'TR-03', status: 'ok', prd: '卡片 rgba(2,12,4,0.58)', actual: '一致' },
+      { id: 'TR-04', status: 'partial', prd: '文字 rgba(185,205,180,0.90)', actual: '实际 0.95' },
+      { id: 'TR-05', status: 'ok', prd: 'accent #9db898', actual: '一致' },
+      { id: 'TR-06', status: 'ok', prd: '故事文', actual: '一致' },
+      { id: 'TR-07', status: 'ok', prd: 'emptyHint「写下这段独处」', actual: '一致' },
+      { id: 'TR-08', status: 'partial', prd: '添加按钮 §1.2.1：右上 56×56', actual: '.float-add 圆形 ＋，位置 TBD' },
+      { id: 'TR-09', status: 'new', prd: '列表入口 §1.2.2', actual: 'iframe 内无（V2 父 App）' },
+      { id: 'TR-10', status: 'unknown', prd: '关键词作为粒子流入树干', actual: '❓ 待验证' },
+      { id: 'TR-11', status: 'unknown', prd: '记录越多树越茂盛 + 重量越高文字越大', actual: '❓' },
+      { id: 'TR-12', status: 'unknown', prd: '树随时间缓慢生长', actual: '❓' },
+      { id: 'TR-13', status: 'unknown', prd: '关键词提取：简单分词 + 过滤停用词', actual: '❓' },
+      { id: 'TR-14', status: 'partial', prd: 'composer 字段：日期 / 独处的故事 / 独处深度 / 按钮"长成年轮"', actual: 'ms-composer' },
+      { id: 'TR-15', status: 'ok', prd: '列表卡 ① 纯文字', actual: 'V2 UnifiedCard text' },
+      { id: 'TR-16', status: 'major', prd: '【未完成】消息页点卡片黑屏（P-081）', actual: '❌ 未修' },
+      { id: 'TR-17', status: 'major', prd: '【未完成】列表页没办法编辑修改（P-082）', actual: '❌ 未修' },
+      { id: 'TR-18', status: 'major', prd: '【未完成】列表 ⇄ 交互页未同步（P-083）', actual: '❌ 未修' },
+      { id: 'TR-19', status: 'major', prd: '【未完成】切页面弹窗没关回来还显示（P-084 / A5 共性）', actual: '❌ 未修' },
+    ]
+  },
+  {
+    key: 'common', num: '9', title: '共性架构差异（跨多颗星）',
+    prdRef: 'PRD §1.2 / §3', fileRef: 'src/components/planets/* + public/planets/_shared/*',
+    items: [
+      { id: 'CM-01', status: 'partial', prd: '添加按钮统一位置：右上 top:88px right:48px, 56×56 圆形（PRD §1.2.1）', actual: '8 颗星位置各异：治愈 ✅ / 花、云 右下 ❌ / 行星 椭圆胶囊 ❌ / 其他 partial' },
+      { id: 'CM-02', status: 'major', prd: '列表入口统一位置：右上紧邻添加按钮下方 top:156px right:48px, 4 格图标（PRD §1.2.2）', actual: '8 颗星 iframe 内全部无 4 格按钮，列表入口走父 App lm2-list-btn（V2 接入）' },
+      { id: 'CM-03', status: 'new', prd: 'ms-composer 接入（PRD 未提及）', actual: '7 颗星已接入（行星例外，用原生 composer-panel）' },
+      { id: 'CM-04', status: 'ok', prd: '列表展示模式 §3 双模式架构', actual: '已实现（ListModeOverlayV2 + V2_PLANETS 集合）' },
+      { id: 'CM-05', status: 'ok', prd: '列表卡 8 种内容形态（PRD §3.4）', actual: 'V2 UnifiedCard 8 模板完整实现 + inferCardType 智能识别' },
+      { id: 'CM-06', status: 'new', prd: 'ExpandCardModal 浮层（PRD 未规范）', actual: '🆕 点击卡片展开看 + 编辑 + 删除' },
+      { id: 'CM-07', status: 'new', prd: '列表加完自动切回 3D（PRD 未规范）', actual: '🆕 治愈最新做的，未推广到其他 7 颗' },
+      { id: 'CM-08', status: 'ok', prd: 'ms-list-bridge.js 桥接 + __msReloadAll', actual: '已接' },
+      { id: 'CM-09', status: 'partial', prd: '列表写完 → 场景同步（PRD §3.7）', actual: '部分星可能漏接（花-6 / 海-2 / 云-6 / 繁-5 / 树-4 都报过同步问题）' },
+      { id: 'CM-10', status: 'ok', prd: '介绍卡 §0.2：宽 min(360px,31vw), 圆角 24px, padding 22px', actual: '一致' },
+      { id: 'CM-11', status: 'partial', prd: '介绍卡毛玻璃 blur(24px) saturate(1.1)', actual: '实际 blur(18px) saturate(1.2)' },
+      { id: 'CM-12', status: 'new', prd: '介绍卡进场动画（PRD 未规范）', actual: '🆕 msIntroDrop translateY(-160%) → 0, 2s delay + 1s 弹性' },
+      { id: 'CM-13', status: 'unknown', prd: '介绍卡动画治愈跟其他星不一致（用户最新反馈）', actual: '❓ 待修' },
+      { id: 'CM-14', status: 'ok', prd: '故事文与 emptyHint（PRD §2 各星）', actual: '8 颗星全部一致' },
+      { id: 'CM-15', status: 'partial', prd: '数据 storage key 命名 memory-sparks:<star>-records', actual: '8 颗星一致' },
+    ]
+  },
+];
+
+// 状态标签
+const STATUS_LABELS = {
+  ok: '一致',
+  partial: '部分偏离',
+  major: '重大偏离',
+  new: 'PRD 没说',
+  unknown: '待验证'
+};
+
+// ──────────────────────────────────────────────
+// 持久化
+// ──────────────────────────────────────────────
+const STORAGE_KEY = 'memory-sparks-prd-review-2026-06-01';
+const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function getItemState(id) {
+  if (!state[id]) state[id] = { decision: '', note: '' };
+  return state[id];
+}
+
+// ──────────────────────────────────────────────
+// 渲染
+// ──────────────────────────────────────────────
+function renderItem(it) {
+  const s = getItemState(it.id);
+  const decisionMap = {
+    'revert': '改回 PRD',
+    'adopt': '替换 PRD',
+    'both': '两版并存',
+    'defer': '待定',
+    'skip': '不处理'
+  };
+  return `
+    <div class="item${s.decision ? ' decided' : ''}" data-id="${it.id}" data-status="${it.status}">
+      <div class="item-head">
+        <span class="id">${it.id}</span>
+        <span class="tag ${it.status}">${STATUS_LABELS[it.status]}</span>
+        <span class="decision-summary">${decisionMap[s.decision] || ''}</span>
+      </div>
+      <div class="item-row">
+        <div class="label">PRD</div>
+        <div class="value prd">${it.prd}</div>
+      </div>
+      <div class="item-row">
+        <div class="label">实际</div>
+        <div class="value actual">${it.actual}</div>
+      </div>
+      <div class="item-controls">
+        <div class="label">裁决</div>
+        <div class="decision-select">
+          <button class="decision-btn revert ${s.decision === 'revert' ? 'active' : ''}" onclick="setDecision('${it.id}', 'revert')">改回 PRD</button>
+          <button class="decision-btn adopt ${s.decision === 'adopt' ? 'active' : ''}" onclick="setDecision('${it.id}', 'adopt')">替换 PRD</button>
+          <button class="decision-btn both ${s.decision === 'both' ? 'active' : ''}" onclick="setDecision('${it.id}', 'both')">两版并存</button>
+          <button class="decision-btn defer ${s.decision === 'defer' ? 'active' : ''}" onclick="setDecision('${it.id}', 'defer')">待定</button>
+          <button class="decision-btn skip ${s.decision === 'skip' ? 'active' : ''}" onclick="setDecision('${it.id}', 'skip')">不处理</button>
+        </div>
+      </div>
+      <div class="item-controls">
+        <div class="label">备注</div>
+        <textarea class="note-textarea${s.note ? ' has-content' : ''}" placeholder="给我的具体反馈 / 改的细节 / 待补充想法..." oninput="setNote('${it.id}', this)">${s.note || ''}</textarea>
+      </div>
+    </div>
+  `;
+}
+
+function renderSection(sec) {
+  const total = sec.items.length;
+  const done = sec.items.filter(it => state[it.id]?.decision).length;
+  const itemsHTML = sec.items.map(renderItem).join('');
+  return `
+    <section class="section" id="${sec.key}">
+      <div class="section-head" onclick="toggleSection('${sec.key}', event)">
+        <span class="num">${sec.num}</span>
+        <div class="title-block">
+          <h2>${sec.title}</h2>
+          <div class="meta">${sec.prdRef} · ${sec.fileRef}</div>
+        </div>
+        <span class="progress" data-progress="${sec.key}">${done}/${total}</span>
+        <button class="copy-btn" onclick="copySection('${sec.key}', this); event.stopPropagation();">复制本节</button>
+        <span class="chev">▼</span>
+      </div>
+      <div class="section-body">
+        <div class="filter-bar">
+          筛选：
+          <button class="filt active" data-filter="all" onclick="filterSection('${sec.key}', 'all', this)">全部</button>
+          <button class="filt" data-filter="major" onclick="filterSection('${sec.key}', 'major', this)">仅重大偏离</button>
+          <button class="filt" data-filter="new" onclick="filterSection('${sec.key}', 'new', this)">仅 PRD 没说</button>
+          <button class="filt" data-filter="undecided" onclick="filterSection('${sec.key}', 'undecided', this)">未裁决</button>
+          <button class="filt" data-filter="decided" onclick="filterSection('${sec.key}', 'decided', this)">已裁决</button>
+        </div>
+        ${itemsHTML}
+      </div>
+    </section>
+  `;
+}
+
+function renderAll() {
+  document.getElementById('sections').innerHTML = SECTIONS.map(renderSection).join('');
+  updateGlobal();
+}
+
+// ──────────────────────────────────────────────
+// 交互
+// ──────────────────────────────────────────────
+function setDecision(id, decision) {
+  const s = getItemState(id);
+  s.decision = s.decision === decision ? '' : decision; // 再点取消
+  saveState();
+  rerenderItem(id);
+  updateSectionProgress(id);
+  updateGlobal();
+}
+
+function setNote(id, el) {
+  const s = getItemState(id);
+  s.note = el.value;
+  saveState();
+  el.classList.toggle('has-content', !!s.note);
+}
+
+function rerenderItem(id) {
+  const itemEl = document.querySelector(`.item[data-id="${id}"]`);
+  if (!itemEl) return;
+  // 重建该项
+  let sec, it;
+  for (const s of SECTIONS) {
+    const found = s.items.find(x => x.id === id);
+    if (found) { sec = s; it = found; break; }
+  }
+  if (it) {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = renderItem(it);
+    const newEl = wrapper.firstElementChild;
+    // 保留 textarea 焦点
+    const oldTextarea = itemEl.querySelector('textarea');
+    const wasFocused = document.activeElement === oldTextarea;
+    const cursorPos = oldTextarea ? oldTextarea.selectionStart : null;
+    itemEl.replaceWith(newEl);
+    if (wasFocused) {
+      const newTextarea = newEl.querySelector('textarea');
+      newTextarea.focus();
+      if (cursorPos != null) newTextarea.setSelectionRange(cursorPos, cursorPos);
+    }
+  }
+}
+
+function updateSectionProgress(id) {
+  for (const sec of SECTIONS) {
+    if (sec.items.some(x => x.id === id)) {
+      const total = sec.items.length;
+      const done = sec.items.filter(it => state[it.id]?.decision).length;
+      const el = document.querySelector(`[data-progress="${sec.key}"]`);
+      if (el) el.innerHTML = `${done}/${total}`;
+      // 更新 nav-link 状态
+      const link = document.querySelector(`.nav-link[href="#${sec.key}"]`);
+      if (link) link.classList.toggle('has-decisions', done > 0);
+      break;
+    }
+  }
+}
+
+function updateGlobal() {
+  let total = 0, done = 0;
+  SECTIONS.forEach(sec => sec.items.forEach(it => {
+    total++;
+    if (state[it.id]?.decision) done++;
+  }));
+  document.getElementById('globalDoneCount').textContent = done;
+  // 也更新 nav-link 状态
+  SECTIONS.forEach(sec => {
+    const sectionDone = sec.items.filter(it => state[it.id]?.decision).length;
+    const link = document.querySelector(`.nav-link[href="#${sec.key}"]`);
+    if (link) link.classList.toggle('has-decisions', sectionDone > 0);
+  });
+}
+
+function toggleSection(key, evt) {
+  if (evt.target.classList.contains('copy-btn')) return;
+  const sec = document.getElementById(key);
+  sec.classList.toggle('collapsed');
+}
+
+function expandAll(expand) {
+  document.querySelectorAll('.section').forEach(s => {
+    s.classList.toggle('collapsed', !expand);
+  });
+}
+
+function filterSection(key, filter, btnEl) {
+  const sec = document.getElementById(key);
+  sec.querySelectorAll('.filt').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  sec.querySelectorAll('.item').forEach(item => {
+    const status = item.dataset.status;
+    const decided = item.classList.contains('decided');
+    let show = true;
+    if (filter === 'major') show = status === 'major';
+    else if (filter === 'new') show = status === 'new';
+    else if (filter === 'undecided') show = !decided;
+    else if (filter === 'decided') show = decided;
+    item.classList.toggle('hidden', !show);
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ──────────────────────────────────────────────
+// 复制（导出 markdown）
+// ──────────────────────────────────────────────
+const decisionMap = {
+  'revert': '🔴 改回 PRD',
+  'adopt': '🟢 替换 PRD',
+  'both': '🟣 两版并存',
+  'defer': '🟡 待定',
+  'skip': '⚪ 不处理',
+  '': '（未裁决）'
+};
+
+function buildSectionMarkdown(sec, onlyDecided = false) {
+  const lines = [`## ${sec.num} · ${sec.title}`, `> ${sec.prdRef} · \`${sec.fileRef}\``, ''];
+  let any = false;
+  sec.items.forEach(it => {
+    const s = state[it.id] || {};
+    if (onlyDecided && !s.decision && !s.note) return;
+    any = true;
+    lines.push(`### ${it.id} · ${STATUS_LABELS[it.status]}`);
+    lines.push(`- **PRD**：${it.prd}`);
+    lines.push(`- **实际**：${it.actual}`);
+    if (s.decision) lines.push(`- **裁决**：${decisionMap[s.decision]}`);
+    if (s.note) lines.push(`- **备注**：${s.note}`);
+    lines.push('');
+  });
+  if (!any) return null;
+  return lines.join('\n');
+}
+
+function copySection(key, btn) {
+  const sec = SECTIONS.find(x => x.key === key);
+  if (!sec) return;
+  const md = buildSectionMarkdown(sec, false);
+  navigator.clipboard.writeText(md || '（本节无内容）').then(() => {
+    btn.textContent = '已复制 ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制本节'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function copyDecided() {
+  const parts = [];
+  SECTIONS.forEach(sec => {
+    const md = buildSectionMarkdown(sec, true);
+    if (md) parts.push(md);
+  });
+  if (parts.length === 0) { showToast('还没有任何裁决/备注'); return; }
+  navigator.clipboard.writeText(parts.join('\n\n---\n\n')).then(() => showToast('已复制全部裁决/备注'));
+}
+
+function resetAll() {
+  if (!confirm('确定清空所有裁决和备注？')) return;
+  Object.keys(state).forEach(k => delete state[k]);
+  saveState();
+  renderAll();
+  showToast('已清空');
+}
+
+renderAll();
+</script>
+
+</body>
+</html>

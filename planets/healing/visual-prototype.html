@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>治愈星 视觉优化 v3 · 卡片质感方向</title>
+<style>
+  :root {
+    --type-sans: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", -apple-system, sans-serif;
+    --type-serif: "EB Garamond", "Cormorant Garamond", "Georgia", serif;
+    --type-mono: "SF Mono", "Menlo", monospace;
+  }
+  html, body { margin: 0; padding: 0; background: #1c1620; color: #e0d6c8; font-family: var(--type-sans); }
+  body { padding: 56px 36px 120px; }
+
+  /* ─── 顶部说明 ─── */
+  .header {
+    max-width: 1380px;
+    margin: 0 auto 50px;
+    padding: 32px 36px;
+    background: rgba(38, 30, 44, 0.55);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 240, 200, 0.08);
+  }
+  .header h1 { margin: 0 0 12px; font-size: 22px; font-weight: 500; letter-spacing: 0.12em; color: #f5dca8; }
+  .header p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.85; color: rgba(235, 220, 195, 0.78); }
+  .header strong { color: #f5dca8; }
+  .header code { background: rgba(255,238,200,0.10); padding: 2px 7px; border-radius: 4px; font-family: var(--type-mono); font-size: 11.5px; color: #f5dca8; }
+
+  .section-title {
+    max-width: 1380px;
+    margin: 60px auto 22px;
+    padding: 0 6px;
+    display: flex; align-items: baseline; gap: 14px;
+  }
+  .section-title .num {
+    font-family: var(--type-serif);
+    font-style: italic;
+    font-size: 28px;
+    color: rgba(245, 200, 120, 0.55);
+  }
+  .section-title h2 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: 0.14em; color: #f5dca8; }
+  .section-title .desc { font-size: 12.5px; color: rgba(220, 200, 175, 0.6); letter-spacing: 0.04em; }
+
+  /* ════════════════════════════════════════ */
+  /*  Section 1 · 介绍卡固定版                  */
+  /* ════════════════════════════════════════ */
+  .intro-section {
+    max-width: 1380px;
+    margin: 0 auto;
+    border-radius: 18px;
+    overflow: hidden;
+    background: rgba(30, 24, 36, 0.5);
+    border: 1px solid rgba(255, 240, 200, 0.08);
+    padding: 30px 32px;
+  }
+  .intro-section-body {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  /* 固定的介绍卡 */
+  .intro-fixed {
+    width: 100%;
+    padding: 22px;
+    border-radius: 18px;
+    border: 1px solid rgba(120, 90, 70, 0.24);
+    background: rgba(248, 240, 230, 0.82);
+    color: rgb(96, 70, 56);
+    box-shadow:
+      0 14px 36px rgba(60, 30, 10, 0.18),
+      inset 0 1px 0 rgba(255, 252, 245, 0.7);
+    backdrop-filter: blur(18px) saturate(1.15);
+    -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  }
+  .intro-fixed .orb {
+    width: 100%; aspect-ratio: 1;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    background: radial-gradient(circle at 35% 30%, #fef0d8 0%, #dfb8a8 38%, #af6c54 75%, #4a2018 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .intro-fixed .orb::after {
+    content: '';
+    position: absolute;
+    top: 18%; left: 22%;
+    width: 26%; height: 16%;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.5), transparent 70%);
+    transform: rotate(-25deg);
+  }
+  .intro-fixed .eyebrow { font-size: 10px; letter-spacing: 0.32em; color: rgba(96, 70, 56, 0.55); margin-bottom: 8px; font-weight: 500; text-transform: uppercase; }
+  .intro-fixed .name { font-size: 24px; font-weight: 400; letter-spacing: 0.05em; margin: 0 0 12px; line-height: 1.2; color: rgb(80, 56, 42); }
+  .intro-fixed .story { font-size: 12px; line-height: 1.95; letter-spacing: 0.04em; color: rgb(96, 70, 56); margin: 0 0 14px; font-weight: 300; opacity: 0.88; }
+  .intro-fixed .hint {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 13px;
+    border-radius: 99px;
+    background: rgba(140, 90, 60, 0.10);
+    color: rgba(96, 70, 56, 0.78);
+    font-size: 11.5px; letter-spacing: 0.03em;
+  }
+  .intro-fixed .hint .ic {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(120, 90, 70, 0.28);
+    font-size: 11px;
+  }
+
+  .intro-note { color: rgba(220, 200, 175, 0.78); font-size: 13px; line-height: 1.9; }
+  .intro-note h3 { margin: 0 0 12px; font-size: 14px; color: #f5dca8; font-weight: 500; letter-spacing: 0.08em; }
+  .intro-note ul { margin: 0 0 16px; padding-left: 22px; }
+  .intro-note li { margin-bottom: 4px; }
+  .intro-note .swatch-row { display: flex; gap: 10px; margin-top: 10px; }
+  .intro-note .sc { padding: 10px 13px; border-radius: 8px; background: rgba(20, 14, 26, 0.5); border: 1px solid rgba(255, 240, 200, 0.08); flex: 1; }
+  .intro-note .sc .swatch-block { width: 100%; height: 28px; border-radius: 4px; margin-bottom: 6px; border: 1px solid rgba(0,0,0,0.15); }
+  .intro-note .sc .lab { font-size: 9.5px; letter-spacing: 0.22em; color: rgba(220, 200, 175, 0.5); text-transform: uppercase; }
+  .intro-note .sc .val { font-family: var(--type-mono); font-size: 10.5px; color: rgba(235, 220, 195, 0.85); margin-top: 2px; }
+
+  /* ════════════════════════════════════════ */
+  /*  Section 2 · 4 种卡片质感对比               */
+  /* ════════════════════════════════════════ */
+  .texture-section {
+    max-width: 1380px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+  .texture-col {
+    border-radius: 18px;
+    overflow: hidden;
+    background: rgba(30, 24, 36, 0.5);
+    border: 1px solid rgba(255, 240, 200, 0.08);
+  }
+  .texture-col-head {
+    padding: 18px 24px;
+    background: rgba(28, 22, 32, 0.6);
+    border-bottom: 1px solid rgba(255, 240, 200, 0.06);
+  }
+  .texture-col-head .tag {
+    display: inline-block;
+    font-family: var(--type-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    padding: 3px 10px;
+    background: rgba(245, 200, 120, 0.12);
+    color: rgba(245, 200, 120, 0.92);
+    border-radius: 99px;
+    margin-bottom: 8px;
+  }
+  .texture-col-head h3 { margin: 0 0 6px; font-size: 17px; font-weight: 500; letter-spacing: 0.1em; color: #f5dca8; }
+  .texture-col-head .desc { font-size: 12px; color: rgba(220, 200, 175, 0.62); line-height: 1.6; }
+
+  .texture-stage {
+    aspect-ratio: 5 / 3.5;
+    background: var(--demo-stage-bg, radial-gradient(ellipse at 30% 30%, #f8eee6, #efd8be 60%, #c89878 100%));
+    padding: 22px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 0.9fr 1fr 0.75fr;
+    gap: 16px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .texture-stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 18% 16%, rgba(255, 247, 230, 0.5), transparent 50%),
+      radial-gradient(circle at 78% 70%, rgba(246, 209, 190, 0.35), transparent 60%);
+    pointer-events: none;
+  }
+  .demo-card {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    color: var(--card-text);
+    font-family: var(--type-sans);
+  }
+
+  /* 文字卡共用结构 */
+  .card-text {
+    aspect-ratio: 5 / 7;
+    padding: 18px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .card-text::before {
+    content: '';
+    position: absolute;
+    left: 14px; top: 26%;
+    width: 1.5px; height: 48%;
+    background: var(--card-accent);
+    border-radius: 1px;
+    opacity: 0.55;
+  }
+  .card-text .body {
+    font-size: 12px;
+    line-height: 1.78;
+    color: var(--card-text);
+    letter-spacing: 0.01em;
+    font-weight: 300;
+    position: relative; z-index: 2;
+  }
+  .card-text .meta {
+    margin-top: 12px;
+    font-family: var(--type-mono);
+    font-size: 8.5px;
+    letter-spacing: 0.26em;
+    color: var(--card-mute);
+    text-transform: uppercase;
+    position: relative; z-index: 2;
+  }
+  /* 音频卡 */
+  .card-audio {
+    aspect-ratio: 1 / 1;
+    padding: 14px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card-audio .play-row { display: flex; align-items: center; gap: 9px; position: relative; z-index: 2; }
+  .card-audio .play-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--card-accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px var(--card-shadow);
+  }
+  .card-audio .play-btn::before {
+    content: '';
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 5px 0 5px 7px;
+    border-color: transparent transparent transparent var(--card-bg-solid);
+    margin-left: 1.5px;
+  }
+  .card-audio .wave {
+    flex: 1;
+    height: 22px;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .card-audio .wave span {
+    flex: 1;
+    background: var(--card-accent);
+    border-radius: 1px;
+    opacity: 0.62;
+  }
+  .card-audio .audio-body {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--card-text);
+    letter-spacing: 0.01em;
+    position: relative; z-index: 2;
+  }
+  .card-audio .audio-meta {
+    margin-top: 5px;
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--type-mono);
+    font-size: 8px;
+    color: var(--card-mute);
+    letter-spacing: 0.18em;
+    position: relative; z-index: 2;
+  }
+  /* 图卡 */
+  .card-image {
+    aspect-ratio: 9 / 12;
+  }
+  .card-image .photo {
+    position: absolute; inset: 0;
+    background: linear-gradient(160deg, #6c8a4a 0%, #2c4a28 60%, #14260c 100%);
+  }
+  .card-image .photo::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  }
+  .card-image .photo-overlay {
+    position: absolute;
+    left: 10px; right: 10px; bottom: 10px;
+    z-index: 3;
+  }
+  .card-image .photo-overlay .body {
+    font-size: 10.5px;
+    line-height: 1.45;
+    color: #fff;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  }
+  .card-image .photo-overlay .meta {
+    margin-top: 3px;
+    font-family: var(--type-mono);
+    font-size: 7.5px;
+    color: rgba(255,255,255,0.74);
+    letter-spacing: 0.2em;
+  }
+
+  /* ════════════════════════════════════════ */
+  /*  4 种质感方案                              */
+  /* ════════════════════════════════════════ */
+
+  /* ─── A · Frosted Glass 磨砂玻璃 ─── */
+  .tex-A .demo-card {
+    background: rgba(223, 184, 168, 0.55);
+    border: 1px solid rgba(255, 245, 235, 0.42);
+    box-shadow:
+      0 8px 28px rgba(112, 78, 66, 0.25),
+      inset 0 1px 0 rgba(255, 252, 248, 0.6),
+      inset 0 -1px 0 rgba(112, 78, 66, 0.06);
+    backdrop-filter: blur(22px) saturate(1.45);
+    -webkit-backdrop-filter: blur(22px) saturate(1.45);
+    --card-bg-solid: #dfb8a8;
+    --card-text: rgb(82, 50, 38);
+    --card-mute: rgba(82, 50, 38, 0.55);
+    --card-accent: rgba(112, 60, 44, 0.78);
+    --card-shadow: rgba(112, 60, 44, 0.18);
+  }
+
+  /* ─── B · Liquid Glass 液态珠光 ─── */
+  .tex-B .demo-card {
+    background:
+      linear-gradient(135deg, rgba(255, 230, 210, 0.36) 0%, rgba(230, 200, 220, 0.25) 50%, rgba(220, 180, 200, 0.32) 100%),
+      rgba(223, 184, 168, 0.6);
+    border: 1px solid rgba(255, 240, 230, 0.5);
+    box-shadow:
+      0 12px 36px rgba(112, 78, 66, 0.28),
+      inset 0 2px 2px rgba(255, 255, 255, 0.4),
+      inset 0 -2px 4px rgba(112, 60, 50, 0.12);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    --card-bg-solid: #d8b6a5;
+    --card-text: rgb(82, 50, 38);
+    --card-mute: rgba(82, 50, 38, 0.55);
+    --card-accent: rgba(140, 70, 80, 0.74);
+    --card-shadow: rgba(140, 70, 80, 0.2);
+  }
+  .tex-B .demo-card::after {
+    /* 顶部弧形高光 */
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 55%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.05) 60%, transparent 100%);
+    pointer-events: none;
+    border-radius: 14px 14px 60% 60% / 14px 14px 28% 28%;
+  }
+
+  /* ─── C · Warm Glow 治愈暖辉光 ─── */
+  .tex-C .demo-card {
+    background:
+      radial-gradient(circle at 50% 28%, rgba(255, 220, 180, 0.55) 0%, transparent 65%),
+      radial-gradient(circle at 50% 100%, rgba(180, 100, 70, 0.32) 0%, transparent 60%),
+      rgba(223, 184, 168, 0.62);
+    border: 1px solid rgba(255, 200, 160, 0.45);
+    box-shadow:
+      0 10px 32px rgba(255, 170, 110, 0.32),
+      0 0 60px rgba(255, 200, 150, 0.16),
+      inset 0 0 30px rgba(255, 220, 180, 0.22),
+      inset 0 1px 0 rgba(255, 252, 248, 0.5);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    --card-bg-solid: #dfb8a8;
+    --card-text: rgb(82, 50, 38);
+    --card-mute: rgba(82, 50, 38, 0.6);
+    --card-accent: rgba(180, 100, 60, 0.85);
+    --card-shadow: rgba(180, 100, 60, 0.25);
+  }
+
+  /* ─── D · Vellum Paper 绢纸/羊皮纸 ─── */
+  .tex-D .demo-card {
+    background:
+      /* 纸纹噪点 */
+      radial-gradient(circle at 18% 22%, rgba(110, 70, 50, 0.05) 1px, transparent 1.6px),
+      radial-gradient(circle at 72% 64%, rgba(110, 70, 50, 0.04) 1px, transparent 1.4px),
+      radial-gradient(circle at 38% 78%, rgba(110, 70, 50, 0.04) 1px, transparent 1.5px),
+      radial-gradient(circle at 88% 18%, rgba(110, 70, 50, 0.05) 1px, transparent 1.4px),
+      /* 暖纸底 */
+      linear-gradient(135deg, #f0d9c4 0%, #e0bea4 100%);
+    background-size: 7px 7px, 9px 9px, 6px 6px, 8px 8px, auto;
+    border: 1px solid rgba(120, 80, 60, 0.22);
+    box-shadow:
+      0 6px 20px rgba(120, 80, 60, 0.22),
+      inset 0 1px 0 rgba(255, 250, 240, 0.55),
+      inset 0 -1px 0 rgba(120, 80, 60, 0.08);
+    --card-bg-solid: #e0bea4;
+    --card-text: rgb(72, 46, 30);
+    --card-mute: rgba(72, 46, 30, 0.55);
+    --card-accent: rgba(140, 75, 45, 0.78);
+    --card-shadow: rgba(140, 75, 45, 0.18);
+  }
+  .tex-D .demo-card::after {
+    /* 纸张轻微的褪色边缘 */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 65%, rgba(80, 50, 30, 0.06) 100%);
+    pointer-events: none;
+    border-radius: 14px;
+  }
+
+  /* ════════════════════════════════════════ */
+  /*  Section 3 · 选定质感后跨 3 层的样子        */
+  /* ════════════════════════════════════════ */
+  .layers-section {
+    max-width: 1380px;
+    margin: 0 auto;
+    border-radius: 18px;
+    overflow: hidden;
+    background: rgba(30, 24, 36, 0.5);
+    border: 1px solid rgba(255, 240, 200, 0.08);
+  }
+  .layers-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .layer-cell {
+    padding: 22px;
+    border-right: 1px solid rgba(255, 240, 200, 0.06);
+    position: relative;
+  }
+  .layer-cell:last-child { border-right: 0; }
+  .layer-cell .ln {
+    display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px;
+  }
+  .layer-cell .ln-num { font-family: var(--type-serif); font-style: italic; font-size: 16px; color: rgba(245, 200, 120, 0.55); }
+  .layer-cell .ln-cn { font-size: 14px; font-weight: 500; color: #f5dca8; letter-spacing: 0.1em; }
+  .layer-cell .ln-en { font-size: 10px; color: rgba(220, 200, 175, 0.55); letter-spacing: 0.2em; }
+
+  .layer-stage {
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 18px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 0.9fr 1fr;
+    gap: 12px;
+    align-items: center;
+    position: relative;
+  }
+  .layer-stage::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 18% 16%, var(--lay-glow-a), transparent 50%),
+      radial-gradient(circle at 78% 70%, var(--lay-glow-b), transparent 60%);
+    pointer-events: none;
+  }
+  /* 层背景 */
+  .layer-gentle .layer-stage { background: #f8eee6; }
+  .layer-gentle { --lay-glow-a: rgba(255, 247, 230, 0.6); --lay-glow-b: rgba(246, 209, 190, 0.5); }
+  .layer-companion .layer-stage { background: #f7efdf; }
+  .layer-companion { --lay-glow-a: rgba(255, 249, 226, 0.55); --lay-glow-b: rgba(246, 220, 168, 0.55); }
+  .layer-inspire .layer-stage { background: #f8f1ea; }
+  .layer-inspire { --lay-glow-a: rgba(255, 250, 238, 0.5); --lay-glow-b: rgba(238, 218, 198, 0.4); }
+
+  /* 不同层下的卡片色（用 SCENE_PALETTE.card 衍生，同质感 frosted 默认） */
+  .layer-gentle .demo-card {
+    background: rgba(223, 184, 168, 0.55);
+    border: 1px solid rgba(255, 245, 235, 0.42);
+    backdrop-filter: blur(22px) saturate(1.45);
+    -webkit-backdrop-filter: blur(22px) saturate(1.45);
+    box-shadow: 0 8px 28px rgba(112, 78, 66, 0.25), inset 0 1px 0 rgba(255, 252, 248, 0.6);
+    --card-bg-solid: #dfb8a8;
+    --card-text: rgb(82, 50, 38);
+    --card-mute: rgba(82, 50, 38, 0.55);
+    --card-accent: rgba(112, 60, 44, 0.78);
+    --card-shadow: rgba(112, 60, 44, 0.18);
+  }
+  .layer-companion .demo-card {
+    background: rgba(222, 194, 154, 0.6);
+    border: 1px solid rgba(255, 248, 230, 0.45);
+    backdrop-filter: blur(22px) saturate(1.45);
+    -webkit-backdrop-filter: blur(22px) saturate(1.45);
+    box-shadow: 0 8px 28px rgba(113, 88, 54, 0.25), inset 0 1px 0 rgba(255, 252, 240, 0.6);
+    --card-bg-solid: #dec29a;
+    --card-text: rgb(82, 58, 28);
+    --card-mute: rgba(82, 58, 28, 0.55);
+    --card-accent: rgba(140, 90, 32, 0.82);
+    --card-shadow: rgba(140, 90, 32, 0.18);
+  }
+  .layer-inspire .demo-card {
+    background: rgba(241, 229, 219, 0.68);
+    border: 1px solid rgba(255, 252, 248, 0.5);
+    backdrop-filter: blur(22px) saturate(1.4);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    box-shadow: 0 8px 28px rgba(104, 82, 70, 0.2), inset 0 1px 0 rgba(255, 254, 252, 0.62);
+    --card-bg-solid: #f1e5db;
+    --card-text: rgb(74, 52, 38);
+    --card-mute: rgba(74, 52, 38, 0.55);
+    --card-accent: rgba(132, 80, 56, 0.75);
+    --card-shadow: rgba(132, 80, 56, 0.16);
+  }
+
+  /* ════════════════════════════════════════ */
+  /*  Section 4 · 列表背景 3 层渐变              */
+  /* ════════════════════════════════════════ */
+  .list-section {
+    max-width: 1380px;
+    margin: 0 auto;
+    border-radius: 18px;
+    overflow: hidden;
+    background: rgba(30, 24, 36, 0.5);
+    border: 1px solid rgba(255, 240, 200, 0.08);
+  }
+  .list-bg-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .list-bg {
+    aspect-ratio: 5 / 3.5;
+    padding: 26px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    align-content: flex-start;
+    border-right: 1px solid rgba(255, 240, 200, 0.06);
+    position: relative;
+  }
+  .list-bg:last-child { border-right: 0; }
+  .list-bg .label-tag {
+    position: absolute;
+    top: 14px; left: 16px;
+    font-family: var(--type-mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    background: rgba(0,0,0,0.32);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 3px;
+    z-index: 3;
+  }
+  .list-bg .thumb {
+    aspect-ratio: 5 / 4;
+    border-radius: 8px;
+    background: rgba(255, 248, 230, 0.36);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(120, 80, 40, 0.16);
+    position: relative;
+    overflow: hidden;
+  }
+  .list-bg .thumb.green { background: linear-gradient(160deg, #4a6b3a, #1f3520); }
+  .list-bg .thumb.warm { background: linear-gradient(160deg, #d8a075, #8a5640); }
+  .list-gentle-bg { background-image: linear-gradient(180deg, #f8eee6 0%, #dfb8a8 60%, #8e6858 100%); }
+  .list-companion-bg { background-image: linear-gradient(180deg, #f7efdf 0%, #dec29a 60%, #8f7146 100%); }
+  .list-inspire-bg { background-image: linear-gradient(180deg, #f8f1ea 0%, #f1e5db 60%, #84685c 100%); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>治愈星 视觉优化 v3 · 卡片质感方向</h1>
+  <p>你的核心反馈：<strong>介绍卡只一个固定版（不跟层变）</strong> + <strong>卡片不只换色，要有真正的质感差异</strong>（玻璃 / 磨砂 / 暖光 等）。</p>
+  <p>这一版分四块：① 介绍卡固定版（已收敛成一个）→ ② <strong>4 种卡片质感方向</strong>横排对比 → ③ 选定质感后<strong>在 3 层场景下的样子</strong> → ④ 列表页 3 层渐变。</p>
+</div>
+
+<!-- ═════════════════════════════════════════ Section 1 介绍卡固定 ════════════ -->
+<div class="section-title">
+  <span class="num">01</span>
+  <h2>介绍卡 · 固定版</h2>
+  <span class="desc">用最中性的浅奶米调，3 层场景下都协调，不喧宾夺主</span>
+</div>
+<div class="intro-section">
+  <div class="intro-section-body">
+    <div class="intro-fixed">
+      <div class="orb"></div>
+      <div class="eyebrow">KEYWORD PLANET · ORBIT 03</div>
+      <h3 class="name">治愈星</h3>
+      <p class="story">治愈星像是一个被档案环绕的封闭星球，在这里的人们从来不会生病。那些美好的时刻会自动变成环绕在星球上的微光。</p>
+      <div class="hint"><span class="ic">↺</span>放进来一个美好的时刻</div>
+    </div>
+    <div class="intro-note">
+      <h3>为什么用这套色</h3>
+      <ul>
+        <li><strong>背景 rgba(248, 240, 230, 0.82)</strong> — 取 3 层 base 的平均偏浅，浅奶米</li>
+        <li><strong>文字 rgb(96, 70, 56)</strong> — 取 3 层 title 的平均，暖咖栗</li>
+        <li><strong>边框 rgba(120, 90, 70, 0.24)</strong> — 中性暖棕，3 层都不冲突</li>
+        <li>backdrop-filter blur 18px + saturate 1.15 — 让卡跟身后场景轻度融合</li>
+      </ul>
+      <div class="swatch-row">
+        <div class="sc">
+          <div class="swatch-block" style="background: rgba(248, 240, 230, 0.82)"></div>
+          <div class="lab">CARD BG</div>
+          <div class="val">#f8f0e6 / 0.82</div>
+        </div>
+        <div class="sc">
+          <div class="swatch-block" style="background: rgb(96, 70, 56)"></div>
+          <div class="lab">TEXT</div>
+          <div class="val">rgb(96,70,56)</div>
+        </div>
+        <div class="sc">
+          <div class="swatch-block" style="background: rgba(140, 90, 60, 0.20)"></div>
+          <div class="lab">HINT BG</div>
+          <div class="val">#8c5a3c / 0.10</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════ Section 2 卡片质感 ═══════════════ -->
+<div class="section-title">
+  <span class="num">02</span>
+  <h2>3D 场景卡片 · 4 种质感方向</h2>
+  <span class="desc">不只换色，每种是真正不同的材料感 · 配色统一用 gentle 层做对比</span>
+</div>
+
+<div class="texture-section">
+  <!-- A · Frosted Glass -->
+  <div class="texture-col tex-A">
+    <div class="texture-col-head">
+      <span class="tag">A · FROSTED</span>
+      <h3>磨砂玻璃</h3>
+      <div class="desc">高 backdrop-filter blur + 双重 inner shadow + 半透色底 · 干净、冷静、像浴室磨砂窗</div>
+    </div>
+    <div class="texture-stage">
+      <div class="demo-card card-text">
+        <div class="body">那天只是很普通的一句提醒，却让我觉得自己被放在心上。</div>
+        <div class="meta">2026·05·21</div>
+      </div>
+      <div class="demo-card card-audio">
+        <div class="play-row">
+          <div class="play-btn"></div>
+          <div class="wave">
+            <span style="height: 40%"></span><span style="height: 70%"></span><span style="height: 55%"></span><span style="height: 88%"></span><span style="height: 45%"></span><span style="height: 72%"></span><span style="height: 60%"></span><span style="height: 38%"></span><span style="height: 80%"></span><span style="height: 50%"></span>
+          </div>
+        </div>
+        <div>
+          <div class="audio-body">妈妈打来的电话</div>
+          <div class="audio-meta"><span>AUDIO</span><span>4:05</span></div>
+        </div>
+      </div>
+      <div class="demo-card card-image">
+        <div class="photo"></div>
+        <div class="photo-overlay">
+          <div class="body">山顶看日落</div>
+          <div class="meta">05·12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B · Liquid Glass -->
+  <div class="texture-col tex-B">
+    <div class="texture-col-head">
+      <span class="tag">B · LIQUID</span>
+      <h3>液态珠光</h3>
+      <div class="desc">玻璃底 + 渐变彩调高光 + 顶部弧形反光 · iOS 26 风格 / 液态有流动感</div>
+    </div>
+    <div class="texture-stage">
+      <div class="demo-card card-text">
+        <div class="body">那天只是很普通的一句提醒，却让我觉得自己被放在心上。</div>
+        <div class="meta">2026·05·21</div>
+      </div>
+      <div class="demo-card card-audio">
+        <div class="play-row">
+          <div class="play-btn"></div>
+          <div class="wave">
+            <span style="height: 40%"></span><span style="height: 70%"></span><span style="height: 55%"></span><span style="height: 88%"></span><span style="height: 45%"></span><span style="height: 72%"></span><span style="height: 60%"></span><span style="height: 38%"></span><span style="height: 80%"></span><span style="height: 50%"></span>
+          </div>
+        </div>
+        <div>
+          <div class="audio-body">妈妈打来的电话</div>
+          <div class="audio-meta"><span>AUDIO</span><span>4:05</span></div>
+        </div>
+      </div>
+      <div class="demo-card card-image">
+        <div class="photo"></div>
+        <div class="photo-overlay">
+          <div class="body">山顶看日落</div>
+          <div class="meta">05·12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C · Warm Glow -->
+  <div class="texture-col tex-C">
+    <div class="texture-col-head">
+      <span class="tag">C · GLOW</span>
+      <h3>治愈暖辉光</h3>
+      <div class="desc">玻璃 + 中央径向暖光 + 外发光阴影 · 像「微光」自己在发光 · 最符合治愈意象</div>
+    </div>
+    <div class="texture-stage">
+      <div class="demo-card card-text">
+        <div class="body">那天只是很普通的一句提醒，却让我觉得自己被放在心上。</div>
+        <div class="meta">2026·05·21</div>
+      </div>
+      <div class="demo-card card-audio">
+        <div class="play-row">
+          <div class="play-btn"></div>
+          <div class="wave">
+            <span style="height: 40%"></span><span style="height: 70%"></span><span style="height: 55%"></span><span style="height: 88%"></span><span style="height: 45%"></span><span style="height: 72%"></span><span style="height: 60%"></span><span style="height: 38%"></span><span style="height: 80%"></span><span style="height: 50%"></span>
+          </div>
+        </div>
+        <div>
+          <div class="audio-body">妈妈打来的电话</div>
+          <div class="audio-meta"><span>AUDIO</span><span>4:05</span></div>
+        </div>
+      </div>
+      <div class="demo-card card-image">
+        <div class="photo"></div>
+        <div class="photo-overlay">
+          <div class="body">山顶看日落</div>
+          <div class="meta">05·12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D · Vellum Paper -->
+  <div class="texture-col tex-D">
+    <div class="texture-col-head">
+      <span class="tag">D · VELLUM</span>
+      <h3>绢纸 / 羊皮纸</h3>
+      <div class="desc">细噪点纸纹 + 边缘轻微褪色 · 不是玻璃是纸 · 像信件、像日记、有「记忆」的物理感</div>
+    </div>
+    <div class="texture-stage">
+      <div class="demo-card card-text">
+        <div class="body">那天只是很普通的一句提醒，却让我觉得自己被放在心上。</div>
+        <div class="meta">2026·05·21</div>
+      </div>
+      <div class="demo-card card-audio">
+        <div class="play-row">
+          <div class="play-btn"></div>
+          <div class="wave">
+            <span style="height: 40%"></span><span style="height: 70%"></span><span style="height: 55%"></span><span style="height: 88%"></span><span style="height: 45%"></span><span style="height: 72%"></span><span style="height: 60%"></span><span style="height: 38%"></span><span style="height: 80%"></span><span style="height: 50%"></span>
+          </div>
+        </div>
+        <div>
+          <div class="audio-body">妈妈打来的电话</div>
+          <div class="audio-meta"><span>AUDIO</span><span>4:05</span></div>
+        </div>
+      </div>
+      <div class="demo-card card-image">
+        <div class="photo"></div>
+        <div class="photo-overlay">
+          <div class="body">山顶看日落</div>
+          <div class="meta">05·12</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════ Section 3 同质感 3 层切换 ════════ -->
+<div class="section-title">
+  <span class="num">03</span>
+  <h2>选定质感 · 3 层场景里色调流动</h2>
+  <span class="desc">以「磨砂玻璃」为例 · 同质感下用每层 SCENE_PALETTE.card 衍生不同色，体现 3 层情绪递进</span>
+</div>
+
+<div class="layers-section">
+  <div class="layers-row">
+    <div class="layer-cell layer-gentle">
+      <div class="ln">
+        <span class="ln-num">01</span>
+        <span class="ln-cn">温柔</span>
+        <span class="ln-en">GENTLE · #dfb8a8</span>
+      </div>
+      <div class="layer-stage">
+        <div class="demo-card card-text">
+          <div class="body">那天只是很普通的一句提醒，却让我觉得自己被放在心上。</div>
+          <div class="meta">05·21</div>
+        </div>
+        <div class="demo-card card-audio">
+          <div class="play-row">
+            <div class="play-btn"></div>
+            <div class="wave">
+              <span style="height: 40%"></span><span style="height: 70%"></span><span style="height: 55%"></span><span style="height: 88%"></span><span style="height: 45%"></span><span style="height: 72%"></span><span style="height: 60%"></span><span style="height: 38%"></span><span style="height: 80%"></span>
+            </div>
+          </div>
+          <div>
+            <div class="audio-body">妈妈的电话</div>
+            <div class="audio-meta"><span>AUDIO</span><span>4:05</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="layer-cell layer-companion">
+      <div class="ln">
+        <span class="ln-num">02</span>
+        <span class="ln-cn">陪伴</span>
+        <span class="ln-en">COMPANION · #dec29a</span>
+      </div>
+      <div class="layer-stage">
+        <div class="demo-card card-text">
+          <div class="body">坐在窗边十分钟，心里突然安静下来。</div>
+          <div class="meta">05·17</div>
+        </div>
+        <div class="demo-card card-audio">
+          <div class="play-row">
+            <div class="play-btn"></div>
+            <div class="wave">
+              <span style="height: 40%"></span><span style="height: 70%"></span><span style="height: 55%"></span><span style="height: 88%"></span><span style="height: 45%"></span><span style="height: 72%"></span><span style="height: 60%"></span><span style="height: 38%"></span><span style="height: 80%"></span>
+            </div>
+          </div>
+          <div>
+            <div class="audio-body">朋友的歌</div>
+            <div class="audio-meta"><span>AUDIO</span><span>3:08</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="layer-cell layer-inspire">
+      <div class="ln">
+        <span class="ln-num">03</span>
+        <span class="ln-cn">启发</span>
+        <span class="ln-en">INSPIRE · #f1e5db</span>
+      </div>
+      <div class="layer-stage">
+        <div class="demo-card card-text">
+          <div class="body">有人说：你已经做得够好了。我突然就停下来了。</div>
+          <div class="meta">02·28</div>
+        </div>
+        <div class="demo-card card-audio">
+          <div class="play-row">
+            <div class="play-btn"></div>
+            <div class="wave">
+              <span style="height: 40%"></span><span style="height: 70%"></span><span style="height: 55%"></span><span style="height: 88%"></span><span style="height: 45%"></span><span style="height: 72%"></span><span style="height: 60%"></span><span style="height: 38%"></span><span style="height: 80%"></span>
+            </div>
+          </div>
+          <div>
+            <div class="audio-body">一句没关系</div>
+            <div class="audio-meta"><span>AUDIO</span><span>0:42</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════════════════════════════════════ Section 4 列表页 ════════════════ -->
+<div class="section-title">
+  <span class="num">04</span>
+  <h2>列表页背景 · 3 层渐变</h2>
+  <span class="desc">从该层 base → card → 衍生深栗 三色渐变 · 跟交互场景同色系延伸</span>
+</div>
+<div class="list-section">
+  <div class="list-bg-row">
+    <div class="list-bg list-gentle-bg">
+      <span class="label-tag">GENTLE</span>
+      <div class="thumb"></div><div class="thumb green"></div><div class="thumb"></div><div class="thumb"></div>
+      <div class="thumb warm"></div><div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+    </div>
+    <div class="list-bg list-companion-bg">
+      <span class="label-tag">COMPANION</span>
+      <div class="thumb"></div><div class="thumb green"></div><div class="thumb"></div><div class="thumb"></div>
+      <div class="thumb warm"></div><div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+    </div>
+    <div class="list-bg list-inspire-bg">
+      <span class="label-tag">INSPIRE</span>
+      <div class="thumb"></div><div class="thumb green"></div><div class="thumb"></div><div class="thumb"></div>
+      <div class="thumb warm"></div><div class="thumb"></div><div class="thumb"></div><div class="thumb"></div>
+    </div>
+  </div>
+</div>
+
+<div class="header" style="margin-top:60px">
+  <p>👉 看完告诉我：</p>
+  <p>1. <strong>介绍卡固定版</strong>这套色对不对（如果不对，告诉我偏哪个方向）<br>
+  2. <strong>卡片质感选哪个</strong>（A 磨砂 / B 液态珠光 / C 暖辉光 / D 绢纸）—— 也可以说"我喜欢 B 的高光 + D 的纸纹叠加"<br>
+  3. 列表页背景要<strong>跟层切换</strong>还是<strong>固定一套</strong>（推荐固定 gentle 渐变，因为列表不跟交互页绑层）</p>
+</div>
+
+</body>
+</html>

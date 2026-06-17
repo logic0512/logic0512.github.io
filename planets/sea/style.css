@@ -1,0 +1,941 @@
+:root {
+  --ink: #31526a;
+  --ink-soft: rgba(49, 82, 106, 0.68);
+  --paper: #f6f2e9;
+  --paper-warm: #eee7d8;
+  --sea: #0b83c7;
+  --sea-deep: #06509a;
+  --foam: #fffdfa;
+  --glass: rgba(246, 250, 252, 0.76);
+  --glass-border: rgba(255, 255, 255, 0.62);
+  --shadow: 0 22px 70px rgba(42, 67, 86, 0.24);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Segoe UI", sans-serif;
+  background: #0f1822;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+.sea-page,
+.sea-stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sea-stage {
+  background:
+    radial-gradient(circle at 68% 24%, rgba(255, 255, 255, 0.64), transparent 30%),
+    radial-gradient(circle at 24% 72%, rgba(177, 206, 213, 0.18), transparent 34%),
+    linear-gradient(140deg, #fbf6e8 0%, #efe6d3 56%, #d8ebf0 100%);
+}
+
+.sea-stage::before,
+.sea-stage::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.sea-stage::before {
+  opacity: 0.62;
+  background-image:
+    repeating-linear-gradient(97deg, rgba(79, 73, 54, 0.028) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(7deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 9px),
+    radial-gradient(circle at 22% 38%, rgba(125, 102, 70, 0.07) 0 1px, transparent 1.4px);
+  background-size: auto, auto, 18px 18px;
+  mix-blend-mode: multiply;
+}
+
+.sea-stage::after {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.72), transparent 22%),
+    radial-gradient(circle at 50% -12%, rgba(70, 84, 92, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(30, 41, 52, 0.18), transparent 18%, transparent 78%, rgba(15, 38, 66, 0.1));
+}
+
+.sea-svg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.sand-base {
+  fill: url("#sandGradient");
+}
+
+.sand-specks {
+  fill: url("#sandSpecks");
+  opacity: 0.86;
+  mix-blend-mode: multiply;
+}
+
+.worry-svg-text {
+  transform-origin: center;
+  opacity: 1;
+  /* mix-blend-mode: multiply 已移除：对动画波浪做 blend 每帧强制 re-composite，是主要卡顿源 */
+}
+
+/* 字符冲散由 GSAP 控制，不要再加 CSS transition 干扰 */
+
+.worry-text {
+  /* STORE-008：文字块固定居中（绝对定位 + translate 居中），按内容收窄（max-width），
+     旋转留出余量，避免长文字旋转后顶出容器被裁切。text-align 由 JS 按行数切换（单行居中/多行左对齐）。
+     字号过长时由 JS 自动缩小（见 main.js setText 的 fit）。 */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: 600px;
+  padding: 20px 28px;
+  color: rgba(68, 47, 14, 0.39);
+  font-family: "ZCOOL XiaoWei", serif;
+  font-size: clamp(25px, 2.55vw, 48px);
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0.06em;
+  text-align: center;
+  word-break: break-word;
+  /* text-shadow 在 SVG mix-blend-mode 环境里每帧重绘，已移除 */
+  transform: translate(-50%, -50%) rotate(20deg) skewX(-3deg);
+  transform-origin: center;
+}
+
+.ocean-group {
+  transform-origin: center bottom;
+  transition: transform 4.5s cubic-bezier(0.22, 0.72, 0.18, 1);
+}
+
+.ocean-bob {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: oceanBreath 8s ease-in-out infinite alternate;
+  will-change: transform;
+}
+/* wash-mask-bob 关掉 breath：mask 元素的 transform animation 是闪烁主因
+   （SVG mask 每帧 transform 会触发整个 ocean-group 区域 reflow + 重计算 mask 区域） */
+.wash-mask-bob {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.water-fill {
+  fill: url("#oceanGradient");
+}
+
+.water-texture-fill {
+  fill: url("#waterLines");
+  opacity: 0.42;
+  /* 去掉 mix-blend-mode（跟 ocean-group transform 叠加会触发持续 GPU 闪烁） */
+  animation: waterDrift 6s linear infinite;
+  will-change: transform;
+}
+
+.foam-fill {
+  fill: var(--foam);
+  opacity: 0.82;
+}
+
+.foam-bubbles {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.82);
+  stroke-width: 42;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 简化 dasharray：6 段交错 + animation = chromium 易闪。改成 2 段稳定 */
+  stroke-dasharray: 2 26;
+  opacity: 0.72;
+  animation: foamBubbleShift 12s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
+.foam-edge {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.94);
+  stroke-width: 26;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* 关掉 foamPulse — stroke-width 持续变化 + ocean transform 叠加是另一个闪烁源 */
+  /* animation: foamPulse 4.4s ease-in-out infinite; */
+  opacity: 0.85;
+}
+
+@keyframes waterDrift {
+  from { transform: translateY(0); }
+  to { transform: translateY(130px); }
+}
+
+@keyframes oceanBreath {
+  from { transform: translate3d(-12px, 5px, 0) scaleY(0.992); }
+  to { transform: translate3d(12px, -9px, 0) scaleY(1.01); }
+}
+
+@keyframes foamPulse {
+  0%, 100% { opacity: 0.72; stroke-width: 23; }
+  50% { opacity: 0.98; stroke-width: 31; }
+}
+
+@keyframes foamBubbleShift {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -86; }
+}
+
+/* ── 设计系统对齐：海星卡片 ── */
+.intro-card {
+  position: absolute;
+  top: clamp(28px, 4vh, 52px);
+  left: clamp(24px, 3.5vw, 48px);
+  z-index: 5;
+  width: min(360px, 31vw);
+  padding: 22px;
+  border: 1px solid rgba(25, 142, 208, 0.22);
+  border-radius: 24px;
+  background: rgba(251, 245, 230, 0.76);
+  color: rgba(10, 45, 75, 0.85);
+  box-shadow: 0 22px 64px rgba(10, 50, 80, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: padding 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* planet orb — 真实星球图，screen 混合去黑底 */
+.planet-orb {
+  position: relative;
+  width: 88%;
+  aspect-ratio: 1;
+  margin: 0 auto 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.planet-orb img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+}
+
+/* card 折叠 */
+.card-fold {
+  overflow: hidden;
+  max-height: 600px;
+  opacity: 1;
+  transition:
+    max-height 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.30s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.intro-card.collapsed .card-fold { max-height: 0; opacity: 0; }
+.intro-card.collapsed { cursor: pointer; padding: 14px 22px 16px; }
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: rgba(10, 45, 75, 0.45);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  transition: margin-bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.intro-card.collapsed .eyebrow { margin-bottom: 4px; }
+
+.intro-card h1 {
+  margin: 0 0 12px;
+  color: rgba(10, 45, 75, 0.92);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  transition:
+    font-size 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-bottom 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.intro-card.collapsed h1 { font-size: 19px; margin-bottom: 0; }
+
+.story {
+  margin: 0 0 18px;
+  color: rgba(10, 45, 75, 0.72);
+  font-size: 13px;
+  line-height: 2.0;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+
+.hint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(10, 45, 75, 0.52);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  user-select: none;
+}
+.hint-row:hover { opacity: 0.72; }
+
+.icon-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* ── 浮动按钮（设计系统统一规格：右下 54×54） ── */
+.write-trigger {
+  position: fixed;
+  right: 52px;
+  bottom: 44px;
+  z-index: 20;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 1px solid rgba(25, 142, 208, 0.50);
+  border-radius: 50%;
+  background: rgba(251, 245, 230, 0.55);
+  color: rgba(10, 45, 75, 0.78);
+  box-shadow: 0 8px 28px rgba(10, 50, 80, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.write-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(10, 50, 80, 0.28);
+}
+
+.bottle-icon {
+  position: relative;
+  width: 18px;
+  height: 38px;
+  border: 2px solid #477b99;
+  border-radius: 8px 8px 10px 10px;
+  transform: rotate(25deg);
+}
+
+.bottle-icon::before {
+  position: absolute;
+  top: -12px;
+  left: 4px;
+  width: 8px;
+  height: 12px;
+  content: "";
+  border: 2px solid #477b99;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+}
+
+.bottle-icon::after {
+  position: absolute;
+  top: 17px;
+  left: -16px;
+  width: 28px;
+  height: 2px;
+  content: "";
+  border-radius: 999px;
+  background: #477b99;
+  transform: rotate(-72deg);
+}
+
+/* ── 记录窗格（设计系统统一规格：模态，按卡片状态居中） ── */
+:root {
+  --card-left: clamp(24px, 3.5vw, 48px);
+  --card-w: min(360px, 31vw);
+  --card-gap: 32px;
+  --right-shift: 0px; /* composer 默认就居中 */
+}
+
+.composer {
+  position: fixed;
+  top: 50%;
+  left: calc(50% + var(--right-shift));
+  transform: translate(-50%, -50%) scale(0.97);
+  z-index: 100;
+  width: min(420px, 92vw);
+  max-height: 82vh;
+  overflow-y: auto;
+  padding: 22px;
+  border: 1px solid rgba(25, 142, 208, 0.22);
+  border-radius: 24px;
+  background: rgba(251, 245, 230, 0.92);
+  color: rgba(10, 45, 75, 0.85);
+  box-shadow: 0 22px 64px rgba(10, 50, 80, 0.24);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 240ms ease,
+    transform 240ms ease,
+    left 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.composer.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+body.card-collapsed .composer { left: 50%; }
+
+/* 遮罩：点击关闭 composer */
+#backdrop {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(10, 50, 80, 0.18);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.24s, visibility 0.24s;
+  cursor: pointer;
+}
+body.modal-open #backdrop { opacity: 1; visibility: visible; }
+
+.composer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.composer-head button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: rgba(49, 82, 106, 0.7);
+  background: rgba(49, 82, 106, 0.08);
+}
+
+.composer textarea {
+  width: 100%;
+  resize: none;
+  padding: 14px;
+  border: 1px solid rgba(71, 123, 153, 0.18);
+  border-radius: 14px;
+  outline: 0;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.composer textarea:focus {
+  border-color: rgba(54, 135, 188, 0.48);
+  box-shadow: 0 0 0 4px rgba(54, 135, 188, 0.12);
+}
+
+.weight-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+  color: rgba(49, 82, 106, 0.62);
+  font-size: 12px;
+}
+
+.weight {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  color: rgba(49, 82, 106, 0.72);
+  background: rgba(49, 82, 106, 0.08);
+}
+
+.weight.active {
+  color: white;
+  background: #317fb4;
+}
+
+.submit-worry {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  color: white;
+  font-weight: 700;
+  background: linear-gradient(135deg, #299cd2, #096aac);
+  box-shadow: 0 12px 28px rgba(9, 106, 172, 0.22);
+}
+
+.timeline {
+  /* 完全居中（介绍卡收起时画面对齐） */
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: clamp(28px, 5vh, 58px);
+  z-index: 6;
+  width: min(620px, 60vw);
+  height: 76px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 22px;
+  background: rgba(247, 251, 253, 0.58);
+  box-shadow: 0 18px 50px rgba(42, 83, 110, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+.timeline-line {
+  position: absolute;
+  top: 33px;
+  right: 42px;
+  left: 42px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(49, 82, 106, 0.2);
+}
+
+.timeline-nodes {
+  position: relative;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.timeline-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 62px;
+  height: 100%;
+  padding: 0 0 10px;
+  color: rgba(49, 82, 106, 0.58);
+  font-size: 12px;
+}
+
+.timeline-node button {
+  position: absolute;
+  top: 24px;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(247, 251, 253, 0.96);
+  border-radius: 50%;
+  background: #74aeca;
+  box-shadow: 0 3px 12px rgba(49, 82, 106, 0.2);
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.timeline-node button:hover,
+.timeline-node.active button {
+  background: #166ca6;
+  transform: scale(1.18);
+}
+
+.timeline-node.active {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+body.is-washing .write-trigger {
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+/* 海浪动画期间暂停 foam 重绘，释放 GPU */
+body.is-washing .foam-bubbles {
+  animation-play-state: paused;
+}
+
+/* composer 打开时：全面降低 msc-backdrop 背后的合成代价
+   ① 暂停所有动画（避免 backdrop-filter 每帧重采样）
+   ② 关掉背景层 mix-blend-mode（最贵的那层，视觉几乎不变）
+   ③ 关掉其他元素的 backdrop-filter（msc-backdrop 本身的模糊已经够用） */
+body.ms-composer-open .ocean-bob,
+body.ms-composer-open .water-texture-fill,
+body.ms-composer-open .foam-bubbles,
+body.ms-composer-open .voice-trigger,
+body.ms-composer-open .ms-add-fab,
+body.ms-composer-open .ms-add-fab::before {
+  animation-play-state: paused !important;
+}
+body.ms-composer-open .sea-stage::before {
+  mix-blend-mode: normal;
+}
+body.ms-composer-open .intro-card,
+body.ms-composer-open .write-trigger,
+body.ms-composer-open .voice-trigger,
+body.ms-composer-open .timeline {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+
+@media (max-width: 900px) {
+  .intro-card {
+    top: 18px;
+    left: 18px;
+    width: calc(100% - 36px);
+    max-height: 38vh;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  .planet-orb {
+    display: none;
+  }
+
+  .intro-card h1 {
+    font-size: 22px;
+  }
+
+  .story {
+    margin: 0 0 14px;
+    font-size: 12px;
+    line-height: 1.9;
+  }
+
+  .worry-text {
+    padding: 16px;
+    font-size: 24px;
+  }
+
+  .write-trigger {
+    right: 26px;
+    top: auto;
+    bottom: 120px;
+    width: 62px;
+    height: 62px;
+  }
+
+  .composer {
+    right: 18px;
+    left: 18px;
+    top: auto;
+    bottom: 112px;
+    width: auto;
+  }
+
+  .timeline {
+    right: 18px;
+    bottom: 18px;
+    left: 18px;
+  }
+}
+
+/* ─── 历史按钮（在 timeline 左侧） ─── */
+.timeline-history-btn {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(25, 142, 208, 0.32);
+  background: rgba(255, 255, 255, 0.55);
+  color: rgba(10, 45, 75, 0.78);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 180ms ease;
+  z-index: 2;
+}
+.timeline-history-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+  transform: translateY(-50%) scale(1.06);
+}
+.timeline-history-btn svg { display: block; }
+/* timeline 给历史按钮腾位置：左侧 padding 加大 */
+.timeline { padding-left: 56px; }
+
+/* ─── 历史 modal（参照被子星风格 + 海星配色） ─── */
+.history-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  z-index: 130;
+  width: min(520px, 90vw);
+  padding: 24px 22px 18px;
+  background: rgba(251, 245, 230, 0.96);
+  border: 1px solid rgba(25, 142, 208, 0.28);
+  border-radius: 22px;
+  box-shadow: 0 24px 72px rgba(10, 50, 80, 0.28);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  opacity: 0;
+  pointer-events: none;
+  /* visibility:hidden 让 28px 全屏模糊在弹窗关闭时彻底停止渲染（否则每帧跟着海浪重算 → 常驻卡顿源）。
+     visibility 延迟 0.32s 切换，等淡出动画播完再隐藏，过渡视觉零变化。 */
+  visibility: hidden;
+  transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.32s;
+}
+.history-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+  /* 打开时立即可见（visibility 0 延迟），淡入照常 */
+  transition: opacity 0.32s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0s;
+}
+.history-modal .head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.history-modal .head span {
+  color: rgba(10, 45, 75, 0.85);
+  font-size: 14px;
+  letter-spacing: 0.1em;
+}
+.history-modal .close {
+  width: 28px; height: 28px;
+  border: 0; border-radius: 50%;
+  background: rgba(25, 142, 208, 0.08);
+  color: rgba(10, 45, 75, 0.7);
+  cursor: pointer;
+  font-size: 14px;
+}
+.history-modal .close:hover { background: rgba(25, 142, 208, 0.18); }
+.history-modal .list {
+  max-height: 56vh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.history-modal .item {
+  position: relative;
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(25, 142, 208, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+.history-modal .item:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(25, 142, 208, 0.38);
+}
+.history-modal .item.active {
+  background: rgba(25, 142, 208, 0.10);
+  border-color: rgba(25, 142, 208, 0.45);
+}
+.history-modal .date {
+  flex: 0 0 56px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: rgba(10, 45, 75, 0.6);
+  padding-top: 2px;
+}
+.history-modal .content {
+  flex: 1;
+  font-family: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: rgba(10, 45, 75, 0.85);
+  padding-right: 70px; /* 给 weight + 按钮留位置 */
+  word-break: break-word;
+}
+.history-modal .weight-dot {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+  flex: 0 0 auto;
+}
+.history-modal .weight-dot span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(25, 142, 208, 0.15);
+}
+.history-modal .weight-dot span.on {
+  background: rgba(25, 142, 208, 0.7);
+}
+.history-modal .empty {
+  text-align: center;
+  padding: 32px 12px;
+  color: rgba(10, 45, 75, 0.5);
+  font-size: 13px;
+}
+
+/* ─── 麦克风浮动按钮 ─── */
+/* 麦克风按钮：右侧竖排第三位（FAB top:88 → 列表 top:156 → 麦克风 top:224，等间距 12px） */
+.voice-trigger {
+  position: fixed;
+  top: 224px;
+  right: 48px;
+  z-index: 20;
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border: 1px solid rgba(25, 142, 208, 0.32);
+  border-radius: 50%;
+  background: rgba(251, 245, 230, 0.82);
+  color: rgba(10, 45, 75, 0.72);
+  box-shadow: 0 4px 16px rgba(10, 50, 80, 0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+.voice-trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(10, 50, 80, 0.22);
+  background: rgba(251, 245, 230, 0.96);
+}
+/* 录音中状态：边框脉冲 */
+.voice-trigger.recording {
+  border-color: rgba(220, 38, 38, 0.6);
+  color: rgb(220, 38, 38);
+  animation: voiceTriggerPulse 1.2s ease-in-out infinite;
+}
+@keyframes voiceTriggerPulse {
+  0%, 100% { box-shadow: 0 8px 28px rgba(10, 50, 80, 0.22); }
+  50% { box-shadow: 0 8px 28px rgba(220, 38, 38, 0.4), 0 0 0 6px rgba(220, 38, 38, 0.12); }
+}
+
+/* ─── 录音控制条（时间线正上方，无遮罩）─── */
+/* 外层：透明容器，管显示/隐藏和位置 */
+.voice-control-bar {
+  position: fixed;
+  bottom: calc(clamp(28px, 5vh, 58px) + 76px + 14px);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+.voice-control-bar.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+/* 按钮行：真正的胶囊 */
+.voice-ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  background: rgba(251, 245, 230, 0.94);
+  border: 1px solid rgba(25, 142, 208, 0.20);
+  border-radius: 50px;
+  box-shadow: 0 6px 24px rgba(10, 50, 80, 0.14);
+}
+.voice-ctrl-btn {
+  padding: 7px 18px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+  background: rgba(10, 45, 75, 0.07);
+  border: 1px solid rgba(10, 45, 75, 0.15);
+  color: rgba(10, 45, 75, 0.75);
+}
+.voice-ctrl-btn:hover:not(:disabled) { opacity: 0.8; }
+.voice-ctrl-btn:disabled { opacity: 0.32; cursor: default; }
+.voice-ctrl-done {
+  background: #0b83c7;
+  border-color: transparent;
+  color: #fff;
+}
+.voice-ctrl-done:not(:disabled):hover { background: #096aac; }
+.voice-ctrl-cancel {
+  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(10, 45, 75, 0.45);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 150ms;
+}
+.voice-ctrl-cancel:hover { color: rgba(10, 45, 75, 0.7); }
+.voice-ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.voice-hint {
+  font-size: 14px;
+  letter-spacing: 0.10em;
+  color: rgba(10, 45, 75, 0.42);
+  margin: 0;
+}
+
+/* ─── 沙滩声纹（SVG path，在海浪层之下） ─── */
+.waveform-path {
+  stroke: rgba(68, 47, 14, 0.50);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity 0.1s;
+  pointer-events: none;
+}
+
+/* 历史列表中语音条目 */
+.history-modal .item.voice-record .content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: -apple-system, sans-serif;
+  font-size: 13px;
+  color: rgba(10, 45, 75, 0.72);
+}
+.history-modal .item.voice-record .voice-duration {
+  color: rgba(10, 45, 75, 0.5);
+  font-size: 12px;
+}
+.history-modal .voice-play-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(25, 142, 208, 0.38);
+  background: rgba(25, 142, 208, 0.08);
+  color: rgba(11, 131, 199, 0.9);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+.history-modal .voice-play-btn:hover { background: rgba(25, 142, 208, 0.20); }
+
+/* is-washing 时麦克风按钮也禁用 */
+body.is-washing .voice-trigger {
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .voice-trigger {
+    right: 98px;
+    bottom: 120px;
+  }
+}

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>海星 · 烦恼星球原型</title>
+  <link rel="stylesheet" href="style.css?v=20260606sea8">
+<style>
+/* 小薇字体：本地文件，离线可用 */
+@font-face {
+  font-family: 'ZCOOL XiaoWei';
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url('/assets/fonts/zcool-xiaowei-chinese-simplified-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'ZCOOL XiaoWei';
+  font-style: normal; font-weight: 400; font-display: swap;
+  src: url('/assets/fonts/zcool-xiaowei-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF;
+}
+</style>
+  <script src="/assets/vendor/gsap/gsap.min.js"></script>
+<script>
+// Visibility pause: 父页面切 tab 时停掉本 iframe 的 RAF/setInterval，避免后台烧 CPU
+(function(){
+  let _raf = window.requestAnimationFrame.bind(window);
+  let _caf = window.cancelAnimationFrame.bind(window);
+  let _setInt = window.setInterval.bind(window);
+  let _clrInt = window.clearInterval.bind(window);
+  let active = true;
+  let pendingRafs = [];      // {cb, id}
+  let liveIntervals = new Map();
+  let nextId = 1;
+  window.requestAnimationFrame = function(cb){
+    if (active) return _raf(cb);
+    const id = nextId++;
+    pendingRafs.push({cb, id});
+    return id;
+  };
+  window.cancelAnimationFrame = function(id){
+    pendingRafs = pendingRafs.filter(x => x.id !== id);
+    return _caf(id);
+  };
+  window.setInterval = function(cb, ms){
+    const id = _setInt(function(){ if (active) cb(); }, ms);
+    liveIntervals.set(id, true);
+    return id;
+  };
+  window.clearInterval = function(id){
+    liveIntervals.delete(id);
+    return _clrInt(id);
+  };
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.type !== "memory-sparks:visibility") return;
+    const wasActive = active;
+    active = !!e.data.visible;
+    if (!wasActive && active && pendingRafs.length){
+      const q = pendingRafs; pendingRafs = [];
+      q.forEach(({cb}) => _raf(cb));
+    }
+  });
+})();
+</script>
+<!-- MS shared -->
+<link rel="stylesheet" href="../_shared/ms-shared.css?v=20260602f">
+<link rel="stylesheet" href="../_shared/ms-composer.css?v=20260603sea2">
+<script src="../_shared/ms-config.js?v=20260606x"></script>
+<script src="../_shared/ms-sound.js?v=20260604i"></script>
+<script>window.MS_SOUND && MS_SOUND.init('sea');</script>
+<script src="../_shared/ms-icons.js?v=20260602f"></script>
+<script src="../_shared/ms-feedback.js?v=20260602e"></script>
+<script src="../_shared/ms-mount.js?v=20260602f"></script>
+<script src="../_shared/ms-list-bridge.js?v=20260603sea3"></script>
+<script src="../_shared/ms-media-vault.js?v=20260605s"></script>
+<script src="../_shared/ms-media-store.js?v=20260606c"></script>
+<script src="../_shared/ms-composer.js?v=20260605l" defer></script>
+</head>
+<body>
+
+  <main class="sea-page" aria-label="海星交互原型">
+    <section class="sea-stage" aria-label="海星内部场景">
+      <svg class="sea-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="沙滩、海水和浪花">
+        <defs>
+          <linearGradient id="sandGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#fbf6e8"/>
+            <stop offset="48%" stop-color="#efe6d2"/>
+            <stop offset="100%" stop-color="#d9ecf1"/>
+          </linearGradient>
+
+          <pattern id="sandSpecks" width="78" height="78" patternUnits="userSpaceOnUse">
+            <circle cx="9" cy="13" r="0.9" fill="rgba(100,85,60,0.16)"/>
+            <circle cx="36" cy="23" r="0.7" fill="rgba(255,255,255,0.42)"/>
+            <circle cx="64" cy="11" r="0.8" fill="rgba(120,103,74,0.12)"/>
+            <circle cx="19" cy="56" r="0.75" fill="rgba(106,91,67,0.13)"/>
+            <path d="M3 36 C18 31 30 39 43 34 S65 31 76 36" stroke="rgba(121,101,69,0.05)" stroke-width="1.2" fill="none"/>
+            <path d="M10 70 C26 66 44 72 62 66" stroke="rgba(255,255,255,0.18)" stroke-width="1" fill="none"/>
+          </pattern>
+
+          <pattern id="waterLines" width="18" height="130" patternUnits="userSpaceOnUse">
+            <path d="M4 0 C2 24 7 47 5 70 C3 92 6 110 4 130" stroke="rgba(255,255,255,0.24)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+            <path d="M13 4 C15 26 10 48 12 75 C14 96 11 112 13 130" stroke="rgba(7,95,153,0.34)" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+          </pattern>
+
+          <linearGradient id="oceanGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#25a9df"/>
+            <stop offset="58%" stop-color="#0879c0"/>
+            <stop offset="100%" stop-color="#07579f"/>
+          </linearGradient>
+
+          <mask id="worryMask">
+            <rect width="1440" height="900" fill="white"/>
+            <g id="wash-mask-wave" class="wash-mask-wave">
+              <g id="wash-mask-bob" class="wash-mask-bob">
+                <path class="mask-wave" fill="black"/>
+              </g>
+            </g>
+          </mask>
+        </defs>
+
+        <rect class="sand-base" width="1440" height="900"/>
+        <rect class="sand-specks" width="1440" height="900"/>
+
+        <!-- mask 已移除：ocean-group 绘制顺序在后（天然盖住文字），mask 的每帧重算是主要卡顿源 -->
+        <g class="worry-svg-text">
+          <foreignObject x="470" y="130" width="880" height="480">
+            <div xmlns="http://www.w3.org/1999/xhtml" id="worryText" class="worry-text"></div>
+          </foreignObject>
+        </g>
+
+        <!-- 声纹 path：在 worry-text 层之后、海浪层之前，与文字同向旋转 -->
+        <path id="waveformPath" class="waveform-path" d="" fill="none"
+              transform="rotate(20, 910, 370) skewX(-3)"/>
+
+        <g id="oceanGroup" class="ocean-group">
+          <g id="oceanBob" class="ocean-bob">
+            <path id="waterFill" class="water-fill"/>
+            <path id="waterTextureFill" class="water-texture-fill"/>
+            <path id="foamFill" class="foam-fill"/>
+            <path id="foamBubbles" class="foam-bubbles"/>
+            <path id="foamEdge" class="foam-edge"/>
+          </g>
+        </g>
+      </svg>
+
+      <aside class="intro-card" aria-label="海星介绍">
+        <div class="card-fold">
+          <div class="planet-orb" aria-hidden="true">
+            <img src="../../assets/planets/sea.png" alt="">
+          </div>
+        </div>
+        <p class="eyebrow">KEYWORD PLANET · ORBIT 05</p>
+        <h1>海星</h1>
+        <div class="card-fold">
+          <p class="story">
+            在海星上，每个人都有一片属于自己的海。只要他们把烦恼写在沙滩上，或者轻轻说给海风听，潮水就会慢慢涨上来，把那些烦恼带走。
+          </p>
+          <div class="hint-row">
+            <button class="icon-button" type="button" aria-hidden="true" tabindex="-1">↺</button>
+            <span>向大海倾诉</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- 麦克风按钮（在瓶子按钮左侧） -->
+      <button id="voiceTrigger" class="voice-trigger" type="button" aria-label="录下烦恼">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="2" width="6" height="11" rx="3"/>
+          <path d="M5 10a7 7 0 0014 0"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="8" y1="22" x2="16" y2="22"/>
+        </svg>
+      </button>
+
+      <button id="writeTrigger" class="write-trigger" type="button" aria-label="写下烦恼">
+        <span class="bottle-icon" aria-hidden="true"></span>
+      </button>
+
+      <!-- 添加界面：交给 ms-composer 统一渲染 -->
+
+      <!-- 录音控制条：时间线正上方，点麦克风才显示 -->
+      <div id="voiceControlBar" class="voice-control-bar" aria-label="录音控制">
+        <p class="voice-hint">想和大海倾诉些什么</p>
+        <div class="voice-ctrl-row">
+          <button id="voiceStart" class="voice-ctrl-btn" type="button">开始录制</button>
+          <button id="voiceDone"  class="voice-ctrl-btn voice-ctrl-done" type="button" disabled>完成录制</button>
+          <button id="voiceCancel" class="voice-ctrl-cancel" type="button">取消</button>
+        </div>
+      </div>
+
+      <nav class="timeline" aria-label="以往的烦恼时间线">
+        <button id="openHistory" class="timeline-history-btn" type="button" aria-label="查看全部烦恼" title="查看全部">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18M3 12h18M3 18h18"/>
+          </svg>
+        </button>
+        <div class="timeline-line"></div>
+        <div id="timelineNodes" class="timeline-nodes"></div>
+      </nav>
+
+      <!-- 历史 modal（参考被子星，列出全部记录） -->
+      <section class="history-modal" id="historyModal" aria-label="全部烦恼">
+        <header class="head">
+          <span id="historyTitle">全部烦恼</span>
+          <button class="close" id="closeHistory" type="button" aria-label="关闭">×</button>
+        </header>
+        <div class="list" id="historyList"></div>
+      </section>
+
+      <div id="backdrop" aria-hidden="true"></div>
+    </section>
+  </main>
+
+
+  <script src="main.js?v=20260606g"></script>
+
+<script>
+  // ── Memory Sparks · 统一组件挂载（介绍卡 + 添加按钮） ──
+  // 在 DOM ready 后挂载，避免被原有 init 顺序覆盖
+  (function bootMSShared() {
+    function go() { if (window.MS && window.MS.bootstrap) MS.bootstrap('sea'); else setTimeout(go, 60); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+  })();
+</script>
+
+
+<script>
+// 消息页点 + → V2 postMessage('open-composer') → 触发本星原 + 按钮 click → 本星原 composer 自然弹
+(function () {
+  window.__msOpenComposer = function (editIdx) {
+    const btn = document.getElementById("writeTrigger");
+    if (btn) btn.click();
+  };
+})();
+</script>
+
+</body>
+</html>

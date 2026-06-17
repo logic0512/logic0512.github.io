@@ -1,0 +1,1246 @@
+/**
+ * Memory Sparks · 共享组件样式（8 颗星 iframe 通用）
+ * 用法：每颗星的 iframe head 加：
+ *   <link rel="stylesheet" href="../_shared/ms-shared.css">
+ *   然后用 CSS 变量定义自己的主题色：
+ *   :root {
+ *     --ms-theme: #7ab048;        // 主色（按钮、强调）
+ *     --ms-theme-soft: rgba(...);  // 描边
+ *     --ms-theme-glow: rgba(...);  // 发光
+ *     --ms-card-bg: rgba(...);     // 卡片底
+ *   }
+ */
+
+/* ════════════════════════════════════════════ */
+/*  介绍卡 .ms-intro-card                       */
+/*  尺寸统一，配色由每星各自 palette 注入       */
+/* ════════════════════════════════════════════ */
+.ms-intro-card {
+  position: fixed;
+  /* 按钮挪到右侧后，介绍卡恢复原本顶部位置 */
+  top: clamp(28px, 4vh, 52px);
+  left: clamp(24px, 3.5vw, 48px);
+  z-index: 20;
+  width: min(360px, 31vw);
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid var(--ms-card-border, rgba(255, 255, 255, 0.18));
+  background: var(--ms-card-bg, rgba(15, 22, 36, 0.5));
+  color: var(--ms-card-text, rgba(245, 250, 255, 0.92));
+  box-shadow:
+    0 22px 64px var(--ms-card-shadow, rgba(0, 0, 0, 0.5)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  /* 入场掉落动画：默认暂停，等父 App 通知"星球进入完成"才播放
+     （父 App enterPlanet 转场要 ~3s，iframe 此时 opacity 0 用户看不到，直接播会浪费动画）
+     duration 1.6s · cubic-bezier 模拟 back.out(1.4) · 起点屏幕外 -130vh */
+  animation: msIntroDrop 1.6s cubic-bezier(0.34, 1.4, 0.64, 1) backwards paused;
+}
+.ms-intro-card.ms-intro-show {
+  animation-play-state: running;
+}
+@keyframes msIntroDrop {
+  from { transform: translateY(-130vh); }
+  to   { transform: translateY(0); }
+}
+
+.ms-intro-card .ms-orb {
+  width: 100%;
+  aspect-ratio: 1;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: transparent;  /* 去掉圆球后面的灰底，星球(透明四角)直接贴在卡片上 */
+}
+.ms-intro-card .ms-orb img,
+.ms-intro-card .ms-orb video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.ms-intro-card .ms-name {
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--ms-card-text, #fff);
+  margin: 2px 0 14px;
+  line-height: 1.15;
+}
+.ms-intro-card .ms-story {
+  font-size: 13px;
+  line-height: 2.0;
+  color: var(--ms-card-text, rgba(245, 250, 255, 0.85));
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+  font-weight: 300;
+}
+
+/* 空状态/引导行（用色调对应自己 palette） */
+.ms-intro-card .ms-empty-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  border-radius: 99px;
+  background: var(--ms-hint-bg, rgba(0, 0, 0, 0.05));
+  color: var(--ms-card-mute, rgba(255, 255, 255, 0.7));
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+.ms-intro-card .ms-empty-hint:hover {
+  background: var(--ms-hint-bg-hover, rgba(0, 0, 0, 0.08));
+}
+.ms-intro-card .ms-empty-hint .ic {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--ms-card-border, rgba(255, 255, 255, 0.18));
+  color: var(--ms-card-mute);
+  flex-shrink: 0;
+}
+.ms-intro-card .ms-empty-hint .ic svg { width: 12px; height: 12px; }
+
+/* card-fold 折叠态（保留 - 介绍卡可折叠） */
+.ms-intro-card.collapsed { padding: 14px 22px; cursor: pointer; }
+.ms-intro-card.collapsed .ms-orb,
+.ms-intro-card.collapsed .ms-story,
+.ms-intro-card.collapsed .ms-empty-hint { display: none; }
+.ms-intro-card.collapsed .ms-name { font-size: 18px; margin: 0; }
+
+
+/* ════════════════════════════════════════════ */
+/*  添加按钮 .ms-add-fab（右下角统一）           */
+/* ════════════════════════════════════════════ */
+.ms-add-fab {
+  position: fixed;
+  /* 父 App 顶部右上还有个笔形按钮（编辑入口），让出 88px 避免重叠 */
+  top: 88px;
+  right: 48px;
+  z-index: 80;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ms-fab-border, rgba(255, 208, 112, 0.7));
+  background: var(--ms-fab-bg, rgba(0, 0, 0, 0.55));
+  color: var(--ms-fab-icon, #ffd070);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow:
+    0 12px 36px var(--ms-card-shadow, rgba(0, 0, 0, 0.48)),
+    0 0 0 0 var(--ms-fab-glow, rgba(255, 208, 112, 0.4)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: all 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* 呼吸光环：让按钮更显眼，但不刺眼 */
+.ms-add-fab::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1px solid var(--ms-fab-glow, rgba(255, 208, 112, 0.5));
+  opacity: 0.35;
+  pointer-events: none;
+  animation: msFabBreath 2.6s ease-in-out infinite;
+}
+@keyframes msFabBreath {
+  0%, 100% { opacity: 0.20; transform: scale(1); }
+  50%      { opacity: 0.05; transform: scale(1.18); }
+}
+.ms-add-fab:hover {
+  transform: translateY(-3px) scale(1.06);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.6),
+    0 0 24px var(--ms-fab-glow, rgba(255, 208, 112, 0.55)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.ms-add-fab:active {
+  transform: translateY(-1px) scale(1.02);
+  transition-duration: 100ms;
+}
+.ms-add-fab svg {
+  width: 24px; height: 24px;
+  stroke-width: 1.8;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* ════════════════════════════════════════════ */
+/*  历史条 .ms-history-bar（底部居中统一）       */
+/* ════════════════════════════════════════════ */
+.ms-history-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--ms-theme-soft, rgba(255, 255, 255, 0.14));
+  border-radius: 99px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  min-height: 48px;
+  max-width: min(720px, calc(100vw - 96px));
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.ms-history-bar::-webkit-scrollbar { display: none; }
+.ms-history-bar.empty {
+  padding: 12px 24px;
+  color: var(--ms-card-mute, rgba(255, 255, 255, 0.5));
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.ms-history-bar .ms-history-line {
+  width: 18px;
+  height: 1px;
+  background: var(--ms-theme-soft, rgba(255, 255, 255, 0.18));
+  flex-shrink: 0;
+}
+/* 时间点型节点（被子、海） */
+.ms-history-bar .ms-history-dot {
+  flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+.ms-history-bar .ms-history-dot .pt {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ms-theme, #ffd070);
+  box-shadow: 0 0 6px var(--ms-theme-glow, rgba(255, 208, 112, 0.6));
+}
+.ms-history-bar .ms-history-dot .lb {
+  font-size: 9px;
+  color: var(--ms-card-mute, rgba(255, 255, 255, 0.6));
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.ms-history-bar .ms-history-dot.active .pt { transform: scale(1.4); }
+/* 缩略图型节点（行） */
+.ms-history-bar .ms-history-thumb {
+  width: 40px; height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid var(--ms-theme-soft, rgba(255, 255, 255, 0.18));
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+.ms-history-bar .ms-history-thumb img,
+.ms-history-bar .ms-history-thumb video {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.ms-history-bar .ms-history-thumb.active {
+  border-color: var(--ms-theme, #ffd070);
+  box-shadow: 0 0 8px var(--ms-theme-glow, rgba(255, 208, 112, 0.6));
+}
+
+
+/* ════════════════════════════════════════════ */
+/*  详情卡骨架 .ms-detail-card                  */
+/*  （外观由各星 main.css 主题化，骨架统一）     */
+/* ════════════════════════════════════════════ */
+.ms-detail-card {
+  position: fixed;
+  z-index: 75;
+  width: 320px;
+  background: var(--ms-card-bg, rgba(15, 22, 36, 0.95));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--ms-theme-soft, rgba(255, 255, 255, 0.12));
+  border-radius: 16px;
+  color: var(--ms-card-text, rgba(245, 250, 255, 0.92));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ms-detail-card .ms-detail-head {
+  padding: 14px 16px 8px;
+  position: relative;
+}
+.ms-detail-card .ms-detail-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ms-card-mute, rgba(255, 255, 255, 0.55));
+}
+.ms-detail-card .ms-detail-name {
+  font-size: 17px;
+  font-weight: 400;
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+.ms-detail-card .ms-detail-meta {
+  font-size: 11px;
+  color: var(--ms-card-mute, rgba(255, 255, 255, 0.5));
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.ms-detail-card .ms-detail-body {
+  padding: 8px 16px 12px;
+  font-size: 13px;
+  line-height: 1.8;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 240px;
+}
+.ms-detail-card .ms-detail-media {
+  padding: 0 16px 12px;
+}
+.ms-detail-card .ms-detail-media img,
+.ms-detail-card .ms-detail-media video {
+  width: 100%; max-height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.ms-detail-card .ms-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ms-detail-card .ms-detail-actions button {
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 0;
+  font-size: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ms-card-text);
+}
+.ms-detail-card .ms-detail-actions button:hover { background: rgba(255, 255, 255, 0.14); }
+.ms-detail-card .ms-detail-actions button.del {
+  color: #ff9a9a;
+  background: rgba(255, 100, 100, 0.1);
+}
+.ms-detail-card .ms-detail-actions button.del:hover { background: rgba(255, 100, 100, 0.2); }
+
+
+/* ════════════════════════════════════════════ */
+/*  关闭按钮 .ms-close（统一右上 26px）          */
+/* ════════════════════════════════════════════ */
+.ms-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ms-card-text, white);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+.ms-close:hover { background: rgba(255, 255, 255, 0.18); }
+
+
+/* ════════════════════════════════════════════ */
+/*  详情卡右上角删除按钮 .ms-card-del-btn       */
+/*  挂载到任意 .reader / .leaf-card / .popup 等 */
+/* ════════════════════════════════════════════ */
+.ms-card-del-btn,
+.ms-card-edit-btn {
+  position: absolute;
+  top: 10px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 160ms ease;
+  z-index: 10;
+}
+.ms-card-del-btn {
+  right: 44px; /* 留给可能存在的 close 按钮 */
+  color: rgba(255, 200, 200, 0.85);
+}
+.ms-card-del-btn:hover {
+  background: rgba(255, 100, 100, 0.28);
+  color: #ff8a8a;
+}
+.ms-card-edit-btn {
+  right: 78px; /* 删除按钮的左边 */
+  color: var(--ms-card-mute, rgba(255, 255, 255, 0.75));
+}
+.ms-card-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: var(--ms-card-text, white);
+}
+.ms-card-del-btn svg,
+.ms-card-edit-btn svg { display: block; }
+
+
+/* ════════════════════════════════════════════ */
+/*  Toast 提示 .ms-toast                        */
+/* ════════════════════════════════════════════ */
+/* B4.4：toast 位置从顶部移到画面中部，避免被介绍卡 / 顶部卡片遮挡 */
+.ms-toast {
+  position: fixed;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.92);
+  z-index: 9990;
+  padding: 12px 28px;
+  background: rgba(0, 0, 0, 0.84);
+  color: white;
+  font-size: 14px;
+  border-radius: 99px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: all 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+  pointer-events: none;
+}
+.ms-toast.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+
+/* ════════════════════════════════════════════ */
+/*  Confirm 弹窗 .ms-confirm                    */
+/* ════════════════════════════════════════════ */
+.ms-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9980;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.ms-confirm-backdrop.show { display: flex; }
+.ms-confirm {
+  width: min(320px, calc(100vw - 48px));
+  padding: 26px 24px 20px;
+  background: rgba(20, 26, 40, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  color: white;
+  text-align: center;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+  animation: msConfirmIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes msConfirmIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.ms-confirm .msg {
+  font-size: 15px;
+  margin-bottom: 20px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.92);
+}
+.ms-confirm .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.ms-confirm button {
+  padding: 8px 26px;
+  border-radius: 99px;
+  border: 0;
+  cursor: pointer;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.ms-confirm .no {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+}
+.ms-confirm .no:hover { background: rgba(255, 255, 255, 0.14); color: white; }
+.ms-confirm .yes {
+  background: var(--ms-theme, #ffd070);
+  color: var(--ms-theme-text, #2a1a04);
+  font-weight: 500;
+}
+.ms-confirm .yes:hover { filter: brightness(1.1); }
+.ms-confirm.danger .yes {
+  background: #ff7777;
+  color: white;
+}
+
+/* ════════════════════════════════════════════ */
+/*  列表模式 [LIST-001] —— 入口按钮 + 覆盖层    */
+/* ════════════════════════════════════════════ */
+
+/* 列表入口按钮：跟 ms-add-fab 同样式，挂在它正下方 */
+.ms-list-btn {
+  position: fixed;
+  top: 156px;              /* 88 (add-fab top) + 56 (高) + 12 间距 */
+  right: 48px;
+  z-index: 80;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ms-fab-border, rgba(255, 208, 112, 0.7));
+  background: var(--ms-fab-bg, rgba(0, 0, 0, 0.55));
+  color: var(--ms-fab-icon, #ffd070);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow:
+    0 12px 36px var(--ms-card-shadow, rgba(0, 0, 0, 0.48)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: all 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.ms-list-btn:hover {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.55),
+    0 0 18px var(--ms-fab-glow, rgba(255, 208, 112, 0.4)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.ms-list-btn:active {
+  transform: scale(1.02);
+  transition-duration: 100ms;
+}
+.ms-list-btn svg {
+  width: 22px; height: 22px;
+  stroke-width: 1.8;
+}
+
+/* 列表模式打开时：按钮变成「返回交互模式」 */
+.ms-list-btn.is-back {
+  /* 返回按钮统一中性深色，跟列表层背景区分 */
+  background: rgba(15, 22, 36, 0.66);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* ── 列表覆盖层（全屏） ── */
+.ms-list-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--ms-list-bg, #0a0e16);
+  overflow-y: auto;
+  opacity: 0;
+  visibility: hidden;            /* visibility 比 opacity 0 更彻底：跳过 paint */
+  pointer-events: none;
+  transition: opacity 200ms ease, visibility 0s linear 200ms;
+  contain: layout style paint;
+}
+.ms-list-layer.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 200ms ease, visibility 0s linear 0s;
+}
+.ms-list-layer::-webkit-scrollbar { width: 8px; }
+.ms-list-layer::-webkit-scrollbar-track { background: transparent; }
+.ms-list-layer::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.14);
+  border-radius: 4px;
+}
+
+/* 列表模式时：交互场景隐藏（保留 add-fab / list-btn / intro-card 不动） */
+body.ms-list-open .ms-list-layer { opacity: 1; pointer-events: auto; }
+
+/* 列表网格：一排 4 张 4:3 横卡 */
+.ms-list-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 96px 64px 100px;
+}
+@media (max-width: 1100px) {
+  .ms-list-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 760px) {
+  .ms-list-grid { grid-template-columns: repeat(2, 1fr); padding: 88px 24px 80px; }
+}
+
+/* ── 卡片基础（共用骨架） ── */
+.ms-card {
+  --media: linear-gradient(135deg, #4a5566, #2a3140);
+  aspect-ratio: 4/3;
+  /* 用不透明色合成（rgba 0.95 接近不透明），不再用 backdrop-filter blur —— 12 张卡 × blur 是性能杀手 */
+  background: var(--ms-card-bg-solid, rgba(255,255,255,0.92));
+  border: 1px solid var(--ms-card-border, rgba(255,255,255,0.18));
+  border-radius: 14px;
+  box-shadow: 0 8px 24px var(--ms-card-shadow, rgba(0,0,0,0.32));
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  contain: layout style paint;
+}
+/* 入场动画砍掉 stagger：12 张卡同时短淡入，省 GPU */
+.ms-list-layer.show .ms-card {
+  animation: msCardIn 220ms ease both;
+}
+@keyframes msCardIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.ms-card:hover {
+  /* hover 不再 transform（去掉重新合成），仅改 border 和 shadow */
+  border-color: var(--ms-fab-icon);
+  box-shadow: 0 12px 28px var(--ms-card-shadow, rgba(0,0,0,0.4));
+}
+
+.ms-card .ms-card-date {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-size: 10px;
+  color: var(--ms-card-mute, rgba(0,0,0,0.55));
+  letter-spacing: 0.16em;
+  font-variant-numeric: tabular-nums;
+  z-index: 3;
+}
+.ms-card[data-type="image"] .ms-card-date,
+.ms-card[data-type="video-h"] .ms-card-date,
+.ms-card[data-type="image-text-h"] .ms-card-date,
+.ms-card[data-type="video-text-h"] .ms-card-date,
+.ms-card[data-type="video-v"] .ms-card-date {
+  color: rgba(255,255,255,0.78);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.ms-card .ms-card-dots {
+  position: absolute;
+  bottom: 10px;
+  right: 14px;
+  display: flex;
+  gap: 3px;
+  z-index: 3;
+}
+.ms-card .ms-card-dots span {
+  width: 4.5px; height: 4.5px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.16);
+}
+.ms-card[data-type="image"] .ms-card-dots span,
+.ms-card[data-type="video-h"] .ms-card-dots span,
+.ms-card[data-type="image-text-h"] .ms-card-dots span,
+.ms-card[data-type="video-text-h"] .ms-card-dots span,
+.ms-card[data-type="video-v"] .ms-card-dots span {
+  background: rgba(255,255,255,0.28);
+}
+.ms-card .ms-card-dots span.on { background: var(--ms-fab-icon, #ffd070); }
+
+/* hover 工具（编辑/删除） */
+.ms-card .ms-card-tools {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  z-index: 5;
+}
+.ms-card:hover .ms-card-tools { opacity: 1; }
+.ms-card .ms-card-tools button {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  border: 0;
+  color: white;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ms-card .ms-card-tools button.del:hover { background: rgba(255,90,90,0.8); }
+
+/* ─── ① 纯文字 ─── */
+.ms-card[data-type="text"] {
+  display: flex;
+  align-items: center;
+  padding: 30px 22px 26px;
+}
+.ms-card[data-type="text"] .ms-quote { flex: 1; text-align: left; }
+.ms-card[data-type="text"] .ms-mark {
+  font-size: 28px;
+  color: var(--ms-fab-icon, #c8b88e);
+  opacity: 0.55;
+  font-family: "Georgia", serif;
+  line-height: 0.6;
+  margin-bottom: 8px;
+}
+.ms-card[data-type="text"] .ms-body-text {
+  font-family: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13.5px;
+  color: var(--ms-card-text);
+  line-height: 1.65;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.ms-card[data-type="text"] .ms-title-mini {
+  margin-top: 10px;
+  font-size: 10.5px;
+  color: var(--ms-card-mute);
+  letter-spacing: 0.14em;
+}
+
+/* ─── ② 纯音频 ─── */
+.ms-card[data-type="audio"] {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 30px 22px 30px;
+}
+.ms-card[data-type="audio"] .ms-play-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ms-fab-icon) 18%, transparent);
+  border: 1px solid var(--ms-fab-icon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ms-card[data-type="audio"] .ms-play-btn svg {
+  width: 18px; height: 18px;
+  color: var(--ms-fab-icon);
+  margin-left: 3px;
+}
+.ms-card[data-type="audio"] .ms-audio-right {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ms-card[data-type="audio"] .ms-title-line {
+  font-size: 13px;
+  color: var(--ms-card-text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ms-card[data-type="audio"] .ms-wave-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ms-card[data-type="audio"] .ms-wave {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 20px;
+}
+.ms-card[data-type="audio"] .ms-wave span {
+  flex: 1;
+  background: color-mix(in srgb, var(--ms-fab-icon) 55%, transparent);
+  border-radius: 2px;
+  min-height: 3px;
+}
+.ms-card[data-type="audio"] .ms-duration {
+  font-size: 10px;
+  color: var(--ms-card-mute);
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ─── ③ 纯视频·横 ─── */
+.ms-card[data-type="video-h"] { background: #0a0e16; }
+.ms-card[data-type="video-h"] .ms-frame-16-9 {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  aspect-ratio: 16 / 9;
+  background: var(--media);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+.ms-card[data-type="video-h"] .ms-frame-16-9::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.5) 100%);
+}
+.ms-card[data-type="video-h"] .ms-play-overlay,
+.ms-card[data-type="video-v"] .ms-play-overlay,
+.ms-card[data-type="video-text-h"] .ms-play-overlay {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  border: 1.5px solid rgba(255,255,255,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  backdrop-filter: blur(4px);
+}
+.ms-card[data-type="video-h"] .ms-play-overlay svg,
+.ms-card[data-type="video-v"] .ms-play-overlay svg,
+.ms-card[data-type="video-text-h"] .ms-play-overlay svg {
+  width: 16px; height: 16px; color: white; margin-left: 2px;
+}
+.ms-card .ms-duration-chip {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 4;
+  font-size: 10px;
+  padding: 3px 7px;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+.ms-card[data-type="video-h"] .ms-title-inside {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  right: 80px;
+  z-index: 4;
+  font-size: 12px;
+  color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ─── ④ 纯视频·竖 ─── */
+.ms-card[data-type="video-v"] { background: #0a0e16; }
+.ms-card[data-type="video-v"] .ms-frame-9-16 {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  aspect-ratio: 9 / 16;
+  background: var(--media);
+  background-size: cover;
+  background-position: center;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.ms-card[data-type="video-v"] .ms-frame-9-16::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 35%, transparent 70%, rgba(0,0,0,0.6) 100%);
+}
+.ms-card[data-type="video-v"] .ms-play-overlay { width: 36px; height: 36px; }
+.ms-card[data-type="video-v"] .ms-duration-chip {
+  top: 14px; right: 14px; font-size: 9.5px; padding: 2px 6px;
+}
+.ms-card[data-type="video-v"] .ms-title-inframe {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-size: 11.5px;
+  color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  white-space: nowrap;
+}
+
+/* ─── ⑤ 纯图片 ─── */
+.ms-card[data-type="image"] .ms-media-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--media);
+  background-size: cover;
+  background-position: center;
+}
+.ms-card[data-type="image"] .ms-media-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 28%, transparent 60%, rgba(0,0,0,0.75) 100%);
+}
+.ms-card[data-type="image"] .ms-title-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  right: 60px;
+  z-index: 3;
+  font-size: 13px;
+  color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ─── ⑥ 横屏视频 + 文字 / ⑦ 横屏图片 + 文字 ─── */
+.ms-card[data-type="video-text-h"] .ms-media-bg,
+.ms-card[data-type="image-text-h"] .ms-media-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--media);
+  background-size: cover;
+  background-position: center;
+}
+.ms-card[data-type="video-text-h"] .ms-media-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 30%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.9) 100%);
+}
+.ms-card[data-type="image-text-h"] .ms-media-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 25%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.88) 100%);
+}
+.ms-card[data-type="video-text-h"] .ms-play-overlay { top: 38%; width: 42px; height: 42px; }
+.ms-card[data-type="video-text-h"] .ms-text-overlay,
+.ms-card[data-type="image-text-h"] .ms-text-overlay {
+  position: absolute;
+  bottom: 10px;
+  left: 14px;
+  right: 60px;
+  z-index: 4;
+}
+.ms-card[data-type="video-text-h"] .ms-title-line,
+.ms-card[data-type="image-text-h"] .ms-title-line {
+  font-size: 13px;
+  color: white;
+  font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ms-card[data-type="video-text-h"] .ms-preview-line,
+.ms-card[data-type="image-text-h"] .ms-preview-line {
+  font-size: 11px;
+  color: rgba(255,255,255,0.78);
+  font-family: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.4;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+/* ─── ⑧ 竖屏视频/图片 + 文字（左右分栏） ─── */
+.ms-card[data-type="media-text-v"] {
+  display: grid;
+  grid-template-columns: 44% 1fr;
+}
+.ms-card[data-type="media-text-v"] .ms-media-side {
+  background: var(--media);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  border-right: 1px solid var(--ms-card-border);
+}
+.ms-card[data-type="media-text-v"] .ms-play-overlay-small {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.55);
+  border: 1.5px solid rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+}
+.ms-card[data-type="media-text-v"] .ms-play-overlay-small svg {
+  width: 12px; height: 12px; color: white; margin-left: 2px;
+}
+.ms-card[data-type="media-text-v"] .ms-duration-chip-small {
+  position: absolute;
+  bottom: 8px; left: 8px;
+  font-size: 9.5px;
+  padding: 2px 6px;
+  background: rgba(0,0,0,0.55);
+  color: white;
+  border-radius: 3px;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  z-index: 4;
+}
+.ms-card[data-type="media-text-v"] .ms-text-side {
+  padding: 26px 14px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.ms-card[data-type="media-text-v"] .ms-text-side .ms-title {
+  font-size: 13px;
+  color: var(--ms-card-text);
+  font-weight: 500;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.ms-card[data-type="media-text-v"] .ms-text-side .ms-preview {
+  font-size: 11.5px;
+  color: var(--ms-card-mute);
+  font-family: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.55;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* ── 空状态 ── */
+.ms-list-empty {
+  grid-column: 1 / -1;
+  aspect-ratio: 5 / 1;
+  border: 1px dashed rgba(255,255,255,0.18);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.55);
+  background: rgba(0,0,0,0.18);
+}
+.ms-list-empty .txt { font-size: 12.5px; letter-spacing: 0.08em; }
+.ms-list-empty .sub { font-size: 10.5px; color: rgba(255,255,255,0.35); }
+
+/* ── 调位置按钮：开发期工具，生产环境完全隐藏 ── */
+.layout-toggle,
+.layout-panel {
+  display: none !important;
+}
+
+/* ── 列表模式上下文：父 App 通知 iframe 进列表后，隐藏所有星球本体 UI ──
+   一刀切方案：body 所有直接子元素都 hide，除了 composer 和必要的 toast/confirm 弹窗
+   composer 由 ms-list-bridge.js 移到 body 下，所以它是 body 直接子元素，需要白名单保留 */
+body.ms-list-context > *:not(.composer-backdrop):not(.msc-backdrop):not(.composer):not(#composer):not(.panel):not(.input-panel):not(.input-mask):not(.history-modal):not(.overlay):not(#backdrop):not(#overlay):not(.ms-toast):not(.ms-confirm):not(.ms-toast-host):not(script):not(style) {
+  display: none !important;
+}
+/* iframe 透明：html + body 都要 transparent，让父 App 列表网格背景透过来 */
+html:has(body.ms-list-context),
+body.ms-list-context {
+  background: transparent !important;
+}
+/* 兜底：直接给 html 也加 */
+body.ms-list-context ~ *,
+body.ms-list-context {
+  background: transparent !important;
+}
+/* 列表模式下，composer 的 backdrop（半透明黑暗层）也透明，让父 App 虚化的列表卡片透过来 */
+body.ms-list-context .composer-backdrop,
+body.ms-list-context .msc-backdrop,
+body.ms-list-context .input-mask,
+body.ms-list-context .overlay {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.ms-list-context::after,
+body.ms-list-context::before {
+  display: none !important;
+}
+
+/* ════════════════════════════════════════════ */
+/*  composer 打开时全局性能优化（C2 卡死修复）   */
+/*  根因：composer 有 backdrop-filter blur(20+px)，*/
+/*  后景动画每帧让 GPU 重 blur 整屏 → 严重掉帧   */
+/*  对策：composer 打开时停所有 CSS 动画/过渡   */
+/* ════════════════════════════════════════════ */
+body.ms-composer-open *,
+body.ms-composer-open *::before,
+body.ms-composer-open *::after {
+  animation-play-state: paused !important;
+}
+/* composer 本身的过渡保留 */
+body.ms-composer-open .composer,
+body.ms-composer-open .msc-backdrop,
+body.ms-composer-open .composer-backdrop,
+body.ms-composer-open .composer-panel,
+body.ms-composer-open .panel,
+body.ms-composer-open .input-mask,
+body.ms-composer-open .overlay {
+  animation-play-state: running !important;
+}
+
+/* ── composer 强制居中（任何模式下打开都居中） ── */
+.composer-backdrop .composer-panel {
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  width: min(920px, 86vw) !important;
+  transform: translate(-50%, calc(-50% + 16px)) scale(0.97) !important;
+}
+.composer-backdrop.open .composer-panel {
+  transform: translate(-50%, -50%) scale(1) !important;
+}
+/* 列表模式下 composer 要盖在列表层之上 */
+body.ms-list-open .composer-backdrop {
+  z-index: 200 !important;
+}
+
+/* ════════════════════════════════════════════ */
+/*  列表卡 · 详情弹窗（点卡片放大查看）         */
+/* ════════════════════════════════════════════ */
+/* ── 详情弹窗：紧凑精致版 ── */
+.ms-card-detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  background: rgba(5, 8, 14, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.ms-card-detail-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ms-card-detail {
+  width: min(440px, 92vw);
+  max-height: 84vh;
+  background: var(--ms-card-bg-solid, #fafafa);
+  border: 1px solid var(--ms-card-border, rgba(0,0,0,0.1));
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.45);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transform: translateY(16px) scale(0.96);
+  transition: transform 220ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.ms-card-detail-backdrop.show .ms-card-detail {
+  transform: translateY(0) scale(1);
+}
+
+/* 媒体（如果有） */
+.ms-card-detail-media {
+  width: 100%;
+  height: 220px;
+  background: var(--detail-media, linear-gradient(135deg, #4a5566, #2a3140));
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+/* 内容区 */
+.ms-card-detail-body {
+  padding: 22px 24px 18px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.ms-card-detail-body .det-date {
+  font-size: 10.5px;
+  color: var(--ms-card-mute, rgba(0,0,0,0.5));
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+}
+.ms-card-detail-body .det-title {
+  font-size: 17px;
+  color: var(--ms-card-text, rgba(0,0,0,0.9));
+  font-weight: 500;
+  margin: 6px 0 12px;
+  line-height: 1.4;
+}
+.ms-card-detail-body .det-text {
+  font-family: "Noto Sans SC", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  color: var(--ms-card-text, rgba(0,0,0,0.78));
+  line-height: 1.85;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ms-card-detail-body .det-meta {
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--ms-card-mute, rgba(0,0,0,0.45));
+  letter-spacing: 0.06em;
+}
+
+/* 顶部 3 个图标按钮（编辑 / 删除 / 关闭，icon only） */
+.ms-card-detail-bar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+}
+.ms-card-detail-bar button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 0;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.ms-card-detail-bar button:hover {
+  background: rgba(0, 0, 0, 0.78);
+  transform: scale(1.08);
+}
+.ms-card-detail-bar button.del:hover { background: rgba(220, 80, 80, 0.85); }
+.ms-card-detail-bar button svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.8;
+}
+
+/* ════════════════════════════════════════════ */
+/*  全局减压：截图 / 系统弱动画偏好时停所有动画  */
+/* ════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01s !important;
+  }
+}

@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>列表模式</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  }
+
+  /* ── 各星场景背景 ── */
+  body { position: relative; }
+  body.planet-hiking {
+    background: radial-gradient(ellipse 60% 50% at 30% 35%, rgba(255,220,150,0.28), transparent 60%),
+                radial-gradient(ellipse 55% 60% at 75% 70%, rgba(60,110,40,0.45), transparent 65%),
+                linear-gradient(180deg, #2a3a22 0%, #14241a 100%);
+    color: rgba(230,250,215,0.95);
+  }
+  body.planet-beizi {
+    background: radial-gradient(ellipse 70% 50% at 50% 60%, rgba(160,200,230,0.4), transparent 65%),
+                linear-gradient(180deg, #c8d8e6 0%, #708ca8 100%);
+    color: rgba(30,55,80,0.92);
+  }
+  body.planet-healing {
+    background: radial-gradient(circle at 50% 45%, rgba(245,200,120,0.45), transparent 45%),
+                radial-gradient(ellipse 80% 70% at 50% 55%, rgba(120,70,170,0.55), transparent 70%),
+                linear-gradient(135deg, #b89478 0%, #6a4c84 50%, #3a2858 100%);
+    color: rgba(245,220,180,0.95);
+  }
+  body.planet-flower {
+    background: radial-gradient(circle at 74% 18%, rgba(255,240,190,0.45), transparent 38%),
+                radial-gradient(circle at 38% 72%, rgba(200,220,150,0.4), transparent 48%),
+                radial-gradient(circle at 62% 58%, rgba(220,120,150,0.3), transparent 50%),
+                linear-gradient(138deg, #fff3f5 0%, #fadce0 24%, #e8c8b0 52%, #c0d098 100%);
+    color: rgba(88,10,38,0.92);
+  }
+  body.planet-sea {
+    background: radial-gradient(ellipse 80% 40% at 50% 70%, rgba(60,140,200,0.4), transparent 60%),
+                linear-gradient(180deg, #2a4868 0%, #1e3854 50%, #142840 100%);
+    color: rgba(220,235,248,0.95);
+  }
+  body.planet-starry {
+    background: radial-gradient(circle at 20% 30%, rgba(240,216,112,0.3), transparent 8%),
+                radial-gradient(circle at 70% 20%, rgba(240,216,112,0.25), transparent 6%),
+                radial-gradient(circle at 80% 60%, rgba(240,216,112,0.2), transparent 7%),
+                radial-gradient(circle at 30% 75%, rgba(240,216,112,0.18), transparent 5%),
+                linear-gradient(180deg, #050c1c 0%, #0a1530 100%);
+    color: rgba(215,205,180,0.95);
+  }
+  body.planet-cloud {
+    background: radial-gradient(ellipse 55% 45% at 30% 55%, rgba(255,215,175,0.55), transparent 65%),
+                radial-gradient(ellipse 50% 50% at 72% 35%, rgba(215,190,240,0.45), transparent 60%),
+                radial-gradient(ellipse 40% 40% at 55% 80%, rgba(255,235,200,0.4), transparent 60%),
+                linear-gradient(148deg, #d8c8ee 0%, #eee0f8 24%, #fff4ee 50%, #ffe8d8 75%, #f0d0b5 100%);
+    color: rgba(40,30,80,0.92);
+  }
+  body.planet-tree {
+    background: radial-gradient(ellipse 30% 70% at 50% 60%, rgba(60,90,55,0.4), transparent 50%),
+                linear-gradient(180deg, #0a1810 0%, #020806 100%);
+    color: rgba(185,205,180,0.95);
+  }
+
+  /* ── palette 每颗星 ──
+     卡片底色保持浅白玻璃（深底星不再用深底卡），accent 跟随星球性格 */
+  body { /* 默认 hiking */
+    --card-bg: rgba(255,255,255,0.62);
+    --card-border: rgba(74,136,32,0.22);
+    --card-text: rgba(22,68,8,0.88);
+    --card-mute: rgba(22,68,8,0.55);
+    --card-accent: #4a8820;
+    --card-shadow: rgba(0,0,0,0.32);
+    --card-glow: rgba(180,220,130,0.35);
+    --fab-bg: rgba(255,255,255,0.7);
+    --fab-border: rgba(74,136,32,0.5);
+    --fab-icon: rgba(22,68,8,0.85);
+  }
+  body.planet-beizi {
+    --card-bg: rgba(255,255,255,0.62);
+    --card-border: rgba(90,136,176,0.22);
+    --card-text: rgba(30,55,80,0.88);
+    --card-mute: rgba(30,55,80,0.55);
+    --card-accent: #5a88b0;
+    --card-shadow: rgba(42,80,120,0.22);
+    --card-glow: rgba(90,136,176,0.3);
+    --fab-bg: rgba(255,255,255,0.7);
+    --fab-border: rgba(90,136,176,0.48);
+    --fab-icon: rgba(30,55,80,0.85);
+  }
+  body.planet-healing {
+    --card-bg: rgba(255,250,235,0.72);
+    --card-border: rgba(180,140,40,0.24);
+    --card-text: rgba(90,60,10,0.88);
+    --card-mute: rgba(90,60,10,0.55);
+    --card-accent: #c89028;
+    --card-shadow: rgba(120,80,20,0.28);
+    --card-glow: rgba(245,200,64,0.4);
+    --fab-bg: rgba(255,250,235,0.78);
+    --fab-border: rgba(180,140,40,0.5);
+    --fab-icon: rgba(90,60,10,0.85);
+  }
+  body.planet-flower {
+    --card-bg: rgba(255,248,252,0.7);
+    --card-border: rgba(192,56,112,0.22);
+    --card-text: rgba(88,10,38,0.88);
+    --card-mute: rgba(88,10,38,0.55);
+    --card-accent: #c03870;
+    --card-shadow: rgba(140,20,60,0.2);
+    --card-glow: rgba(192,56,112,0.35);
+    --fab-bg: rgba(255,248,252,0.78);
+    --fab-border: rgba(192,56,112,0.48);
+    --fab-icon: rgba(88,10,38,0.85);
+  }
+  body.planet-sea {
+    --card-bg: rgba(228,240,248,0.78);
+    --card-border: rgba(25,142,208,0.26);
+    --card-text: rgba(10,45,75,0.88);
+    --card-mute: rgba(10,45,75,0.55);
+    --card-accent: #198ed0;
+    --card-shadow: rgba(10,50,80,0.24);
+    --card-glow: rgba(25,142,208,0.35);
+    --fab-bg: rgba(228,240,248,0.82);
+    --fab-border: rgba(25,142,208,0.48);
+    --fab-icon: rgba(10,45,75,0.85);
+  }
+  body.planet-starry {
+    --card-bg: rgba(252,248,232,0.66);
+    --card-border: rgba(180,140,40,0.24);
+    --card-text: rgba(75,55,15,0.88);
+    --card-mute: rgba(75,55,15,0.55);
+    --card-accent: #c89028;
+    --card-shadow: rgba(0,0,0,0.42);
+    --card-glow: rgba(240,216,112,0.5);
+    --fab-bg: rgba(252,248,232,0.7);
+    --fab-border: rgba(180,140,40,0.5);
+    --fab-icon: rgba(75,55,15,0.85);
+  }
+  body.planet-cloud {
+    --card-bg: rgba(255,252,250,0.7);
+    --card-border: rgba(80,112,168,0.22);
+    --card-text: rgba(40,30,80,0.88);
+    --card-mute: rgba(40,30,80,0.55);
+    --card-accent: #7888c0;
+    --card-shadow: rgba(50,40,100,0.2);
+    --card-glow: rgba(120,130,200,0.35);
+    --fab-bg: rgba(255,252,250,0.78);
+    --fab-border: rgba(80,112,168,0.48);
+    --fab-icon: rgba(40,30,80,0.85);
+  }
+  body.planet-tree {
+    --card-bg: rgba(240,245,235,0.62);
+    --card-border: rgba(80,120,80,0.26);
+    --card-text: rgba(30,55,30,0.88);
+    --card-mute: rgba(30,55,30,0.55);
+    --card-accent: #5a8a5a;
+    --card-shadow: rgba(0,0,0,0.42);
+    --card-glow: rgba(157,184,152,0.35);
+    --fab-bg: rgba(240,245,235,0.7);
+    --fab-border: rgba(80,120,80,0.5);
+    --fab-icon: rgba(30,55,30,0.85);
+  }
+
+  /* ── 顶部 toggle ── */
+  .mode-toggle {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: inline-flex;
+    padding: 4px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 999px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  }
+  .mode-toggle button {
+    padding: 8px 20px;
+    background: transparent;
+    border: 0;
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    cursor: pointer;
+    border-radius: 999px;
+    transition: all 200ms ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+  }
+  .mode-toggle button.on {
+    background: rgba(255,255,255,0.94);
+    color: #1a1a2a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .mode-toggle button svg { width: 13px; height: 13px; }
+
+  /* ── 添加 / 返回 ── */
+  .fab-add, .fab-back {
+    position: fixed;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+    z-index: 100;
+    transition: transform 180ms ease;
+  }
+  .fab-add {
+    top: 24px;
+    right: 28px;
+    background: var(--fab-bg);
+    border: 1px solid var(--fab-border);
+    color: var(--fab-icon);
+  }
+  .fab-back {
+    bottom: 28px;
+    right: 28px;
+    background: rgba(15,22,36,0.62);
+    border: 1px solid rgba(255,255,255,0.24);
+    color: rgba(255,255,255,0.92);
+  }
+  .fab-add:hover, .fab-back:hover { transform: scale(1.05); }
+  .fab-add svg, .fab-back svg { width: 22px; height: 22px; }
+
+  /* ── 星球切换器（仅本预览页用） ── */
+  .planet-picker {
+    position: fixed;
+    bottom: 28px;
+    left: 28px;
+    z-index: 100;
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    background: rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .planet-picker button {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 180ms ease, border-color 180ms ease;
+  }
+  .planet-picker button.on { border-color: rgba(255,255,255,0.9); transform: scale(1.15); }
+
+  /* ── 列表网格 ── */
+  .list-canvas {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 100px 48px 110px;
+  }
+  .list-canvas::-webkit-scrollbar { width: 8px; }
+  .list-canvas::-webkit-scrollbar-track { background: transparent; }
+  .list-canvas::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+  .list-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* ═══════════ 卡片基础（4:3 横版） ═══════════ */
+  .card {
+    aspect-ratio: 4/3;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 0 8px 24px var(--card-shadow);
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+    animation: card-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card:nth-child(1) { animation-delay: 0ms; }
+  .card:nth-child(2) { animation-delay: 50ms; }
+  .card:nth-child(3) { animation-delay: 100ms; }
+  .card:nth-child(4) { animation-delay: 150ms; }
+  .card:nth-child(5) { animation-delay: 200ms; }
+  .card:nth-child(6) { animation-delay: 250ms; }
+  .card:nth-child(7) { animation-delay: 300ms; }
+  .card:nth-child(8) { animation-delay: 350ms; }
+  .card:hover {
+    transform: translateY(-3px);
+    border-color: var(--card-accent);
+    box-shadow: 0 16px 36px var(--card-shadow), 0 0 18px var(--card-glow);
+  }
+
+  .card .date {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    font-size: 10px;
+    color: var(--card-mute);
+    letter-spacing: 0.16em;
+    font-variant-numeric: tabular-nums;
+    z-index: 3;
+  }
+  .card[data-type="image"] .date,
+  .card[data-type="video-h"] .date,
+  .card[data-type="image-text-h"] .date,
+  .card[data-type="video-text-h"] .date,
+  .card[data-type="video-v"] .date {
+    color: rgba(255,255,255,0.75);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+
+  .card .dots {
+    position: absolute;
+    bottom: 10px;
+    right: 14px;
+    display: flex;
+    gap: 3px;
+    z-index: 3;
+  }
+  .card .dots span {
+    width: 4.5px; height: 4.5px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.16);
+  }
+  .card[data-type="image"] .dots span,
+  .card[data-type="video-h"] .dots span,
+  .card[data-type="image-text-h"] .dots span,
+  .card[data-type="video-text-h"] .dots span,
+  .card[data-type="video-v"] .dots span {
+    background: rgba(255,255,255,0.28);
+  }
+  .card .dots span.on { background: var(--card-accent); }
+
+  /* hover 工具 */
+  .card .tools {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    z-index: 5;
+  }
+  .card:hover .tools { opacity: 1; }
+  .card .tools button {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    border: 0;
+    color: white;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card .tools button.del:hover { background: rgba(255,90,90,0.8); }
+
+  /* ─── ① 纯文字 ─── */
+  .card[data-type="text"] {
+    display: flex;
+    align-items: center;
+    padding: 30px 22px 26px;
+  }
+  .card[data-type="text"] .quote {
+    flex: 1;
+    text-align: left;
+  }
+  .card[data-type="text"] .mark {
+    font-size: 28px;
+    color: var(--card-accent);
+    opacity: 0.55;
+    font-family: "Georgia", serif;
+    line-height: 0.6;
+    margin-bottom: 8px;
+  }
+  .card[data-type="text"] .body-text {
+    font-family: "Kaiti SC", "STKaiti", serif;
+    font-size: 13.5px;
+    color: var(--card-text);
+    line-height: 1.65;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+  .card[data-type="text"] .title-mini {
+    margin-top: 10px;
+    font-size: 10.5px;
+    color: var(--card-mute);
+    letter-spacing: 0.14em;
+  }
+
+  /* ─── ② 纯音频 ─── */
+  .card[data-type="audio"] {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 30px 22px 30px;
+  }
+  .card[data-type="audio"] .play-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--card-accent) 18%, transparent);
+    border: 1px solid var(--card-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .card[data-type="audio"] .play-btn svg {
+    width: 18px; height: 18px;
+    color: var(--card-accent);
+    margin-left: 3px;
+  }
+  .card[data-type="audio"] .audio-right {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card[data-type="audio"] .title-line {
+    font-size: 13px;
+    color: var(--card-text);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .card[data-type="audio"] .wave-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card[data-type="audio"] .wave {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 20px;
+  }
+  .card[data-type="audio"] .wave span {
+    flex: 1;
+    background: color-mix(in srgb, var(--card-accent) 55%, transparent);
+    border-radius: 2px;
+    min-height: 3px;
+  }
+  .card[data-type="audio"] .duration {
+    font-size: 10px;
+    color: var(--card-mute);
+    letter-spacing: 0.1em;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  /* ─── ③ 纯视频·横 ─── */
+  .card[data-type="video-h"] {
+    background: #0a0e16;
+  }
+  .card[data-type="video-h"] .frame-16-9 {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    aspect-ratio: 16 / 9;
+    background: var(--media-bg, linear-gradient(135deg, #4a5566, #2a3140));
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+  }
+  .card[data-type="video-h"] .frame-16-9::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.5) 100%);
+  }
+  .card[data-type="video-h"] .play-overlay,
+  .card[data-type="video-v"] .play-overlay,
+  .card[data-type="video-text-h"] .play-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    border: 1.5px solid rgba(255,255,255,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+    backdrop-filter: blur(4px);
+  }
+  .card[data-type="video-h"] .play-overlay svg,
+  .card[data-type="video-v"] .play-overlay svg,
+  .card[data-type="video-text-h"] .play-overlay svg {
+    width: 16px; height: 16px;
+    color: white;
+    margin-left: 2px;
+  }
+  .card .duration-chip {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    z-index: 4;
+    font-size: 10px;
+    padding: 3px 7px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border-radius: 4px;
+    letter-spacing: 0.08em;
+    font-variant-numeric: tabular-nums;
+  }
+  .card[data-type="video-h"] .title-inside {
+    position: absolute;
+    bottom: 12px;
+    left: 14px;
+    right: 80px;
+    z-index: 4;
+    font-size: 12px;
+    color: white;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* ─── ④ 纯视频·竖 ─── */
+  .card[data-type="video-v"] {
+    background: #0a0e16;
+  }
+  .card[data-type="video-v"] .frame-9-16 {
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    aspect-ratio: 9 / 16;
+    background: var(--media-bg, linear-gradient(135deg, #5a6478, #323848));
+    background-size: cover;
+    background-position: center;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .card[data-type="video-v"] .frame-9-16::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 35%, transparent 70%, rgba(0,0,0,0.6) 100%);
+  }
+  .card[data-type="video-v"] .play-overlay {
+    width: 36px;
+    height: 36px;
+  }
+  .card[data-type="video-v"] .duration-chip {
+    top: 14px;
+    right: 14px;
+    font-size: 9.5px;
+    padding: 2px 6px;
+  }
+  .card[data-type="video-v"] .title-inframe {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    font-size: 11.5px;
+    color: white;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    white-space: nowrap;
+  }
+
+  /* ─── ⑤ 纯图片 ─── */
+  .card[data-type="image"] .media {
+    position: absolute;
+    inset: 0;
+    background: var(--media-bg, linear-gradient(135deg, #4a5566, #2a3140));
+    background-size: cover;
+    background-position: center;
+  }
+  .card[data-type="image"] .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 28%, transparent 60%, rgba(0,0,0,0.75) 100%);
+  }
+  .card[data-type="image"] .title-overlay {
+    position: absolute;
+    bottom: 12px;
+    left: 14px;
+    right: 60px;
+    z-index: 3;
+    font-size: 13px;
+    color: white;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* ─── ⑥ 横屏视频 + 文字 ─── */
+  .card[data-type="video-text-h"] .media {
+    position: absolute;
+    inset: 0;
+    background: var(--media-bg, linear-gradient(135deg, #525c70, #2e3544));
+    background-size: cover;
+    background-position: center;
+  }
+  .card[data-type="video-text-h"] .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, transparent 30%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.9) 100%);
+  }
+  .card[data-type="video-text-h"] .play-overlay {
+    top: 38%;
+    width: 42px;
+    height: 42px;
+  }
+  .card[data-type="video-text-h"] .text-overlay,
+  .card[data-type="image-text-h"] .text-overlay {
+    position: absolute;
+    bottom: 10px;
+    left: 14px;
+    right: 60px;
+    z-index: 4;
+  }
+  .card[data-type="video-text-h"] .title-line,
+  .card[data-type="image-text-h"] .title-line {
+    font-size: 13px;
+    color: white;
+    font-weight: 500;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .card[data-type="video-text-h"] .preview-line,
+  .card[data-type="image-text-h"] .preview-line {
+    font-size: 11px;
+    color: rgba(255,255,255,0.78);
+    font-family: "Kaiti SC", "STKaiti", serif;
+    line-height: 1.4;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+
+  /* ─── ⑦ 横屏图片 + 文字 ─── */
+  .card[data-type="image-text-h"] .media {
+    position: absolute;
+    inset: 0;
+    background: var(--media-bg, linear-gradient(135deg, #4a5566, #2a3140));
+    background-size: cover;
+    background-position: center;
+  }
+  .card[data-type="image-text-h"] .media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 25%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.88) 100%);
+  }
+
+  /* ─── ⑧ 竖屏视频/图片 + 文字（左右分栏） ─── */
+  .card[data-type="media-text-v"] {
+    display: grid;
+    grid-template-columns: 44% 1fr;
+  }
+  .card[data-type="media-text-v"] .media {
+    background: var(--media-bg, linear-gradient(135deg, #5a6478, #323848));
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    border-right: 1px solid var(--card-border);
+  }
+  .card[data-type="media-text-v"] .play-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    border: 1.5px solid rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+  }
+  .card[data-type="media-text-v"] .play-overlay svg {
+    width: 12px; height: 12px;
+    color: white;
+    margin-left: 2px;
+  }
+  .card[data-type="media-text-v"] .duration-chip {
+    bottom: 8px;
+    top: auto;
+    left: 8px;
+    right: auto;
+    font-size: 9.5px;
+    padding: 2px 6px;
+  }
+  .card[data-type="media-text-v"] .body {
+    padding: 26px 14px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+  }
+  .card[data-type="media-text-v"] .title {
+    font-size: 13px;
+    color: var(--card-text);
+    font-weight: 500;
+    line-height: 1.4;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+  .card[data-type="media-text-v"] .preview {
+    font-size: 11.5px;
+    color: var(--card-mute);
+    font-family: "Kaiti SC", "STKaiti", serif;
+    line-height: 1.55;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+</style>
+</head>
+<body class="planet-hiking">
+
+  <div class="mode-toggle">
+    <button data-mode="scene">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>
+      </svg>
+      场景
+    </button>
+    <button data-mode="list" class="on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      列表
+    </button>
+  </div>
+
+  <button class="fab-add" title="添加记录">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+  </button>
+
+  <button class="fab-back" title="返回星图">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 14l-4-4 4-4M5 10h11a4 4 0 014 4v6"/>
+    </svg>
+  </button>
+
+  <div class="planet-picker" id="picker">
+    <button data-p="beizi"  style="background:#8eb8d4"></button>
+    <button data-p="hiking" style="background:#7ab048" class="on"></button>
+    <button data-p="healing" style="background:#f5c840"></button>
+    <button data-p="flower" style="background:#e08aba"></button>
+    <button data-p="sea"    style="background:#198ed0"></button>
+    <button data-p="starry" style="background:#f0d870"></button>
+    <button data-p="cloud"  style="background:#c8b0e8"></button>
+    <button data-p="tree"   style="background:#5a8a5a"></button>
+  </div>
+
+  <div class="list-canvas">
+    <div class="list-grid" id="grid"></div>
+  </div>
+
+<script>
+  // 每条记录: type + 数据。混排 8 种内容形态。
+  const DATA = {
+    hiking: [
+      { type:'image-text-h', d:'05.27', t:'傍晚回程', p:'天色暗下来的时候，每个转弯都变得柔和。', w:3, m:'linear-gradient(135deg, #4a6230, #1f3a18)' },
+      { type:'video-h',      d:'05.25', t:'下山前一眼', dur:'0:18', w:4, m:'linear-gradient(135deg, #5a7a38, #2d4a20)' },
+      { type:'text',         d:'05.23', t:'溪边补水',  body:'把水壶拿出来的时候，忽然发现自己已经走了很远。背包里的水比早晨轻了不止一半。', w:2 },
+      { type:'image',        d:'05.20', t:'第一次走 8 公里', w:5, m:'linear-gradient(135deg, #2d4a20, #14280f)' },
+      { type:'audio',        d:'05.18', t:'山顶的风',   dur:'0:54', w:3 },
+      { type:'video-v',      d:'05.14', t:'帐篷外',     dur:'0:32', w:4, m:'linear-gradient(135deg, #3a5a28, #1d3818)' },
+      { type:'video-text-h', d:'05.10', t:'试鞋的下午', p:'店员陪我从早走到中午。', dur:'0:45', w:2, m:'linear-gradient(135deg, #4a6230, #1f3a18)' },
+      { type:'media-text-v', d:'05.06', t:'背包整理好', p:'所有东西摆上桌的那一刻，已经像出门了。', w:3, m:'linear-gradient(135deg, #3a5a28, #1d3818)' },
+    ],
+    beizi: [
+      { type:'text',         d:'05.27', t:'没接到电话', body:'三天没接到他电话。知道他大概只是忙，但还是会反复检查手机。',  w:2 },
+      { type:'image-text-h', d:'05.20', t:'阴天',       p:'下了一整天的雨，心里也跟着潮潮的。', w:3, m:'linear-gradient(135deg, #b8d0e0, #6a92b8)' },
+      { type:'audio',        d:'05.14', t:'妈妈的留言', dur:'1:24', w:4 },
+      { type:'text',         d:'05.06', t:'没说出口的话', body:'本来想说的，到了嘴边又咽回去。',                                  w:3 },
+      { type:'image',        d:'04.28', t:'凌晨的窗',   w:2, m:'linear-gradient(135deg, #c8d8e6, #7090b0)' },
+      { type:'video-v',      d:'04.20', t:'下雨的窗',   dur:'0:15', w:2, m:'linear-gradient(135deg, #b8d0e0, #6a92b8)' },
+      { type:'media-text-v', d:'04.14', t:'想念一只猫', p:'今天又想起它了。十六年了。', w:3, m:'linear-gradient(135deg, #d4e3ec, #8eb4cc)' },
+      { type:'image-text-h', d:'04.06', t:'空了的位置', p:'桌子那一头还摆着他的杯子。', w:4, m:'linear-gradient(135deg, #c8d8e6, #7090b0)' },
+    ],
+    healing: [
+      { type:'audio',        d:'05.21', t:'她说我在', dur:'0:08', w:5 },
+      { type:'image-text-h', d:'05.17', t:'晒到太阳的下午', p:'坐在窗边十分钟，心里突然安静下来。', w:4, m:'linear-gradient(135deg, #6a4080, #301850)' },
+      { type:'text',         d:'05.10', t:'被记得',   body:'那天只是很普通的一句提醒，却让我觉得自己被放在心上。',  w:5 },
+      { type:'image',        d:'05.04', t:'奶奶的饺子', w:5, m:'linear-gradient(135deg, #5a3070, #2a1040)' },
+      { type:'video-h',      d:'04.28', t:'陌生人的伞', dur:'0:22', w:4, m:'linear-gradient(135deg, #6a4080, #301850)' },
+      { type:'media-text-v', d:'04.21', t:'夜里的灯', p:'回家的路上每盏灯都还亮着。', w:3, m:'linear-gradient(135deg, #4a2860, #1a0830)' },
+      { type:'text',         d:'04.14', t:'医生的话', body:'他说没什么大事的时候，我突然眼睛酸了。',  w:4 },
+      { type:'video-v',      d:'04.07', t:'落日',     dur:'0:48', w:3, m:'linear-gradient(135deg, #5a3070, #2a1040)' },
+    ],
+    flower: [
+      { type:'image',        d:'05.24', t:'妈妈做的饭', w:4, m:'linear-gradient(135deg, #e8a0c0, #b04068)' },
+      { type:'text',         d:'05.18', t:'婚礼',     body:'看着她笑得很开心，我也跟着哭了。结婚那天她回头看了我一眼。', w:3 },
+      { type:'video-text-h', d:'05.12', t:'他记得',   p:'我顺口提过一次，他三个月后还记得。', dur:'0:20', w:5, m:'linear-gradient(135deg, #f0b8d4, #c06080)' },
+      { type:'audio',        d:'05.06', t:'告白录音', dur:'0:36', w:5 },
+      { type:'image-text-h', d:'04.28', t:'和好',     p:'吵架之后第一次见面，谁都没提那件事。', w:4, m:'linear-gradient(135deg, #e8b0c8, #b85878)' },
+      { type:'text',         d:'04.20', t:'老朋友',   body:'三年没见，坐下就有话说。',           w:2 },
+      { type:'video-v',      d:'04.14', t:'回家',     dur:'0:12', w:3, m:'linear-gradient(135deg, #e8a0c0, #b04068)' },
+      { type:'media-text-v', d:'04.06', t:'第一束花', p:'第一次给自己买花，放在床头三天。', w:3, m:'linear-gradient(135deg, #f0b8d4, #c06080)' },
+    ],
+    sea: [
+      { type:'text',         d:'05.18', t:'写不出报告', body:'最近事情太多，脑子里总像有一团打不开的线。', w:4 },
+      { type:'audio',        d:'05.13', t:'凌晨自言',  dur:'2:08', w:2 },
+      { type:'image-text-h', d:'05.06', t:'体检前一晚', p:'明明知道大概率没事，却一夜没睡好。', w:3, m:'linear-gradient(135deg, #a0d0e0, #4090b8)' },
+      { type:'text',         d:'04.29', t:'辞职的念头', body:'又冒出来了，比上次更强烈一点。',           w:4 },
+      { type:'video-v',      d:'04.22', t:'潮水',      dur:'0:24', w:2, m:'linear-gradient(135deg, #88c0dc, #2080b0)' },
+      { type:'image',        d:'04.15', t:'账单',      w:3, m:'linear-gradient(135deg, #98c8d8, #3088b0)' },
+      { type:'media-text-v', d:'04.08', t:'担心的事', p:'一些说不出口的小担心，先交给今天的海风。', w:2, m:'linear-gradient(135deg, #a0d0e0, #4090b8)' },
+      { type:'video-h',      d:'04.01', t:'失眠',     dur:'0:30', w:3, m:'linear-gradient(135deg, #88c0dc, #2080b0)' },
+    ],
+    starry: [
+      { type:'image-text-h', d:'05.09', t:'第 30 天', p:'本来以为放弃的事居然走到了今天。', w:4, m:'linear-gradient(135deg, #2a3050, #0a1020)' },
+      { type:'text',         d:'05.04', t:'长线整理', body:'把零散的想法收进了一个清晰的结构里。这是很久没有的踏实。', w:3 },
+      { type:'video-h',      d:'04.28', t:'第一次演讲', dur:'1:20', w:5, m:'linear-gradient(135deg, #3a4060, #151c30)' },
+      { type:'image',        d:'04.21', t:'糖醋排骨', w:2, m:'linear-gradient(135deg, #2a3050, #0a1020)' },
+      { type:'audio',        d:'04.14', t:'录取通知', dur:'0:18', w:4 },
+      { type:'media-text-v', d:'04.07', t:'读完一本书', p:'480 页，断断续续读了两个月。', w:3, m:'linear-gradient(135deg, #3a4060, #151c30)' },
+      { type:'video-v',      d:'03.30', t:'第一支舞', dur:'0:42', w:5, m:'linear-gradient(135deg, #2a3050, #0a1020)' },
+      { type:'text',         d:'03.22', t:'三公里',   body:'第一次跑完三公里没停。',                       w:3 },
+    ],
+    cloud: [
+      { type:'text',         d:'05.22', t:'一个想法',  body:'突然意识到，没必要把每件事都做对。',                 w:2 },
+      { type:'image',        d:'05.10', t:'放空',     w:1, m:'linear-gradient(135deg, #d8c8ee, #8070a8)' },
+      { type:'media-text-v', d:'05.04', t:'不想去',   p:'这个聚会跳过，应该没人会怪我。', w:2, m:'linear-gradient(135deg, #d0c0e8, #7060a0)' },
+      { type:'image-text-h', d:'04.28', t:'想去看海', p:'一个人，订了机票就走。', w:3, m:'linear-gradient(135deg, #e0d0f0, #9080b8)' },
+      { type:'text',         d:'04.21', t:'辞职吧',   body:'已经想了很久，今天忽然没那么难下决定。',           w:4 },
+      { type:'audio',        d:'04.14', t:'清晨的鸟', dur:'0:50', w:2 },
+      { type:'video-v',      d:'04.07', t:'飘',       dur:'0:18', w:1, m:'linear-gradient(135deg, #d8c8ee, #8070a8)' },
+      { type:'video-text-h', d:'03.30', t:'坐反的列车', p:'坐错了方向，反而看到了没见过的窗景。', dur:'0:24', w:3, m:'linear-gradient(135deg, #e0d0f0, #9080b8)' },
+    ],
+    tree: [
+      { type:'image-text-h', d:'05.15', t:'凌晨四点的海', p:'海边没有人，连风都很轻。', w:4, m:'linear-gradient(135deg, #2a4030, #0a2010)' },
+      { type:'text',         d:'05.08', t:'夜路',     body:'最后一班地铁。整节车厢只有我。',                  w:3 },
+      { type:'image',        d:'05.02', t:'独自跨年', w:5, m:'linear-gradient(135deg, #3a5040, #182618)' },
+      { type:'audio',        d:'04.26', t:'河边自语', dur:'1:42', w:2 },
+      { type:'text',         d:'04.20', t:'麻辣烫',   body:'一个人吃了顿很久没吃的麻辣烫，把汤都喝完了。',     w:3 },
+      { type:'video-v',      d:'04.12', t:'独自散步', dur:'0:28', w:2, m:'linear-gradient(135deg, #2a4030, #0a2010)' },
+      { type:'media-text-v', d:'04.04', t:'默剧',     p:'整个晚上没说一句话，吃了一顿饭、看了一部电影。', w:2, m:'linear-gradient(135deg, #3a5040, #182618)' },
+      { type:'video-h',      d:'03.27', t:'雨夜',     dur:'0:36', w:3, m:'linear-gradient(135deg, #2a4030, #0a2010)' },
+    ],
+  };
+
+  const grid = document.getElementById('grid');
+  const picker = document.getElementById('picker');
+  const body = document.body;
+
+  function dots(n) {
+    let s = '';
+    for (let i = 0; i < 5; i++) s += `<span class="${i < n ? 'on' : ''}"></span>`;
+    return s;
+  }
+
+  function waveBars() {
+    const seeds = [0.4, 0.7, 0.5, 0.9, 0.65, 0.85, 0.5, 0.75, 0.6, 0.9, 0.7, 0.55, 0.8, 0.45, 0.65, 0.7];
+    return seeds.map(h => `<span style="height:${h*100}%"></span>`).join('');
+  }
+
+  const TOOLS = `<div class="tools"><button title="编辑">✎</button><button class="del" title="删除">×</button></div>`;
+  const PLAY_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+
+  const tmpl = {
+    text: (r) => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="quote">
+        <div class="mark">"</div>
+        <div class="body-text">${r.body || ''}</div>
+        <div class="title-mini">${r.t}</div>
+      </div>
+      <div class="dots">${dots(r.w)}</div>`,
+    audio: (r) => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="play-btn">${PLAY_SVG}</div>
+      <div class="audio-right">
+        <div class="title-line">${r.t}</div>
+        <div class="wave-row">
+          <div class="wave">${waveBars()}</div>
+          <div class="duration">${r.dur || '0:00'}</div>
+        </div>
+      </div>
+      <div class="dots">${dots(r.w)}</div>`,
+    'video-h': (r) => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="frame-16-9" style="--media-bg:${r.m};">
+        <div class="play-overlay">${PLAY_SVG}</div>
+        <div class="duration-chip">${r.dur || '0:00'}</div>
+        <div class="title-inside">${r.t}</div>
+      </div>
+      <div class="dots">${dots(r.w)}</div>`,
+    'video-v': (r) => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="frame-9-16" style="--media-bg:${r.m};">
+        <div class="play-overlay">${PLAY_SVG}</div>
+        <div class="duration-chip">${r.dur || '0:00'}</div>
+        <div class="title-inframe">${r.t}</div>
+      </div>
+      <div class="dots">${dots(r.w)}</div>`,
+    image: (r) => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="media" style="--media-bg:${r.m};"></div>
+      <div class="title-overlay">${r.t}</div>
+      <div class="dots">${dots(r.w)}</div>`,
+    'video-text-h': (r) => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="media" style="--media-bg:${r.m};"></div>
+      <div class="play-overlay">${PLAY_SVG}</div>
+      <div class="duration-chip">${r.dur || '0:00'}</div>
+      <div class="text-overlay">
+        <div class="preview-line">${r.p || ''}</div>
+        <div class="title-line">${r.t}</div>
+      </div>
+      <div class="dots">${dots(r.w)}</div>`,
+    'image-text-h': (r) => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="media" style="--media-bg:${r.m};"></div>
+      <div class="text-overlay">
+        <div class="preview-line">${r.p || ''}</div>
+        <div class="title-line">${r.t}</div>
+      </div>
+      <div class="dots">${dots(r.w)}</div>`,
+    'media-text-v': (r) => `
+      ${TOOLS}
+      <div class="date">${r.d}</div>
+      <div class="media" style="--media-bg:${r.m};">
+        ${r.dur ? `<div class="play-overlay">${PLAY_SVG}</div><div class="duration-chip">${r.dur}</div>` : ''}
+      </div>
+      <div class="body">
+        <div class="title">${r.t}</div>
+        <div class="preview">${r.p || ''}</div>
+      </div>
+      <div class="dots">${dots(r.w)}</div>`,
+  };
+
+  function render(planet) {
+    const data = DATA[planet] || DATA.hiking;
+    grid.innerHTML = data.map(r => {
+      const t = tmpl[r.type] || tmpl.text;
+      return `<div class="card" data-type="${r.type}">${t(r)}</div>`;
+    }).join('');
+  }
+
+  picker.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-p]');
+    if (!btn) return;
+    picker.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    const p = btn.dataset.p;
+    body.className = `planet-${p}`;
+    render(p);
+  });
+
+  document.querySelectorAll('.mode-toggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.mode-toggle button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+    });
+  });
+
+  render('hiking');
+</script>
+
+</body>
+</html>

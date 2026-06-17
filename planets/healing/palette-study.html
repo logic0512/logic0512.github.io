@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>治愈星 · 3 层 × 6 案例 · glass 卡片配色</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;500&family=Noto+Sans+SC:wght@300;400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: "Noto Sans SC", "PingFang SC", -apple-system, sans-serif;
+  background: #0c0810;
+  color: rgba(255, 250, 240, 0.85);
+  font-weight: 300;
+  padding: 44px 28px 88px;
+}
+.container { max-width: 1340px; margin: 0 auto; }
+
+.meta-head {
+  text-align: center;
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 245, 230, 0.08);
+}
+.meta-head h1 {
+  margin: 0 0 10px;
+  font-family: "Noto Serif SC", serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  padding-left: 0.32em;
+  color: rgba(255, 245, 230, 0.9);
+}
+.meta-head .sub {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(255, 245, 230, 0.45);
+}
+.meta-head .principle {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 16px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: rgba(245, 220, 168, 0.78);
+  background: rgba(245, 220, 168, 0.08);
+  border: 1px solid rgba(245, 220, 168, 0.22);
+  border-radius: 99px;
+}
+
+/* ============ 3 层背景（值取自 healing/index.html · SCENE_PALETTE） ============ */
+.layer {
+  position: relative;
+  margin-bottom: 32px;
+  padding: 44px 36px 56px;
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+}
+.layer[data-layer="gentle"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 247, 230, 0.98), transparent 55%),
+    radial-gradient(circle at 78% 32%, rgba(246, 209, 190, 0.48), transparent 58%),
+    radial-gradient(circle at 50% 90%, rgba(255, 226, 205, 0.24), transparent 58%),
+    #f8eee6;
+  /* card 材质变量 · 同色加浓但不到深色 */
+  --card-bg: rgba(252, 222, 200, 0.42);
+  --card-border: rgba(180, 110, 80, 0.22);
+  --card-inset-hi: rgba(255, 250, 238, 0.6);
+  --card-shadow: 0 12px 40px rgba(180, 90, 60, 0.18), 0 0 60px rgba(255, 200, 175, 0.32);
+  --card-blur: blur(22px) saturate(1.08);
+  --text: #5b2f1f;
+  --meta: rgba(91, 47, 31, 0.62);
+  --accent: #b85a3a;
+  --layer-text: rgba(91, 47, 31, 0.78);
+  --layer-line: rgba(91, 47, 31, 0.18);
+}
+.layer[data-layer="companion"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 249, 226, 0.94), transparent 55%),
+    radial-gradient(circle at 78% 32%, rgba(246, 220, 168, 0.50), transparent 58%),
+    radial-gradient(circle at 50% 90%, rgba(240, 200, 177, 0.22), transparent 58%),
+    #f7efdf;
+  --card-bg: rgba(250, 228, 178, 0.42);
+  --card-border: rgba(170, 120, 50, 0.22);
+  --card-inset-hi: rgba(255, 250, 222, 0.6);
+  --card-shadow: 0 12px 40px rgba(170, 110, 40, 0.16), 0 0 60px rgba(245, 200, 130, 0.3);
+  --card-blur: blur(22px) saturate(1.08);
+  --text: #5d3618;
+  --meta: rgba(93, 54, 24, 0.62);
+  --accent: #b86a2a;
+  --layer-text: rgba(93, 54, 24, 0.78);
+  --layer-line: rgba(93, 54, 24, 0.18);
+}
+.layer[data-layer="inspire"] {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 250, 238, 0.92), transparent 55%),
+    radial-gradient(circle at 78% 32%, rgba(238, 218, 198, 0.36), transparent 58%),
+    radial-gradient(circle at 50% 90%, rgba(248, 226, 204, 0.22), transparent 58%),
+    #f8f1ea;
+  --card-bg: rgba(248, 232, 215, 0.42);
+  --card-border: rgba(160, 110, 80, 0.20);
+  --card-inset-hi: rgba(255, 250, 240, 0.6);
+  --card-shadow: 0 12px 40px rgba(150, 100, 70, 0.14), 0 0 60px rgba(240, 215, 195, 0.28);
+  --card-blur: blur(22px) saturate(1.05);
+  --text: #533622;
+  --meta: rgba(83, 54, 34, 0.62);
+  --accent: #a06d3a;
+  --layer-text: rgba(83, 54, 34, 0.78);
+  --layer-line: rgba(83, 54, 34, 0.18);
+}
+
+.layer-head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 30px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--layer-line);
+}
+.layer-head .tag {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  padding: 4px 10px;
+  border-radius: 99px;
+  color: var(--layer-text);
+  border: 1px solid var(--layer-line);
+}
+.layer-head .name {
+  font-family: "Noto Serif SC", serif;
+  font-size: 18px;
+  letter-spacing: 0.32em;
+  color: var(--layer-text);
+  font-weight: 400;
+  padding-left: 0.32em;
+}
+.layer-head .desc {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--meta);
+}
+.layer-head .hex {
+  margin-left: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: var(--meta);
+}
+
+/* ============ 6 案例 grid · 双行铺满 ============ */
+.cases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+/* ============ Modal 卡片基础（玻璃材质） ============ */
+.case {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--card-bg);
+  backdrop-filter: var(--card-blur);
+  -webkit-backdrop-filter: var(--card-blur);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow), inset 0 1px 0 var(--card-inset-hi);
+  color: var(--text);
+}
+
+/* 形状 = 内容形状 */
+.case.image-h { width: 380px; aspect-ratio: 16/10; padding: 0; }
+.case.image-v { width: 170px; aspect-ratio: 9/16; padding: 0; }
+.case.video-h { width: 380px; aspect-ratio: 16/9; padding: 0; }
+.case.video-v { width: 170px; aspect-ratio: 9/16; padding: 0; }
+.case.audio   { width: 220px; aspect-ratio: 1/1; padding: 20px; }
+.case.text    { width: 210px; aspect-ratio: 5/7; padding: 22px 20px; }
+
+/* ============ 图片卡 ============ */
+.case[class*="image"] .photo,
+.case[class*="video"] .photo {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 50%, rgba(20, 8, 0, 0.45) 100%),
+    linear-gradient(135deg, #c68a5c 0%, #e6b08a 35%, #f0c89e 60%, #a86848 100%);
+}
+.case[class*="image"] .meta,
+.case[class*="video"] .meta {
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  right: 14px;
+  z-index: 2;
+}
+.case[class*="image"] .title,
+.case[class*="video"] .title {
+  font-family: "Noto Serif SC", serif;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #fff7e8;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 4px;
+}
+.case[class*="image"] .date,
+.case[class*="video"] .date {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: rgba(255, 247, 232, 0.72);
+}
+/* video 播放图标 */
+.case[class*="video"] .play {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 247, 232, 0.32);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 247, 232, 0.5);
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+.case[class*="video"] .play::before {
+  content: '';
+  width: 0; height: 0;
+  border-left: 12px solid rgba(255, 247, 232, 0.95);
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  margin-left: 3px;
+}
+
+/* ============ 音频卡 ============ */
+.case.audio {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+.case.audio .title {
+  font-family: "Noto Serif SC", serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+.case.audio .wave {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+}
+.case.audio .wave i {
+  display: block;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.75;
+}
+.case.audio .wave i:nth-child(1) { height: 8px; }
+.case.audio .wave i:nth-child(2) { height: 14px; }
+.case.audio .wave i:nth-child(3) { height: 20px; }
+.case.audio .wave i:nth-child(4) { height: 16px; }
+.case.audio .wave i:nth-child(5) { height: 22px; }
+.case.audio .wave i:nth-child(6) { height: 12px; }
+.case.audio .wave i:nth-child(7) { height: 18px; }
+.case.audio .wave i:nth-child(8) { height: 8px; }
+.case.audio .duration {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  color: var(--meta);
+}
+
+/* ============ 文字卡 ============ */
+.case.text .tag {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.32em;
+  color: var(--meta);
+  margin-bottom: 12px;
+  padding-left: 0.32em;
+}
+.case.text .body {
+  font-family: "Noto Serif SC", serif;
+  font-size: 12.5px;
+  line-height: 1.85;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+.case.text .sign {
+  position: absolute;
+  bottom: 18px;
+  right: 20px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.22em;
+  color: var(--meta);
+}
+
+/* ============ 案例小标签 ============ */
+.case-label {
+  position: absolute;
+  top: -22px;
+  left: 0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--meta);
+  text-transform: uppercase;
+}
+.case-wrap {
+  position: relative;
+  padding-top: 28px;
+}
+
+.note {
+  text-align: center;
+  margin-top: 32px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(255, 245, 230, 0.4);
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="meta-head">
+  <h1>3 层背景 × 6 种内容 · glass 卡片配色</h1>
+  <div class="sub">方向 08 拆解：保留 backdrop-blur + 玻璃质感 · 去掉深色背景 + 光斑</div>
+  <div class="principle">原则 · 卡片 = 同层雾里稍微更稠的一块 + 玻璃质感</div>
+</div>
+
+<!-- ============ L1 Gentle ============ -->
+<div class="layer" data-layer="gentle">
+  <div class="layer-head">
+    <span class="tag">L1</span>
+    <span class="name">温柔 GENTLE</span>
+    <span class="desc">桃粉米雾</span>
+    <span class="hex">card rgba(252,222,200,0.42) blur 22</span>
+  </div>
+  <div class="cases">
+    <div class="case-wrap"><span class="case-label">IMAGE · 16:10</span>
+      <div class="case image-h">
+        <div class="photo"></div>
+        <div class="meta"><div class="title">回家的桥</div><div class="date">2026.03.14</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">IMAGE · 9:16</span>
+      <div class="case image-v">
+        <div class="photo"></div>
+        <div class="meta"><div class="title">小巷</div><div class="date">2026.03.02</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">AUDIO · 1:1</span>
+      <div class="case audio">
+        <div class="title">奶奶哼歌</div>
+        <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="duration">02:47</div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">VIDEO · 16:9</span>
+      <div class="case video-h">
+        <div class="photo"></div>
+        <div class="play"></div>
+        <div class="meta"><div class="title">傍晚的雨</div><div class="date">2026.03.21</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">VIDEO · 9:16</span>
+      <div class="case video-v">
+        <div class="photo"></div>
+        <div class="play"></div>
+        <div class="meta"><div class="title">猫</div><div class="date">2026.02.28</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">TEXT · 5:7</span>
+      <div class="case text">
+        <div class="tag">札记</div>
+        <div class="body">那天天色融得很慢，像有人在远处轻轻揉它。我没有拍下树，但树记住了我。</div>
+        <div class="sign">写于桥头</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ L2 Companion ============ -->
+<div class="layer" data-layer="companion">
+  <div class="layer-head">
+    <span class="tag">L2</span>
+    <span class="name">陪伴 COMPANION</span>
+    <span class="desc">蜂蜜米雾</span>
+    <span class="hex">card rgba(250,228,178,0.42) blur 22</span>
+  </div>
+  <div class="cases">
+    <div class="case-wrap"><span class="case-label">IMAGE · 16:10</span>
+      <div class="case image-h">
+        <div class="photo"></div>
+        <div class="meta"><div class="title">午后</div><div class="date">2026.04.10</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">IMAGE · 9:16</span>
+      <div class="case image-v">
+        <div class="photo"></div>
+        <div class="meta"><div class="title">窗</div><div class="date">2026.04.06</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">AUDIO · 1:1</span>
+      <div class="case audio">
+        <div class="title">爸的笑声</div>
+        <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="duration">01:12</div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">VIDEO · 16:9</span>
+      <div class="case video-h">
+        <div class="photo"></div>
+        <div class="play"></div>
+        <div class="meta"><div class="title">树影摇</div><div class="date">2026.04.08</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">VIDEO · 9:16</span>
+      <div class="case video-v">
+        <div class="photo"></div>
+        <div class="play"></div>
+        <div class="meta"><div class="title">阳台</div><div class="date">2026.04.01</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">TEXT · 5:7</span>
+      <div class="case text">
+        <div class="tag">札记</div>
+        <div class="body">阳光把房间晒得很黄，像是把日子捂热了。她在我旁边织毛衣，没说话。</div>
+        <div class="sign">客厅</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ L3 Inspire ============ -->
+<div class="layer" data-layer="inspire">
+  <div class="layer-head">
+    <span class="tag">L3</span>
+    <span class="name">启发 INSPIRE</span>
+    <span class="desc">奶米雾光</span>
+    <span class="hex">card rgba(248,232,215,0.42) blur 22</span>
+  </div>
+  <div class="cases">
+    <div class="case-wrap"><span class="case-label">IMAGE · 16:10</span>
+      <div class="case image-h">
+        <div class="photo"></div>
+        <div class="meta"><div class="title">清晨海</div><div class="date">2026.05.02</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">IMAGE · 9:16</span>
+      <div class="case image-v">
+        <div class="photo"></div>
+        <div class="meta"><div class="title">早雾</div><div class="date">2026.05.04</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">AUDIO · 1:1</span>
+      <div class="case audio">
+        <div class="title">第一声鸟鸣</div>
+        <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="duration">00:38</div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">VIDEO · 16:9</span>
+      <div class="case video-h">
+        <div class="photo"></div>
+        <div class="play"></div>
+        <div class="meta"><div class="title">湖面</div><div class="date">2026.05.06</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">VIDEO · 9:16</span>
+      <div class="case video-v">
+        <div class="photo"></div>
+        <div class="play"></div>
+        <div class="meta"><div class="title">朝阳</div><div class="date">2026.05.08</div></div>
+      </div>
+    </div>
+    <div class="case-wrap"><span class="case-label">TEXT · 5:7</span>
+      <div class="case text">
+        <div class="tag">札记</div>
+        <div class="body">那天我突然懂了一件事——不是道理，是某种顺序。是要慢慢说才能记住的。</div>
+        <div class="sign">书桌</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note">3 层 × 6 案例 = 18 张卡片 · 卡片色随层走 · 背景不变 · 形状=内容形状</div>
+
+</div>
+</body>
+</html>

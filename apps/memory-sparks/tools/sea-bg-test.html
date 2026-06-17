@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海星 · 新背景 + 海浪冲沙 测试</title>
+<style>
+  :root{--bg:#0a1422;--panel:#13203049;--line:rgba(255,255,255,0.12);--txt:#e8eef6;--mut:#8aa0b8;--accent:#3aa7e0;}
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;font:15px/1.6 -apple-system,"PingFang SC",sans-serif;
+    background:radial-gradient(ellipse at 50% 30%,#10283f 0%,var(--bg) 70%);color:var(--txt);
+    display:flex;align-items:center;justify-content:center;padding:30px;}
+  .wrap{width:min(560px,100%);}
+  h1{font-size:19px;margin:0 0 4px;}
+  .sub{color:var(--mut);font-size:13px;margin:0 0 20px;}
+  .card{background:rgba(20,32,48,0.55);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0;}
+  .row{display:flex;align-items:center;gap:12px;margin:10px 0;}
+  .row label{width:110px;color:var(--mut);font-size:13px;}
+  input[type=range]{flex:1;accent-color:var(--accent);}
+  .v{width:54px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--accent);}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;}
+  button{padding:12px 18px;border:1px solid var(--line);border-radius:10px;background:#1f2c3e;color:var(--txt);font-size:15px;cursor:pointer;}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#04121d;font-weight:700;}
+  button.wash{background:#1c3a52;border-color:#2b6f9a;}
+  .hint{color:var(--mut);font-size:12px;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>海星 · 新背景 + 海浪冲沙 测试</h1>
+  <p class="sub">新音乐当背景循环，点「🌊 海浪冲沙」叠加冲沙音（就是写下烦恼时会触发的那一记）。先听整体搭不搭，满意了我再换进海星。</p>
+
+  <div class="card">
+    <div class="btns">
+      <button class="primary" id="play">▶ 播放背景</button>
+      <button id="stop">■ 停</button>
+      <button class="wash" id="wash">🌊 海浪冲沙</button>
+    </div>
+    <div class="hint">小提示：先点「播放背景」，再边听边点「海浪冲沙」，感受叠加效果。</div>
+  </div>
+
+  <div class="card">
+    <div class="row"><label>背景音量</label><input type="range" id="bgVol" min="0" max="1" step="0.01" value="0.4"><span class="v" id="bgVolV">0.40</span></div>
+    <div class="row"><label>冲沙音量</label><input type="range" id="washVol" min="0" max="1" step="0.01" value="0.34"><span class="v" id="washVolV">0.34</span></div>
+  </div>
+
+  <p class="hint" id="status">未播放</p>
+</div>
+
+<script>
+const BG = '/assets/sounds/sea-test-bg.mp3';
+const WASH = '/assets/sounds/sea-wash-2.mp3';
+// 海星原冲沙参数
+const WP = { volume:0.34, rate:1, trim:0.15, fadeIn:0.2, fadeOut:0.65 };
+
+let ctx, master, bgEl, bgGain, washBuf, playing=false;
+const D = id=>document.getElementById(id);
+
+async function ensure(){
+  if(ctx) return;
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  master = ctx.createGain(); master.connect(ctx.destination);
+  // 背景用 audio 元素（循环）
+  bgEl = new Audio(BG); bgEl.loop = true; bgEl.crossOrigin='anonymous';
+  const src = ctx.createMediaElementSource(bgEl);
+  bgGain = ctx.createGain(); bgGain.gain.value = parseFloat(D('bgVol').value);
+  src.connect(bgGain); bgGain.connect(master);
+  // 预载冲沙
+  const ab = await fetch(WASH).then(r=>r.arrayBuffer());
+  washBuf = await ctx.decodeAudioData(ab);
+}
+async function play(){
+  await ensure(); if(ctx.state==='suspended') await ctx.resume();
+  try{ await bgEl.play(); playing=true; D('play').textContent='♪ 播放中'; D('status').textContent='背景播放中'; }catch(e){ D('status').textContent='播放失败：'+e; }
+}
+function stop(){ if(bgEl){bgEl.pause();} playing=false; D('play').textContent='▶ 播放背景'; D('status').textContent='已停'; }
+
+function playWash(){
+  if(!ctx || !washBuf){ D('status').textContent='先点「播放背景」'; return; }
+  const vol = parseFloat(D('washVol').value);
+  const s = ctx.createBufferSource(); s.buffer=washBuf; s.playbackRate.value=WP.rate;
+  const g = ctx.createGain(); s.connect(g); g.connect(master);
+  const t0=ctx.currentTime, start=Math.max(0,WP.trim);
+  const dur=Math.max(0.05,(washBuf.duration-start)/WP.rate);
+  const fi=Math.min(WP.fadeIn,dur*0.5), fo=Math.min(WP.fadeOut,dur*0.5);
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.linearRampToValueAtTime(vol,t0+Math.max(0.005,fi));
+  g.gain.setValueAtTime(vol,t0+dur-fo);
+  g.gain.linearRampToValueAtTime(0.0001,t0+dur);
+  s.start(t0,start); s.stop(t0+dur+0.05);
+  D('status').textContent='🌊 冲沙叠加';
+}
+
+D('play').addEventListener('click', play);
+D('stop').addEventListener('click', stop);
+D('wash').addEventListener('click', playWash);
+D('bgVol').addEventListener('input', e=>{ D('bgVolV').textContent=(+e.target.value).toFixed(2); if(bgGain) bgGain.gain.setTargetAtTime(+e.target.value,ctx.currentTime,0.05); });
+D('washVol').addEventListener('input', e=>{ D('washVolV').textContent=(+e.target.value).toFixed(2); });
+</script>
+</body>
+</html>

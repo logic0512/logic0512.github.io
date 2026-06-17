@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>一棵树的垂直生态 · 交互原型</title>
+<link rel="preload" as="video" type="video/mp4" href="videos/角雕.mp4">
+<link rel="preload" as="video" type="video/mp4" href="videos/树懒.mp4">
+<link rel="preload" as="video" type="video/mp4" href="videos/浣熊.mp4">
+<link rel="preload" as="video" type="video/mp4" href="videos/水豚.mp4">
+<link rel="preload" as="video" type="video/mp4" href="videos/美洲豹.mp4">
+<script>
+  // 默认完整原型（含 UI + 视频）；带 ?clean=1 才进入截图模式
+  if (new URLSearchParams(location.search).get('clean') === '1') {
+    document.documentElement.classList.add('clean-mode');
+  }
+</script>
+<style>
+@property --pos-y        { syntax: '<length>'; initial-value: 0vh;  inherits: true; }
+@property --subject-y    { syntax: '<length>'; initial-value: 50vh; inherits: true; }
+
+:root {
+  --card-fade-dur: 850ms;
+  --card-right: 280px;
+  --card-top: 43.5vh;
+  --pos-L1: 0vh;     --sub-L1: 18vh;
+  --pos-L2: -23vh;   --sub-L2: 50vh;
+  --pos-L3: -121vh;  --sub-L3: 78vh;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width:100%; height:100%; overflow:hidden;
+  background:#000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color:#fff;
+}
+
+body {
+  --pos-y: var(--pos-L1);
+  --subject-y: var(--sub-L1);
+  transition: --pos-y 1100ms cubic-bezier(.22,.8,.2,1),
+              --subject-y 1100ms cubic-bezier(.22,.8,.2,1);
+}
+body[data-level="L1"] { --pos-y: var(--pos-L1); --subject-y: var(--sub-L1); }
+body[data-level="L2"] { --pos-y: var(--pos-L2); --subject-y: var(--sub-L2); }
+body[data-level="L3"] { --pos-y: var(--pos-L3); --subject-y: var(--sub-L3); }
+
+#stage { position:fixed; inset:0; overflow:hidden; background:#000; }
+
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  background-size: 100vw auto;
+  background-position: center var(--pos-y);
+  background-repeat: no-repeat;
+  background-color: #000;
+  -webkit-mask: radial-gradient(
+    circle at center,
+    black 0, black 38vw,
+    rgba(0,0,0,0.85) 44vw,
+    rgba(0,0,0,0.35) 50vw,
+    transparent 56vw
+  );
+  mask: radial-gradient(
+    circle at center,
+    black 0, black 38vw,
+    rgba(0,0,0,0.85) 44vw,
+    rgba(0,0,0,0.35) 50vw,
+    transparent 56vw
+  );
+  transition: opacity 600ms ease-out;
+  will-change: background-position, filter;
+}
+.bg-layer.hidden { opacity: 0; }
+
+@keyframes refocus {
+  0%   { filter: blur(0) brightness(1); }
+  15%  { filter: blur(3px) brightness(0.94); }
+  50%  { filter: blur(10px) brightness(0.80); }
+  78%  { filter: blur(2.5px) brightness(0.97); }
+  100% { filter: blur(0) brightness(1); }
+}
+#stage.focusing .bg-layer { animation: refocus 1100ms cubic-bezier(.3,.7,.3,1); }
+
+/* ===== 视频层 —— cover 模式铺满视口（与原始视频的对位预设保持一致） ===== */
+#active-video {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 2;
+  opacity: 0;
+  filter: blur(0);
+  transition: opacity 200ms ease-out;
+  pointer-events: none;
+  background: transparent;
+  will-change: opacity, filter;
+  transform: translateZ(0);
+  -webkit-mask: radial-gradient(
+    circle at center,
+    black 0, black 38vw,
+    rgba(0,0,0,0.85) 44vw,
+    rgba(0,0,0,0.35) 50vw,
+    transparent 56vw
+  );
+  mask: radial-gradient(
+    circle at center,
+    black 0, black 38vw,
+    rgba(0,0,0,0.85) 44vw,
+    rgba(0,0,0,0.35) 50vw,
+    transparent 56vw
+  );
+}
+#active-video.visible {
+  opacity: 1;
+  animation: video-refocus 150ms ease-out both;
+}
+@keyframes video-refocus {
+  0%   { filter: blur(3px) brightness(0.97); }
+  100% { filter: blur(0)   brightness(1); }
+}
+
+/* ===== 层级标尺 ===== */
+#ruler {
+  position:fixed; left: 48px; top:50%;
+  transform: translateY(-50%);
+  z-index: 30;
+  display:flex; flex-direction:column;
+  gap: 84px;
+  color: rgba(255,255,255,0.9);
+  font-size: 17px;
+  letter-spacing: 0.5px;
+}
+#ruler .tick {
+  position:relative; padding-left: 40px;
+  opacity: 0.55; cursor: pointer;
+  transition: opacity 400ms, transform 400ms;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.92);
+}
+#ruler .tick.disabled { opacity: 0.22; cursor: default; pointer-events:none; }
+#ruler .tick.time-locked { opacity: 0.22; cursor: not-allowed; }
+@keyframes ruler-shake {
+  0%, 100% { transform: translateY(-50%); }
+  25% { transform: translate(-4px, -50%); }
+  75% { transform: translate(4px, -50%); }
+}
+#ruler.shake { animation: ruler-shake 380ms; }
+#ruler .tick::before {
+  content:""; position:absolute;
+  left:0; top:50%;
+  width:18px; height:1.5px;
+  background: rgba(255,255,255,0.55);
+  transform: translateY(-50%);
+}
+#ruler .tick.active { opacity: 1; transform: translateX(6px); }
+#ruler .tick.active::before {
+  width: 30px; height: 2px; background: #ffd88c;
+  box-shadow: 0 0 14px rgba(255,216,140,0.95);
+}
+#ruler-pointer {
+  position:absolute; left:-22px;
+  width:0; height:0;
+  border-left: 12px solid #ffd88c;
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  transition: top 700ms cubic-bezier(.22,.8,.2,1);
+  filter: drop-shadow(0 0 8px rgba(255,216,140,0.85));
+}
+#ruler-line {
+  position:absolute; left: 6px;
+  top:0; bottom:0;
+  width: 1.5px;
+  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.45), transparent);
+}
+
+/* ===== 时段按钮 —— 沿对角弧排列：清晨在左下、正午在中段、夜晚在右上 ===== */
+#time-dial {
+  position:fixed;
+  right: 40px; bottom: 40px;
+  width: 220px; height: 220px;
+  z-index: 30;
+  transition: opacity 400ms;
+}
+#time-dial.disabled { opacity: 0.3; }
+.time-btn {
+  position:absolute;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 1.2px solid rgba(255,255,255,0.45);
+  background: rgba(20,30,25,0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff; font-size: 12px; letter-spacing: 1px;
+  cursor: pointer;
+  transition: transform 400ms, background 300ms, color 300ms, border-color 300ms, box-shadow 300ms;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap: 2px;
+}
+.time-btn .icon { font-size: 17px; line-height: 1; }
+.time-btn:hover { transform: scale(1.06); }
+/* 三个按钮中心点：(30,180) → (105,115) → (190,30)，沿单调上升的对角弧 */
+.time-btn[data-time="morning"] { left: 0;    top: 150px; }
+.time-btn[data-time="noon"]    { left: 75px; top: 85px;  }
+.time-btn[data-time="night"]   { left: 160px; top: 0;    }
+.time-btn.active {
+  background: #ffd88c; color: #2a1d0c;
+  border-color: #ffd88c;
+  box-shadow: 0 0 24px rgba(255,216,140,0.65);
+  transform: scale(1.14);
+}
+#time-arc { position:absolute; inset:0; pointer-events:none; }
+
+/* ===== 科普卡 · 固定位置，只做淡入淡出 ===== */
+#info-card {
+  position: fixed;
+  right: var(--card-right, 60px);
+  top: var(--card-top, 50vh);
+  transform: translateY(-50%);
+  max-width: 280px;
+  padding: 18px 22px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 8px;
+  color: #2a2a2a;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+  z-index: 30;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 450ms ease-out;
+}
+#info-card.visible { opacity: 1; pointer-events: auto; }
+#info-card.fading-out {
+  opacity: 0;
+  transition: opacity var(--card-fade-dur, 850ms) ease-out;
+}
+#info-card .tag {
+  display:inline-block;
+  font-size: 10px;
+  color:#8a6c2e;
+  letter-spacing: 2px;
+  border: 1px solid rgba(138,108,46,0.4);
+  padding: 2px 7px;
+  border-radius: 3px;
+  margin-bottom: 8px;
+}
+#info-card h2 { font-size: 19px; font-weight: 600; margin-bottom: 6px; color:#1a1a1a; }
+#info-card p  { font-size: 13px; line-height: 1.7; color:#4a4a4a; }
+
+/* ===== 底部 键盘提示 ===== */
+#key-hint {
+  position:fixed; left:50%; bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 30;
+  display:flex; gap: 28px;
+  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  transition: opacity 800ms;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+#key-hint kbd {
+  display:inline-block;
+  padding: 2px 7px; margin: 0 2px;
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 4px;
+  font-family: inherit; font-size: 11px;
+  background: rgba(255,255,255,0.08);
+}
+#key-hint.fade-out { opacity: 0.28; }
+
+@keyframes shake {
+  0%,100% { transform: translate(0,0); }
+  20% { transform: translate(-3px,0); }
+  40% { transform: translate(3px,0); }
+  60% { transform: translate(-2px,0); }
+  80% { transform: translate(2px,0); }
+}
+.shake { animation: shake 0.4s; }
+
+#level-toast {
+  position:fixed; left:50%; top: 36px;
+  transform: translate(-50%, -10px);
+  z-index: 40;
+  color: rgba(255,255,255,0.92);
+  font-size: 18px;
+  letter-spacing: 8px;
+  font-weight: 300;
+  opacity: 0;
+  transition: opacity 400ms, transform 400ms;
+  pointer-events: none;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+}
+#level-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Clean 模式 —— 截图用：隐藏所有 UI + 去掉圆形软遮罩 + 消除黑边 */
+html.clean-mode #ruler,
+html.clean-mode #time-dial,
+html.clean-mode #info-card,
+html.clean-mode #level-toast,
+html.clean-mode #key-hint,
+html.clean-mode #active-video,
+html.clean-mode #splash { display: none !important; }
+
+/* ===== 待机页（splash） ===== */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.55) 100%);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 600ms ease-out;
+  user-select: none;
+}
+#splash.hidden { opacity: 0; pointer-events: none; }
+.splash-title {
+  font-family: "Songti SC", "STSong", "Source Han Serif SC", "Noto Serif SC", "Noto Serif CJK SC", "Times New Roman", serif;
+  font-size: clamp(38px, 4.6vw, 64px);
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  text-align: center;
+  text-shadow: 0 4px 32px rgba(0,0,0,0.85);
+  padding-left: 0.22em; /* 抵消末字 letter-spacing 视觉偏移 */
+}
+.splash-sub {
+  margin-top: 84px;
+  font-size: 12px;
+  letter-spacing: 0.45em;
+  font-weight: 300;
+  opacity: 0.55;
+  animation: splash-pulse 2.4s ease-in-out infinite;
+  padding-left: 0.45em;
+}
+@keyframes splash-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.85; }
+}
+html.clean-mode #stage.focusing .bg-layer { animation: none !important; }
+html.clean-mode .bg-layer {
+  -webkit-mask: none !important;
+  mask: none !important;
+}
+</style>
+</head>
+<body data-level="L2">
+
+<div id="splash">
+  <h1 class="splash-title">吉贝树的垂直生态分布</h1>
+  <div class="splash-sub">点击进入</div>
+</div>
+
+<div id="stage">
+  <div class="bg-layer" id="bg-a"></div>
+  <div class="bg-layer hidden" id="bg-b"></div>
+
+  <video id="active-video" muted playsinline preload="auto"></video>
+
+  <div id="ruler">
+    <div id="ruler-line"></div>
+    <div id="ruler-pointer"></div>
+    <div class="tick" data-level="L1">40m · 树冠层</div>
+    <div class="tick disabled">25m · 林冠</div>
+    <div class="tick" data-level="L2">5m · 林下层</div>
+    <div class="tick" data-level="L3">0.5m · 地表层</div>
+  </div>
+
+  <div id="time-dial">
+    <svg id="time-arc" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 30 180 Q 70 100 190 30" stroke="rgba(255,255,255,0.28)" stroke-width="1" fill="none" stroke-dasharray="3,4"/>
+    </svg>
+    <button class="time-btn" data-time="morning"><span class="icon">☀</span><span>清晨</span></button>
+    <button class="time-btn" data-time="noon"><span class="icon">☼</span><span>正午</span></button>
+    <button class="time-btn" data-time="night"><span class="icon">☾</span><span>夜晚</span></button>
+  </div>
+
+  <div id="info-card">
+    <div class="tag">LEVEL · 树冠层</div>
+    <h2>角雕</h2>
+    <p>世界最强壮的猛禽之一。爪长可达 13 cm，能从冠层抓起一只猴子。新热带雨林冠层的顶级捕食者。</p>
+  </div>
+
+  <div id="level-toast">—— 树冠层 ——</div>
+
+  <div id="key-hint">
+    <span><kbd>↑</kbd><kbd>↓</kbd> 切换层级</span>
+    <span><kbd>←</kbd><kbd>→</kbd> 切换时段</span>
+  </div>
+</div>
+
+
+<script>
+/* ========== 状态 ========== */
+const state = { level: 'L2', time: 'morning' };
+let splashActive = true;
+const LEVELS = ['L1','L2','L3'];
+const TIMES  = ['morning','noon','night'];
+
+/* 背景图 —— 默认空背景（动物只出现在视频里）；?full=1 切回带动物的静态图 */
+const USE_EMPTY_BG = new URLSearchParams(location.search).get('full') !== '1';
+const ASSETS_FULL = {
+  'morning':  'assets/白天-同时段-三只动物.jpg',  // morning 全 level 共用同一张（图里 L1 角雕 / L2 树懒 / L3 浣熊）
+  'noon_L3':  'assets/白天-同时段-下层切换.jpg',  // noon 时 L3 才有水豚
+  'noon_up':  'assets/白天-空背景.jpg',           // noon 时 L1/L2 切到空背景
+  'night_L3': 'assets/夜晚-美洲豹.jpg',
+  'night_up': 'assets/夜晚-空背景.jpg'
+};
+const ASSETS_EMPTY = {
+  'morning':  'assets/白天-空背景.jpg',
+  'noon_L3':  'assets/白天-空背景.jpg',
+  'noon_up':  'assets/白天-空背景.jpg',
+  'night_L3': 'assets/夜晚-空背景.jpg',
+  'night_up': 'assets/夜晚-空背景.jpg'
+};
+const ASSETS = USE_EMPTY_BG ? ASSETS_EMPTY : ASSETS_FULL;
+function getAsset(s) {
+  if (s.time === 'night') return s.level === 'L3' ? ASSETS.night_L3 : ASSETS.night_up;
+  if (s.time === 'noon')  return s.level === 'L3' ? ASSETS.noon_L3  : ASSETS.noon_up;
+  return ASSETS[s.time];
+}
+
+const LEVEL_Y = { L1: 0.08, L2: 0.33, L3: 0.90 };
+const IMG_ASPECT = 3712 / 4608;
+
+const INFO = {
+  'L1_morning': { tag:'LEVEL · 树冠层', title:'角雕', desc:'世界最强壮的猛禽之一。爪长可达 13 cm，能从冠层抓起一只猴子。新热带雨林冠层的顶级捕食者。' },
+  'L1_noon':    { tag:'LEVEL · 树冠层', title:'角雕', desc:'正午烈日下，角雕藏身于冠层阴影中休憩，偶尔扫视下方林海寻找猎物。' },
+  'L1_night':   { tag:'LEVEL · 树冠层 · 夜', title:'夜幕下的冠层', desc:'角雕已入巢。此时冠层属于大食果蝠——它们在月光下穿梭于吉贝花之间传粉。' },
+
+  'L2_morning': { tag:'LEVEL · 林下层', title:'三趾树懒', desc:'平均时速 0.24 公里，一周下树一次。毛发中共生的藻类让它披上天然迷彩——慢，是它的生存策略。' },
+  'L2_noon':    { tag:'LEVEL · 林下层', title:'三趾树懒', desc:'树懒一天中大部分时间都在一动不动地消化树叶。它的代谢率是同体型哺乳动物的一半。' },
+  'L2_night':   { tag:'LEVEL · 林下层 · 夜', title:'幽暗中段', desc:'林下层的夜晚属于蝙蝠、树蛙和夜行昆虫。发光真菌从树干渗出幽绿光。' },
+
+  'L3_morning': { tag:'LEVEL · 地表层 · 晨', title:'南美浣熊', desc:'母系小群生活。长鼻是高精度嗅探器，翻叶堆寻找昆虫、落果——雨林地表的"晨间清道夫"。' },
+  'L3_noon':    { tag:'LEVEL · 地表层 · 午', title:'水豚', desc:'世界最大啮齿动物，正午常泡在水塘边避暑。是美洲豹的重要猎物。' },
+  'L3_night':   { tag:'LEVEL · 地表层 · 夜', title:'美洲豹', desc:'美洲最大的猫科动物，咬合力排名全球第一。几乎只在夜间活动——地表层的顶级捕食者。' }
+};
+
+/* 弹窗时序参数 —— duration 必须比视频清晰窗口短，让弹窗在视频结束前先淡出 */
+const cardTiming = { delay: 1850, duration: 2700, fadeDur: 900 };
+
+/* 视频映射：画面 settle 后自动播放对应视频 */
+const VIDEOS = {
+  'L1_morning': 'videos/角雕.mp4',
+  'L1_noon':    'videos/角雕.mp4',
+  'L1_night':   null,
+  'L2_morning': 'videos/树懒.mp4',
+  'L2_noon':    'videos/树懒.mp4',
+  'L2_night':   null,
+  'L3_morning': 'videos/浣熊.mp4',
+  'L3_noon':    'videos/水豚.mp4',
+  'L3_night':   'videos/美洲豹.mp4'
+};
+/* 视频时序参数：画面切换后延迟 delay 淡入，视频总时长 ~5s，提前 fadeOutBefore 淡出 */
+/* 测试：delay=1100ms 与 refocus 完成同步（图片平移/refocus 都是 1100ms） */
+const videoTiming = { delay: 1100, duration: 5000, fadeOutBefore: 700, fadeDur: 700 };
+
+const TIME_NAMES_CN = { morning: '晨', noon: '午', night: '夜' };
+
+/* ========== DOM ========== */
+const bgA = document.getElementById('bg-a');
+const bgB = document.getElementById('bg-b');
+let curBg = bgA, nextBg = bgB;
+
+const infoCard = document.getElementById('info-card');
+const rulerPointer = document.getElementById('ruler-pointer');
+const timeDial = document.getElementById('time-dial');
+const levelToast = document.getElementById('level-toast');
+const keyHint = document.getElementById('key-hint');
+const stage = document.getElementById('stage');
+const videoEl = document.getElementById('active-video');
+videoEl.volume = 0.85;
+
+/* 浏览器 autoplay 策略：首次播放必须静音；任意 user gesture 后解锁声音 */
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  videoEl.muted = false;
+  videoEl.removeAttribute('muted');
+}
+window.addEventListener('keydown', unlockAudio, { once: true, capture: true });
+window.addEventListener('click', unlockAudio, { once: true, capture: true });
+
+/* 预加载并预解码所有视频，避免首次切换时卡顿 */
+function preloadAllVideos() {
+  const seen = new Set();
+  Object.values(VIDEOS).forEach(src => {
+    if (!src || seen.has(src)) return;
+    seen.add(src);
+    const v = document.createElement('video');
+    v.preload = 'auto';
+    v.muted = true;
+    v.playsInline = true;
+    v.src = src;
+    v.load();
+  });
+}
+
+/* ========== 响应式计算 ========== */
+function updateLevelValues() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const imgHpx = vw / IMG_ASPECT;
+  const K = imgHpx / vh;
+  const posMin = -(K - 1) * 100;
+  function posFor(level) {
+    const L = LEVEL_Y[level];
+    const ideal = 50 - L * K * 100;
+    return Math.max(posMin, Math.min(0, ideal));
+  }
+  function subjFor(level, pos) { return pos + LEVEL_Y[level] * K * 100; }
+  const p1 = posFor('L1'), p2 = posFor('L2'), p3 = posFor('L3');
+  const s1 = subjFor('L1', p1), s2 = subjFor('L2', p2), s3 = subjFor('L3', p3);
+  const r = document.documentElement.style;
+  r.setProperty('--pos-L1', p1.toFixed(2) + 'vh');
+  r.setProperty('--pos-L2', p2.toFixed(2) + 'vh');
+  r.setProperty('--pos-L3', p3.toFixed(2) + 'vh');
+  r.setProperty('--sub-L1', s1.toFixed(2) + 'vh');
+  r.setProperty('--sub-L2', s2.toFixed(2) + 'vh');
+  r.setProperty('--sub-L3', s3.toFixed(2) + 'vh');
+}
+
+/* ========== 初始化 ========== */
+const BUILD_V = 'v20260427b';  // 改这个 = 强制图源/视频缓存失效
+function setImage(el, src) { el.style.backgroundImage = `url("${src}?${BUILD_V}")`; }
+
+function init() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('level') && LEVELS.includes(params.get('level'))) state.level = params.get('level');
+  if (params.get('time')  && TIMES.includes(params.get('time')))   state.time  = params.get('time');
+
+  updateLevelValues();
+  Object.values(ASSETS).forEach(src => { const i = new Image(); i.src = src; });
+  setImage(curBg, getAsset(state));
+  document.body.dataset.level = state.level;
+  renderUI();
+  positionPointer();
+  setTimeout(() => keyHint.classList.add('fade-out'), 4500);
+  preloadAllVideos();
+  scheduleCard();
+  scheduleVideo();
+}
+
+/* ========== 渲染 ========== */
+let switching = false;
+function triggerRefocus() {
+  stage.classList.remove('focusing');
+  void stage.offsetWidth;
+  stage.classList.add('focusing');
+  clearTimeout(triggerRefocus._t);
+  triggerRefocus._t = setTimeout(() => stage.classList.remove('focusing'), 1150);
+}
+
+/* 视频调度：画面 settle 后淡入播放，结束前提前淡出；切换时立即停止 */
+let vidShowT = null, vidHideT = null;
+function scheduleVideo() {
+  clearTimeout(vidShowT); clearTimeout(vidHideT);
+  videoEl.classList.remove('visible');
+  try { videoEl.pause(); } catch(e) {}
+  if (splashActive) return;
+
+  const key = `${state.level}_${state.time}`;
+  const src = VIDEOS[key];
+  if (!src) return;
+
+  vidShowT = setTimeout(() => {
+    if (videoEl.getAttribute('src') !== src) {
+      videoEl.src = src;
+    }
+    try { videoEl.currentTime = 0; } catch(e) {}
+    videoEl.muted = !audioUnlocked;
+    const p = videoEl.play();
+    if (p && p.catch) {
+      p.catch(() => {
+        // 非静音播放被 autoplay 政策拦截 → 静音兜底
+        videoEl.muted = true;
+        videoEl.play().catch(()=>{});
+      });
+    }
+    videoEl.classList.add('visible');
+    // 视频播完后自然停留在最后一帧，下一次切换状态时才会被淡出/替换
+  }, videoTiming.delay);
+}
+
+/* 弹窗时序 —— 固定位置，只做淡入淡出 */
+let cardShowT = null, cardHideT = null;
+function scheduleCard() {
+  clearTimeout(cardShowT); clearTimeout(cardHideT);
+  // 立即淡出当前弹窗（450ms 快淡）
+  infoCard.classList.remove('visible');
+  infoCard.classList.remove('fading-out');
+  if (splashActive) return;
+
+  cardShowT = setTimeout(() => {
+    const key = `${state.level}_${state.time}`;
+    const info = INFO[key];
+    if (info) {
+      infoCard.querySelector('.tag').textContent = info.tag;
+      infoCard.querySelector('h2').textContent  = info.title;
+      infoCard.querySelector('p').textContent   = info.desc;
+    }
+    infoCard.classList.add('visible');
+    cardHideT = setTimeout(() => {
+      infoCard.classList.add('fading-out');
+      infoCard.classList.remove('visible');
+    }, cardTiming.duration);
+  }, cardTiming.delay);
+}
+
+function render({ imageChanged, levelChanged }) {
+  if (levelChanged) {
+    document.body.dataset.level = state.level;
+    showLevelToast();
+  }
+  if (imageChanged) {
+    crossFadeTo(getAsset(state));
+  }
+  renderUI();
+  positionPointer();
+  scheduleCard();  // 内部会处理位置切换 + 延迟显示
+  scheduleVideo(); // 切状态时重启视频
+}
+
+function crossFadeTo(newSrc) {
+  if (switching) return;
+  switching = true;
+  setImage(nextBg, newSrc);
+  requestAnimationFrame(() => {
+    nextBg.classList.remove('hidden');
+    curBg.classList.add('hidden');
+  });
+  setTimeout(() => {
+    [curBg, nextBg] = [nextBg, curBg];
+    switching = false;
+  }, 650);
+}
+
+function renderUI() {
+  document.querySelectorAll('#ruler .tick').forEach(el => {
+    el.classList.toggle('active', el.dataset.level === state.level);
+  });
+  document.querySelectorAll('.time-btn').forEach(el => {
+    el.classList.toggle('active', el.dataset.time === state.time);
+  });
+  timeDial.classList.toggle('disabled', state.level !== 'L3');
+  // 正午时锁定 L3：上方 L1/L2 视觉灰显，无法切到那里
+  const noonLock = state.time === 'noon';
+  document.querySelectorAll('#ruler .tick[data-level="L1"], #ruler .tick[data-level="L2"]').forEach(el => {
+    el.classList.toggle('time-locked', noonLock);
+  });
+}
+
+function shakeRuler() {
+  const r = document.getElementById('ruler');
+  r.classList.add('shake');
+  setTimeout(() => r.classList.remove('shake'), 400);
+}
+
+function positionPointer() {
+  const active = document.querySelector('#ruler .tick.active');
+  if (!active) return;
+  const rulerRect = document.getElementById('ruler').getBoundingClientRect();
+  const r = active.getBoundingClientRect();
+  const top = r.top - rulerRect.top + r.height/2 - 6;
+  rulerPointer.style.top = top + 'px';
+}
+
+function showLevelToast() {
+  const names = { L1:'树冠层', L2:'林下层', L3:'地表层' };
+  levelToast.textContent = `—— ${names[state.level]} ——`;
+  levelToast.classList.add('show');
+  clearTimeout(showLevelToast._t);
+  showLevelToast._t = setTimeout(() => levelToast.classList.remove('show'), 1500);
+}
+
+/* ========== Splash 待机页 ========== */
+const splashEl = document.getElementById('splash');
+function dismissSplash() {
+  if (!splashActive) return;
+  splashActive = false;
+  unlockAudio();
+  splashEl.classList.add('hidden');
+  // 从 L2（待机层）平移到 L1（开场视角），触发完整流程
+  const oldState = { ...state };
+  state.level = 'L1';
+  render({
+    imageChanged: getAsset(oldState) !== getAsset(state),
+    levelChanged: true
+  });
+}
+splashEl.addEventListener('click', dismissSplash);
+
+/* ========== 交互 ========== */
+function onKey(e) {
+  if (splashActive) {
+    e.preventDefault();
+    dismissSplash();
+    return;
+  }
+  const oldState = { ...state };
+  let handled = false;
+  if (e.key === 'ArrowUp') {
+    // 正午锁定：L3 noon 时禁止上行（水豚是地表层独占内容，上方无对应）
+    if (state.time === 'noon' && state.level === 'L3') {
+      e.preventDefault();
+      shakeRuler();
+      return;
+    }
+    const i = LEVELS.indexOf(state.level);
+    if (i > 0) { state.level = LEVELS[i-1]; handled = true; }
+  } else if (e.key === 'ArrowDown') {
+    const i = LEVELS.indexOf(state.level);
+    if (i < LEVELS.length-1) { state.level = LEVELS[i+1]; handled = true; }
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    if (state.level !== 'L3') {
+      timeDial.classList.add('shake');
+      setTimeout(()=>timeDial.classList.remove('shake'), 400);
+      return;
+    }
+    const i = TIMES.indexOf(state.time);
+    const ni = e.key === 'ArrowLeft' ? (i-1+TIMES.length)%TIMES.length : (i+1)%TIMES.length;
+    state.time = TIMES[ni];
+    handled = true;
+  }
+  if (!handled) return;
+  e.preventDefault();
+  render({
+    imageChanged: getAsset(oldState) !== getAsset(state),
+    levelChanged: oldState.level !== state.level
+  });
+}
+
+document.querySelectorAll('.time-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (state.level !== 'L3') {
+      timeDial.classList.add('shake');
+      setTimeout(()=>timeDial.classList.remove('shake'), 400);
+      return;
+    }
+    const oldState = { ...state };
+    state.time = btn.dataset.time;
+    render({
+      imageChanged: getAsset(oldState) !== getAsset(state),
+      levelChanged: false
+    });
+  });
+});
+
+document.querySelectorAll('#ruler .tick[data-level]').forEach(el => {
+  el.addEventListener('click', () => {
+    // 正午锁定：noon 时只允许 L3，点击 L1/L2 不响应（视觉已 time-locked 灰显）
+    if (state.time === 'noon' && el.dataset.level !== 'L3') {
+      shakeRuler();
+      return;
+    }
+    const oldState = { ...state };
+    state.level = el.dataset.level;
+    render({
+      imageChanged: getAsset(oldState) !== getAsset(state),
+      levelChanged: oldState.level !== state.level
+    });
+  });
+});
+
+document.addEventListener('keydown', onKey);
+window.addEventListener('resize', () => {
+  updateLevelValues();
+  positionPointer();
+});
+
+document.documentElement.style.setProperty('--card-fade-dur', cardTiming.fadeDur + 'ms');
+
+init();
+</script>
+
+</body>
+</html>

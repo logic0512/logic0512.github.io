@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>繁星 · 篝火夜空 调音台</title>
+<style>
+  :root{--bg:#0c1018;--panel:#161c28;--line:rgba(255,255,255,0.1);--txt:#e8eef6;--mut:#8aa0b8;--accent:#f0c060;}
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;font:15px/1.6 -apple-system,"PingFang SC",sans-serif;background:radial-gradient(ellipse at 50% 20%,#1a1410 0%,var(--bg) 70%);color:var(--txt);display:flex;align-items:center;justify-content:center;padding:30px;}
+  .wrap{width:min(560px,100%);}
+  h1{font-size:19px;margin:0 0 4px;}
+  .sub{color:var(--mut);font-size:13px;margin:0 0 20px;}
+  .row{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0;}
+  .lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .lab b{font-size:14px;}
+  .lab .v{color:var(--accent);font-variant-numeric:tabular-nums;font-size:13px;}
+  input[type=range]{width:100%;accent-color:var(--accent);}
+  .sub2{color:var(--mut);font-size:11px;margin-top:6px;}
+  .btns{display:flex;gap:10px;margin:16px 0;}
+  button{padding:12px 18px;border:1px solid var(--line);border-radius:10px;background:#1f2836;color:var(--txt);font-size:14px;cursor:pointer;}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#1a1206;font-weight:700;}
+  button.big{flex:1;font-size:16px;}
+  pre{background:#0a0e16;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;white-space:pre-wrap;word-break:break-all;display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>繁星 · 篝火夜空 调音台</h1>
+  <p class="sub">调「篝火 + 夜风」两层的比例。点播放，拖滑块实时听，满意后导出参数发我。</p>
+
+  <div class="btns">
+    <button class="primary big" id="play">▶ 播放</button>
+    <button id="stop">■ 停止</button>
+  </div>
+
+  <div class="row">
+    <div class="lab"><b>篝火 音量</b><span class="v" id="fireV">0.60</span></div>
+    <input type="range" id="fire" min="0" max="1.2" step="0.01" value="0.60">
+    <div class="sub2">篝火噼啪（"篝火边"的主角）</div>
+  </div>
+  <div class="row">
+    <div class="lab"><b>夜风 音量</b><span class="v" id="nightV">0.22</span></div>
+    <input type="range" id="night" min="0" max="1" step="0.01" value="0.22">
+    <div class="sub2">开阔夏夜的底，往左越安静</div>
+  </div>
+  <div class="row">
+    <div class="lab"><b>夜风 质感（低通）</b><span class="v" id="nlpV">1400 Hz</span></div>
+    <input type="range" id="nlp" min="400" max="8000" step="50" value="1400">
+    <div class="sub2">往左夜风更闷更远，往右更亮更近</div>
+  </div>
+  <div class="row">
+    <div class="lab"><b>总音量</b><span class="v" id="masterV">0.50</span></div>
+    <input type="range" id="master" min="0" max="1" step="0.01" value="0.50">
+  </div>
+
+  <div class="btns">
+    <button class="primary" id="exportBtn">导出参数</button>
+    <button id="copyBtn">复制</button>
+  </div>
+  <pre id="out"></pre>
+</div>
+
+<script>
+let ctx, master, fireGain, nightGain, nlp, fireSrc, nightSrc, playing=false, loaded=false;
+let fireBuf, nightBuf;
+const D = id => document.getElementById(id);
+
+async function load(){
+  if(loaded) return;
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  master = ctx.createGain(); master.connect(ctx.destination);
+  fireGain = ctx.createGain();
+  nightGain = ctx.createGain();
+  nlp = ctx.createBiquadFilter(); nlp.type='lowpass';
+  fireGain.connect(master);
+  nightGain.connect(nlp); nlp.connect(master);
+  const [a,b] = await Promise.all([
+    fetch('/assets/sounds/starry-fire.mp3').then(r=>r.arrayBuffer()).then(x=>ctx.decodeAudioData(x)),
+    fetch('/assets/sounds/starry-night.mp3').then(r=>r.arrayBuffer()).then(x=>ctx.decodeAudioData(x)),
+  ]);
+  fireBuf=a; nightBuf=b; loaded=true;
+}
+function apply(){
+  if(!ctx) return;
+  const t=ctx.currentTime;
+  fireGain.gain.setTargetAtTime(parseFloat(D('fire').value), t, 0.05);
+  nightGain.gain.setTargetAtTime(parseFloat(D('night').value), t, 0.05);
+  nlp.frequency.setTargetAtTime(parseFloat(D('nlp').value), t, 0.05);
+  master.gain.setTargetAtTime(parseFloat(D('master').value), t, 0.05);
+}
+async function play(){
+  await load(); if(ctx.state==='suspended') await ctx.resume();
+  if(playing) return;
+  fireSrc = ctx.createBufferSource(); fireSrc.buffer=fireBuf; fireSrc.loop=true; fireSrc.connect(fireGain); fireSrc.start();
+  nightSrc = ctx.createBufferSource(); nightSrc.buffer=nightBuf; nightSrc.loop=true; nightSrc.connect(nightGain); nightSrc.start();
+  apply(); playing=true; D('play').textContent='♪ 播放中';
+}
+function stop(){ if(!playing) return; try{fireSrc.stop();nightSrc.stop();}catch(e){} playing=false; D('play').textContent='▶ 播放'; }
+
+[['fire','fireV',v=>v.toFixed(2)],['night','nightV',v=>v.toFixed(2)],['nlp','nlpV',v=>Math.round(v)+' Hz'],['master','masterV',v=>v.toFixed(2)]].forEach(([id,vid,fmt])=>{
+  D(id).addEventListener('input',e=>{ D(vid).textContent=fmt(parseFloat(e.target.value)); apply(); save(); });
+});
+D('play').addEventListener('click',play);
+D('stop').addEventListener('click',stop);
+
+function exp(){ return { planet:'starry', fireVol:+D('fire').value, nightVol:+D('night').value, nightLowpassHz:+D('nlp').value, masterVol:+D('master').value }; }
+D('exportBtn').addEventListener('click',()=>{ const o=D('out'); o.style.display='block'; o.textContent=JSON.stringify(exp(),null,2); });
+D('copyBtn').addEventListener('click',async()=>{ try{ await navigator.clipboard.writeText(JSON.stringify(exp(),null,2)); D('copyBtn').textContent='已复制✓'; setTimeout(()=>D('copyBtn').textContent='复制',1500);}catch(e){ D('exportBtn').click(); } });
+
+function save(){ try{ localStorage.setItem('ms-starry-mix', JSON.stringify(exp())); }catch(e){} }
+try{ const s=JSON.parse(localStorage.getItem('ms-starry-mix')||'null'); if(s){ D('fire').value=s.fireVol; D('night').value=s.nightVol; if(s.nightLowpassHz)D('nlp').value=s.nightLowpassHz; D('master').value=s.masterVol; ['fire','night','nlp','master'].forEach(id=>D(id).dispatchEvent(new Event('input'))); } }catch(e){}
+</script>
+</body>
+</html>

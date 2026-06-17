@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>治愈星 · 英文标题方案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Cinzel:wght@300;400;500;600&family=Italianno&family=JetBrains+Mono:wght@300;400&family=Inter+Tight:wght@200;300;400&family=Tangerine:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #14101c;
+  color: rgba(255, 245, 230, 0.92);
+  font-weight: 300;
+  min-height: 100vh;
+  padding: 56px 32px 96px;
+}
+
+.container { max-width: 1340px; margin: 0 auto; }
+
+header { text-align: center; margin-bottom: 32px; }
+header h1 {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  padding-left: 0.35em;
+}
+header p {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: rgba(255, 245, 230, 0.42);
+}
+
+.layer-tabs-wrap { text-align: center; margin-bottom: 40px; }
+.layer-tabs {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 24px;
+  background: rgba(255, 245, 230, 0.06);
+  border: 1px solid rgba(255, 245, 230, 0.10);
+}
+.layer-tabs button {
+  padding: 8px 22px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 245, 230, 0.52);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.22s, color 0.22s;
+}
+.layer-tabs button.active {
+  background: rgba(245, 220, 168, 0.18);
+  color: rgba(255, 245, 230, 0.96);
+}
+
+h2.section {
+  margin: 56px 0 28px;
+  font-size: 13px;
+  font-weight: 300;
+  letter-spacing: 0.34em;
+  color: rgba(245, 220, 168, 0.7);
+  padding-left: 0.34em;
+}
+
+.grid { display: grid; gap: 22px; }
+.grid.two { grid-template-columns: repeat(2, 1fr); }
+
+.preview { display: flex; flex-direction: column; }
+
+.scene {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 245, 230, 0.06);
+}
+.scene.card-scene { height: 540px; }
+
+/* 三层氛围 */
+.scene[data-layer="gentle"] {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 247, 230, 0.92), transparent 62%),
+    radial-gradient(circle at 76% 28%, rgba(246, 209, 190, 0.50), transparent 60%),
+    radial-gradient(circle at 50% 88%, rgba(255, 226, 205, 0.26), transparent 60%),
+    linear-gradient(140deg, #f8eee6 0%, #e8c8b8 60%, #d8a890 100%);
+}
+.scene[data-layer="companion"] {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 249, 226, 0.92), transparent 62%),
+    radial-gradient(circle at 76% 28%, rgba(246, 220, 168, 0.55), transparent 60%),
+    radial-gradient(circle at 50% 88%, rgba(240, 200, 177, 0.24), transparent 60%),
+    linear-gradient(140deg, #f7efdf 0%, #e8d8b8 60%, #d8b890 100%);
+}
+.scene[data-layer="inspire"] {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 250, 238, 0.94), transparent 62%),
+    radial-gradient(circle at 76% 28%, rgba(238, 218, 198, 0.42), transparent 60%),
+    radial-gradient(circle at 50% 88%, rgba(248, 226, 204, 0.24), transparent 60%),
+    linear-gradient(140deg, #f8f1ea 0%, #ece2d4 60%, #ddcfba 100%);
+}
+
+.caption {
+  margin: 16px 4px 0;
+  text-align: center;
+}
+.caption strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  color: rgba(245, 220, 168, 0.92);
+  padding-left: 0.22em;
+  margin-bottom: 6px;
+}
+.caption .meta-line {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: rgba(255, 245, 230, 0.45);
+  line-height: 1.7;
+}
+.caption .font-info {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  color: rgba(245, 220, 168, 0.42);
+  text-transform: uppercase;
+  font-family: "Inter Tight", sans-serif;
+}
+
+/* === 模拟主 app 顶部 tab === */
+.mock-tab {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  padding: 5px;
+  background: rgba(38, 26, 30, 0.78);
+  border-radius: 99px;
+  border: 1px solid rgba(255, 245, 230, 0.10);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 9;
+  box-shadow: 0 8px 22px rgba(40, 24, 32, 0.16);
+}
+.mock-tab span {
+  padding: 6px 16px;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  color: rgba(255, 245, 230, 0.5);
+  border-radius: 99px;
+  transition: background 0.2s, color 0.2s;
+}
+.mock-tab span.active {
+  background: rgba(255, 245, 230, 0.16);
+  color: rgba(255, 250, 240, 0.95);
+}
+
+/* 卡片占位（标题背景） */
+.cards-mock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-end;
+  gap: 11px;
+  padding: 0 22px 28px;
+  z-index: 1;
+}
+.mock-card {
+  width: 54px;
+  height: 68px;
+  border-radius: 4px;
+  background: rgba(255, 250, 240, 0.40);
+  border: 1px solid rgba(80, 52, 38, 0.10);
+  box-shadow: 0 4px 10px rgba(80, 52, 38, 0.08);
+}
+.mock-card:nth-child(3n) { transform: rotate(-6deg) translateY(5px); }
+.mock-card:nth-child(3n+1) { transform: rotate(4deg) translateY(-3px); }
+.mock-card:nth-child(4n+2) { width: 70px; height: 52px; }
+
+
+/* ==================== 标题方案（纯英文） ==================== */
+
+.title-area {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 96px;
+  padding: 0 40px;
+  z-index: 3;
+  pointer-events: none;
+  text-align: center;
+}
+
+/* === 方案 1 · Light Serif（极细衬线） === */
+.scheme-1 .title-area { top: 90px; }
+.scheme-1 .title-area .top-hair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.scheme-1 .top-hair::before,
+.scheme-1 .top-hair::after {
+  content: '';
+  width: 36px;
+  height: 1px;
+  background: rgba(80, 52, 38, 0.32);
+}
+.scheme-1 .chapter {
+  font-family: "EB Garamond", "Cormorant Garamond", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: rgba(80, 52, 38, 0.65);
+}
+.scheme-1 .main {
+  font-family: "Cormorant Garamond", "EB Garamond", serif;
+  font-weight: 300;
+  font-size: 72px;
+  letter-spacing: 0.32em;
+  padding-left: 0.32em;
+  color: rgba(60, 38, 24, 0.88);
+  margin: 0;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.scheme-1 .sub {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: "EB Garamond", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: rgba(80, 52, 38, 0.60);
+}
+.scheme-1 .sub::before,
+.scheme-1 .sub::after {
+  content: '';
+  width: 22px;
+  height: 1px;
+  background: rgba(80, 52, 38, 0.26);
+}
+
+/* === 方案 2 · Mono Minimal（等宽极简） === */
+.scheme-2 .title-area { top: 110px; }
+.scheme-2 .dot {
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(80, 52, 38, 0.62);
+  margin: 0 auto 24px;
+}
+.scheme-2 .main {
+  font-family: "JetBrains Mono", "SF Mono", monospace;
+  font-weight: 300;
+  font-size: 26px;
+  letter-spacing: 0.62em;
+  padding-left: 0.62em;
+  color: rgba(60, 38, 24, 0.88);
+  margin: 0;
+  line-height: 1;
+}
+.scheme-2 .meta {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 300;
+  font-size: 10.5px;
+  letter-spacing: 0.32em;
+  color: rgba(80, 52, 38, 0.55);
+}
+.scheme-2 .meta .bar {
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  background: rgba(80, 52, 38, 0.28);
+}
+
+/* === 方案 3 · Script Italic（手写斜体） === */
+.scheme-3 .title-area { top: 90px; }
+.scheme-3 .main {
+  font-family: "Italianno", "Tangerine", "Cormorant Garamond", cursive;
+  font-weight: 400;
+  font-size: 120px;
+  letter-spacing: 0;
+  color: rgba(70, 42, 30, 0.88);
+  margin: 0;
+  line-height: 1;
+  text-transform: none;
+}
+.scheme-3 .sub {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: "Inter Tight", "Helvetica Neue", sans-serif;
+  font-weight: 300;
+  font-size: 10.5px;
+  letter-spacing: 0.42em;
+  color: rgba(80, 52, 38, 0.5);
+}
+.scheme-3 .sub::before,
+.scheme-3 .sub::after {
+  content: '';
+  width: 20px;
+  height: 1px;
+  background: rgba(80, 52, 38, 0.24);
+}
+
+/* === 方案 4 · Display Magazine（巨字杂志） === */
+.scheme-4 .title-area {
+  top: 86px;
+  text-align: left;
+  padding: 0 44px;
+}
+.scheme-4 .top-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "Inter Tight", sans-serif;
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.42em;
+  color: rgba(80, 52, 38, 0.6);
+}
+.scheme-4 .top-meta .hair {
+  flex: 0 0 40px;
+  height: 1px;
+  background: rgba(80, 52, 38, 0.32);
+}
+.scheme-4 .main {
+  font-family: "Playfair Display", "Cormorant Garamond", serif;
+  font-weight: 300;
+  font-size: 96px;
+  letter-spacing: -0.012em;
+  line-height: 0.95;
+  color: rgba(60, 38, 24, 0.92);
+  margin: 8px 0 0;
+}
+.scheme-4 .main em {
+  font-style: italic;
+  font-weight: 400;
+  font-family: "Cormorant Garamond", serif;
+}
+.scheme-4 .en-sub {
+  margin-top: 14px;
+  font-family: "EB Garamond", serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: rgba(80, 52, 38, 0.6);
+}
+
+
+/* ==================== 卡片方向 1 · 玻璃 ==================== */
+
+.cards-demo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 20px;
+  padding: 32px;
+}
+
+.dcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 12px;
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(80, 52, 38, 0.08),
+    0 10px 30px rgba(80, 52, 38, 0.16);
+}
+
+.dcard .title {
+  font-family: "PingFang SC", sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: rgba(60, 38, 24, 0.86);
+  line-height: 1.4;
+  position: relative;
+  z-index: 2;
+}
+.dcard .meta {
+  margin-top: 4px;
+  font-family: "Inter Tight", sans-serif;
+  font-size: 9.5px;
+  font-weight: 300;
+  letter-spacing: 0.26em;
+  color: rgba(60, 38, 24, 0.46);
+  position: relative;
+  z-index: 2;
+}
+
+.dcard .media {
+  position: absolute;
+  inset: 14px 14px 56px 14px;
+  border-radius: 8px;
+  overflow: hidden;
+  z-index: 1;
+}
+.media.cat {
+  background:
+    radial-gradient(circle at 50% 60%, rgba(80, 50, 30, 0.65) 0 18%, transparent 18.5%),
+    radial-gradient(circle at 42% 50%, rgba(255, 240, 210, 0.85) 0 5%, transparent 5.5%),
+    radial-gradient(circle at 58% 50%, rgba(255, 240, 210, 0.85) 0 5%, transparent 5.5%),
+    radial-gradient(ellipse at 50% 75%, rgba(60, 36, 22, 0.7) 0 14%, transparent 14.5%),
+    linear-gradient(180deg, #f4d6a8 0%, #b88860 70%, #6a4838 100%);
+}
+.media.sunset {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 240, 200, 0.95) 0 8%, transparent 8.5%),
+    radial-gradient(circle at 50% 35%, rgba(255, 200, 130, 0.60) 0 18%, transparent 36%),
+    linear-gradient(180deg, #f8c890 0%, #f0a070 35%, #c0707a 70%, #5a4068 100%);
+}
+
+.dcard .play-corner {
+  position: absolute;
+  right: 18px;
+  bottom: 56px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 250, 240, 0.85);
+  background: rgba(40, 24, 16, 0.42);
+  display: grid;
+  place-items: center;
+  z-index: 3;
+}
+.dcard .play-corner::before {
+  content: '';
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 4px 0 4px 7px;
+  border-color: transparent transparent transparent rgba(255, 250, 240, 0.95);
+  margin-left: 2px;
+}
+
+.dcard .wave {
+  position: absolute;
+  top: 24%;
+  left: 14%;
+  right: 14%;
+  height: 38%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  z-index: 1;
+}
+.dcard .wave span {
+  flex: 1;
+  background: linear-gradient(180deg, rgba(80, 52, 38, 0.62) 0%, rgba(80, 52, 38, 0.32) 100%);
+  border-radius: 2px;
+  min-width: 2px;
+}
+
+.dcard.text-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 26px 18px;
+}
+.dcard.text-card .quote {
+  font-family: "EB Garamond", "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 34px;
+  font-weight: 400;
+  color: rgba(60, 38, 24, 0.36);
+  line-height: 0.4;
+  margin-bottom: 8px;
+  height: 14px;
+}
+.dcard.text-card .text-title {
+  font-family: "PingFang SC", serif;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: rgba(60, 38, 24, 0.88);
+  line-height: 1.4;
+  margin: 0 0 10px;
+}
+.dcard.text-card .text-excerpt {
+  font-size: 11px;
+  font-weight: 300;
+  color: rgba(60, 38, 24, 0.58);
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+
+.note {
+  margin: 14px auto 0;
+  max-width: 760px;
+  font-size: 11px;
+  line-height: 1.8;
+  letter-spacing: 0.12em;
+  color: rgba(255, 245, 230, 0.42);
+  text-align: center;
+}
+
+.legend {
+  margin-top: 56px;
+  padding: 24px 28px;
+  background: rgba(255, 245, 230, 0.04);
+  border: 1px solid rgba(255, 245, 230, 0.08);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.9;
+  letter-spacing: 0.06em;
+  color: rgba(255, 245, 230, 0.62);
+}
+.legend strong {
+  color: rgba(245, 220, 168, 0.92);
+  letter-spacing: 0.18em;
+  display: inline-block;
+  margin-right: 12px;
+}
+
+@media (max-width: 980px) {
+  .grid.two { grid-template-columns: 1fr; }
+  .cards-demo { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<main class="container">
+
+  <header>
+    <h1>治愈星 英文标题方案</h1>
+    <p>避开顶部 tab · 纯英文 4 种字体方向</p>
+  </header>
+
+  <div class="layer-tabs-wrap">
+    <div class="layer-tabs">
+      <button data-layer="gentle" class="active">温柔 · Gentle</button>
+      <button data-layer="companion">陪伴 · Companion</button>
+      <button data-layer="inspire">启发 · Inspire</button>
+    </div>
+  </div>
+
+  <h2 class="section">1 — 标题字体（纯英文 / 已为主 app tab 留出顶部空间）</h2>
+  <div class="grid two">
+
+    <!-- 方案 1: Light Serif -->
+    <div class="preview">
+      <div class="scene scheme-1 scene-bg" data-layer="gentle">
+        <div class="mock-tab">
+          <span>足迹</span>
+          <span>重要时刻</span>
+          <span class="active">关键词星球</span>
+        </div>
+        <div class="cards-mock">
+          <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+          <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+          <div class="mock-card"></div><div class="mock-card"></div>
+        </div>
+        <div class="title-area">
+          <div class="top-hair">
+            <span class="chapter" data-chapter>Chapter Ⅰ</span>
+          </div>
+          <h2 class="main" data-main>GENTLE</h2>
+          <div class="sub" data-sub>the quiet kind of warmth</div>
+        </div>
+      </div>
+      <p class="caption">
+        <strong>方案 1 · Light Serif</strong>
+        <span class="meta-line">Cormorant Garamond 300 全大写 + EB Garamond Italic 副标</span>
+        <span class="meta-line">章节扉页气质，hairline 装饰</span>
+        <span class="font-info">editorial / serif / centered</span>
+      </p>
+    </div>
+
+    <!-- 方案 2: Mono Minimal -->
+    <div class="preview">
+      <div class="scene scheme-2 scene-bg" data-layer="gentle">
+        <div class="mock-tab">
+          <span>足迹</span>
+          <span>重要时刻</span>
+          <span class="active">关键词星球</span>
+        </div>
+        <div class="cards-mock">
+          <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+          <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+          <div class="mock-card"></div><div class="mock-card"></div>
+        </div>
+        <div class="title-area">
+          <span class="dot"></span>
+          <h2 class="main" data-main>GENTLE</h2>
+          <div class="meta">
+            <span class="bar"></span>
+            <span data-num>01</span>
+            <span>/</span>
+            <span data-total>03</span>
+            <span class="bar"></span>
+          </div>
+        </div>
+      </div>
+      <p class="caption">
+        <strong>方案 2 · Mono Minimal</strong>
+        <span class="meta-line">JetBrains Mono 300 字距大 + 极小序号</span>
+        <span class="meta-line">克制、留白多，科技 / 终端气质</span>
+        <span class="font-info">monospace / minimal</span>
+      </p>
+    </div>
+
+    <!-- 方案 3: Script Italic -->
+    <div class="preview">
+      <div class="scene scheme-3 scene-bg" data-layer="gentle">
+        <div class="mock-tab">
+          <span>足迹</span>
+          <span>重要时刻</span>
+          <span class="active">关键词星球</span>
+        </div>
+        <div class="cards-mock">
+          <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+          <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+          <div class="mock-card"></div><div class="mock-card"></div>
+        </div>
+        <div class="title-area">
+          <h2 class="main" data-main-script>Gentle</h2>
+          <div class="sub">
+            <span data-num>FIRST</span>
+            <span>PASSAGE</span>
+          </div>
+        </div>
+      </div>
+      <p class="caption">
+        <strong>方案 3 · Script Italic</strong>
+        <span class="meta-line">Italianno 流畅手写 + Inter Tight 极小 caps 副标</span>
+        <span class="meta-line">温柔、像一封手写信开头</span>
+        <span class="font-info">script / handwritten</span>
+      </p>
+    </div>
+
+    <!-- 方案 4: Display Magazine -->
+    <div class="preview">
+      <div class="scene scheme-4 scene-bg" data-layer="gentle">
+        <div class="mock-tab">
+          <span>足迹</span>
+          <span>重要时刻</span>
+          <span class="active">关键词星球</span>
+        </div>
+        <div class="cards-mock">
+          <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+          <div class="mock-card"></div><div class="mock-card"></div><div class="mock-card"></div>
+          <div class="mock-card"></div><div class="mock-card"></div>
+        </div>
+        <div class="title-area">
+          <div class="top-meta">
+            <span class="hair"></span>
+            <span><span data-num>01</span> / <span data-total>03</span> · <span data-passage>FIRST PASSAGE</span></span>
+          </div>
+          <h2 class="main" data-main-display>Gentle</h2>
+          <p class="en-sub" data-en-sub>— the quiet kind of warmth</p>
+        </div>
+      </div>
+      <p class="caption">
+        <strong>方案 4 · Display Magazine</strong>
+        <span class="meta-line">Playfair Display 300 巨字 + Cormorant Italic 副标</span>
+        <span class="meta-line">杂志章节扉页大字号 + 左对齐错落</span>
+        <span class="font-info">magazine / display</span>
+      </p>
+    </div>
+
+  </div>
+
+
+  <h2 class="section">2 — 卡片样式（你已选：玻璃方向）</h2>
+  <div class="preview">
+    <div class="scene card-scene scene-bg" data-layer="gentle">
+      <div class="mock-tab">
+        <span>足迹</span>
+        <span>重要时刻</span>
+        <span class="active">关键词星球</span>
+      </div>
+      <div class="cards-demo" style="padding-top: 84px;">
+
+        <div class="dcard">
+          <div class="media cat"></div>
+          <div class="title">朋友的猫照</div>
+          <div class="meta">IMAGE</div>
+        </div>
+
+        <div class="dcard">
+          <div class="media sunset"></div>
+          <div class="play-corner"></div>
+          <div class="title">山顶看日落</div>
+          <div class="meta">VIDEO</div>
+        </div>
+
+        <div class="dcard">
+          <div class="wave" data-wave></div>
+          <div class="title">妈妈打来的电话</div>
+          <div class="meta">AUDIO · 04:05</div>
+        </div>
+
+        <div class="dcard text-card">
+          <div class="quote">"</div>
+          <p class="text-title">被认真听完</p>
+          <p class="text-excerpt">没有建议，没有评价，只是被认真听完。</p>
+        </div>
+
+      </div>
+    </div>
+    <p class="caption">
+      <strong>玻璃卡 · 四种类型</strong>
+      <span class="meta-line">半透明 backdrop-filter + 暖白细边 + 内发光，氛围色透过来</span>
+    </p>
+  </div>
+
+
+  <p class="note">点上方「温柔 / 陪伴 / 启发」切换三层背景，看不同氛围下的对比。英文标题（GENTLE / COMPANION / INSPIRE）跟着换</p>
+
+  <div class="legend">
+    <p><strong>选择方式</strong>"方案 X"——可以再附改动（"字号小一点"、"去副标"、"位置左对齐"等）</p>
+    <p style="margin-top: 8px; opacity: 0.7;">
+      已在每个 preview 顶部模拟主 app 的「足迹 / 重要时刻 / 关键词星球」tab。标题区域避开顶部 96px+ 空间，不会跟 tab 撞<br>
+      字体来自 Google Fonts（Cormorant Garamond / EB Garamond / Playfair Display / JetBrains Mono / Italianno / Inter Tight）
+    </p>
+  </div>
+
+</main>
+
+<script>
+const LAYER_DATA = {
+  gentle: {
+    main: 'GENTLE',
+    mainScript: 'Gentle',
+    mainDisplay: 'Gentle',
+    chapter: 'Chapter Ⅰ',
+    sub: 'the quiet kind of warmth',
+    num: '01',
+    total: '03',
+    passage: 'FIRST PASSAGE',
+    enSub: '— the quiet kind of warmth'
+  },
+  companion: {
+    main: 'COMPANION',
+    mainScript: 'Companion',
+    mainDisplay: 'Companion',
+    chapter: 'Chapter Ⅱ',
+    sub: 'sitting beside you',
+    num: '02',
+    total: '03',
+    passage: 'SECOND PASSAGE',
+    enSub: '— sitting beside you'
+  },
+  inspire: {
+    main: 'INSPIRE',
+    mainScript: 'Inspire',
+    mainDisplay: 'Inspire',
+    chapter: 'Chapter Ⅲ',
+    sub: 'a small light, kindled',
+    num: '03',
+    total: '03',
+    passage: 'THIRD PASSAGE',
+    enSub: '— a small light, kindled'
+  }
+};
+
+const tabs = document.querySelectorAll('.layer-tabs button');
+const scenes = document.querySelectorAll('.scene-bg');
+
+function applyLayer(layer) {
+  const data = LAYER_DATA[layer];
+  scenes.forEach(s => s.dataset.layer = layer);
+  document.querySelectorAll('[data-main]').forEach(el => el.textContent = data.main);
+  document.querySelectorAll('[data-main-script]').forEach(el => el.textContent = data.mainScript);
+  document.querySelectorAll('[data-main-display]').forEach(el => el.textContent = data.mainDisplay);
+  document.querySelectorAll('[data-chapter]').forEach(el => el.textContent = data.chapter);
+  document.querySelectorAll('[data-sub]').forEach(el => el.textContent = data.sub);
+  document.querySelectorAll('[data-num]').forEach(el => el.textContent = data.num);
+  document.querySelectorAll('[data-total]').forEach(el => el.textContent = data.total);
+  document.querySelectorAll('[data-passage]').forEach(el => el.textContent = data.passage);
+  document.querySelectorAll('[data-en-sub]').forEach(el => el.textContent = data.enSub);
+}
+
+tabs.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    applyLayer(btn.dataset.layer);
+  });
+});
+
+// 波形
+document.querySelectorAll('[data-wave]').forEach((el, idx) => {
+  for (let i = 0; i < 24; i++) {
+    const phase = (i + idx * 3) * 0.45;
+    const h = 18 + Math.abs(Math.sin(phase)) * 56 + Math.abs(Math.sin(phase * 1.7)) * 22;
+    const span = document.createElement('span');
+    span.style.height = Math.min(96, h) + '%';
+    el.appendChild(span);
+  }
+});
+</script>
+</body>
+</html>

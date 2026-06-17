@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>重要时刻 · 数字日记本 — 浅色三方向</title>
+<style>
+  :root{
+    --font-body:'PingFang SC',-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;
+    --font-serif:'Songti SC','Source Han Serif SC','STSong',serif;
+    --tk-tight:.02em; --tk-normal:.04em; --tk-wide:.08em; --tk-wider:.14em; --tk-widest:.22em;
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#eceae4;color:#2e2a24;font-family:var(--font-body);}
+  body{padding:0 0 150px;}
+
+  /* 顶部 */
+  .intro{max-width:880px;margin:0 auto;padding:64px 36px 24px;}
+  .intro .eyebrow{font-size:11px;letter-spacing:var(--tk-widest);color:#a8895a;text-transform:uppercase;}
+  .intro h1{font-family:var(--font-serif);font-weight:400;font-size:30px;letter-spacing:var(--tk-wide);color:#211d17;margin:14px 0 16px;}
+  .intro p{font-size:13.5px;line-height:2;color:#5c554a;letter-spacing:var(--tk-normal);max-width:680px;}
+  .intro p b{color:#2e2a24;font-weight:600;}
+  .intro .meta{margin-top:18px;font-size:11px;color:#9a9588;letter-spacing:var(--tk-wider);}
+
+  .dir{max-width:1180px;margin:60px auto 0;padding:0 36px;}
+  .dir-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px;}
+  .dir-tag{font-size:12px;font-weight:600;letter-spacing:var(--tk-wide);padding:4px 12px;border-radius:999px;}
+  .dir-a .dir-tag{color:#8a6a30;background:rgba(176,134,66,.14);border:1px solid rgba(176,134,66,.34);}
+  .dir-b .dir-tag{color:#6a6a72;background:rgba(120,120,130,.1);border:1px solid rgba(120,120,130,.26);}
+  .dir-c .dir-tag{color:#b06478;background:rgba(199,122,142,.14);border:1px solid rgba(199,122,142,.32);}
+  .dir-head h2{font-family:var(--font-serif);font-weight:400;font-size:23px;letter-spacing:var(--tk-wide);color:#211d17;}
+  .dir-desc{font-size:13px;line-height:1.95;color:#5c554a;letter-spacing:var(--tk-normal);max-width:760px;margin:0 0 26px;}
+  .dir-desc b{color:#2e2a24;font-weight:600;}
+  .stage{display:grid;grid-template-columns:300px 1fr;gap:26px;align-items:start;}
+  @media(max-width:900px){.stage{grid-template-columns:1fr;}}
+  .stage-label{font-size:10.5px;letter-spacing:var(--tk-widest);color:#a8a294;text-transform:uppercase;margin-bottom:12px;}
+
+  /* ═══ A · 暖纸手账（牛皮 / 奶油纸） ═══ */
+  .a-page{position:relative;border-radius:6px;overflow:hidden;padding:54px 56px 58px;
+    background:linear-gradient(135deg,#f4ecdc,#ece0c8);
+    box-shadow:0 20px 48px rgba(120,96,54,.22), inset 0 0 0 1px rgba(255,255,255,.45);}
+  .a-page::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/></svg>");}
+  /* 顶部纸胶带 */
+  .a-tape{position:absolute;top:-8px;left:50%;transform:translateX(-50%) rotate(-1.5deg);width:128px;height:30px;z-index:4;
+    background:rgba(214,196,150,.55);border:1px solid rgba(190,166,110,.4);box-shadow:0 4px 10px rgba(120,96,54,.14);}
+  /* 情感重量 → 纸面暖色浸染（重→更暖更饱和） */
+  .a-warm{position:absolute;inset:0;z-index:0;pointer-events:none;mix-blend-mode:multiply;
+    background:radial-gradient(ellipse 90% 60% at 50% 120%, rgba(200,150,70,calc(.18*var(--w,.5))), transparent 65%);}
+  .a-date{position:relative;z-index:2;font-family:var(--font-serif);font-size:13px;letter-spacing:var(--tk-widest);color:#9a7438;margin-bottom:22px;}
+  .a-date::after{content:'';display:block;width:34px;height:1.5px;background:#b6904a;margin-top:13px;border-radius:2px;}
+  .a-body{position:relative;z-index:2;font-family:var(--font-serif);font-size:18px;line-height:2.15;color:#3c3326;font-weight:400;letter-spacing:var(--tk-tight);white-space:pre-wrap;}
+  .a-body .drop{float:left;font-size:46px;line-height:.82;padding:6px 12px 0 0;color:#a8783a;}
+  .a-tl{display:flex;flex-direction:column;gap:12px;}
+  .a-tl-item{position:relative;padding:16px 18px 16px 22px;cursor:pointer;border-radius:5px;
+    background:linear-gradient(135deg,#f3ebda,#ebe0c9);box-shadow:0 8px 18px rgba(120,96,54,.16), inset 0 0 0 1px rgba(255,255,255,.4);
+    transition:transform .35s var(--ease-out);}
+  .a-tl-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:5px 0 0 5px;
+    background:linear-gradient(180deg,#c79a4a,#9a7438);opacity:var(--w,.5);}
+  .a-tl-item:hover{transform:translateX(5px);}
+  .a-tl-date{font-family:var(--font-serif);font-size:11px;letter-spacing:var(--tk-wider);color:#9a7438;margin-bottom:6px;}
+  .a-tl-text{font-family:var(--font-serif);font-size:13.5px;line-height:1.8;color:#564a36;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+  /* ═══ B · 纯白极简 ═══ */
+  .b-page{position:relative;background:#fbfaf7;border-radius:14px;padding:64px 72px 70px;
+    box-shadow:0 18px 50px rgba(40,40,50,.1), inset 0 0 0 1px rgba(0,0,0,.04);}
+  .b-seal{display:flex;align-items:center;gap:14px;margin-bottom:40px;}
+  .b-seal-dot{width:8px;height:8px;border-radius:50%;background:#c79858;opacity:calc(.35 + .65*var(--w,.5));
+    box-shadow:0 0 calc(8px*var(--w,.5)) rgba(199,152,88,calc(.5*var(--w,.5)));}
+  .b-date{font-size:12px;letter-spacing:var(--tk-widest);color:#9a958c;font-variant-numeric:tabular-nums;}
+  .b-body{font-family:var(--font-serif);font-size:20px;line-height:2.25;color:#23221f;font-weight:400;letter-spacing:var(--tk-tight);white-space:pre-wrap;}
+  .b-rule{width:100%;height:1px;background:#eceae4;margin:46px 0 0;position:relative;}
+  .b-rule::after{content:'';position:absolute;left:0;top:0;width:30px;height:1px;background:#c79858;}
+  .b-tl{position:relative;padding-left:24px;}
+  .b-tl::before{content:'';position:absolute;left:4px;top:8px;bottom:8px;width:1px;background:#e2e0d9;}
+  .b-tl-item{position:relative;padding:0 0 30px 0;cursor:pointer;}
+  .b-tl-item::before{content:'';position:absolute;left:-23px;top:6px;width:7px;height:7px;border-radius:50%;
+    background:#c79858;opacity:calc(.35 + .65*var(--w,.5));}
+  .b-tl-date{font-size:10.5px;letter-spacing:var(--tk-wider);color:#9a958c;margin-bottom:8px;font-variant-numeric:tabular-nums;}
+  .b-tl-text{font-family:var(--font-serif);font-size:14px;line-height:1.9;color:#3a382f;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .b-tl-item:hover .b-tl-text{color:#1c1b18;}
+
+  /* ═══ C · 米黄信笺 ═══ */
+  .c-page{position:relative;border-radius:14px;overflow:hidden;padding:60px 64px 66px;
+    background:linear-gradient(180deg,#faf3e6,#f5ead6);
+    box-shadow:0 18px 48px rgba(150,110,70,.16), inset 0 0 0 1px rgba(255,255,255,.5);}
+  /* 横向信纸细线 */
+  .c-page::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background:repeating-linear-gradient(180deg, transparent 0 39px, rgba(180,140,100,.1) 39px 40px);}
+  /* 情感重量 → 桃玫瑰暖晕 */
+  .c-aura{position:absolute;inset:0;z-index:0;pointer-events:none;mix-blend-mode:multiply;
+    background:radial-gradient(ellipse 80% 50% at 50% -8%, rgba(199,122,142,calc(.16*var(--w,.5))), transparent 60%);}
+  .c-date{position:relative;z-index:2;font-size:12px;letter-spacing:var(--tk-widest);color:#b06478;margin-bottom:26px;font-variant-numeric:tabular-nums;}
+  .c-body{position:relative;z-index:2;font-family:var(--font-serif);font-size:19px;line-height:2.1;color:#43392c;font-weight:400;letter-spacing:var(--tk-tight);white-space:pre-wrap;}
+  .c-tl{display:flex;flex-direction:column;gap:12px;}
+  .c-tl-item{position:relative;padding:16px 18px;cursor:pointer;border-radius:11px;overflow:hidden;
+    background:linear-gradient(180deg,#faf3e6,#f5ebda);box-shadow:0 8px 18px rgba(150,110,70,.13), inset 0 0 0 1px rgba(255,255,255,.45);
+    transition:transform .35s var(--ease-out);}
+  .c-tl-item::after{content:'';position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;
+    background:radial-gradient(ellipse 60% 100% at 0% 50%, rgba(199,122,142,calc(.18*var(--w,.5))), transparent 60%);}
+  .c-tl-item:hover{transform:translateY(-2px);}
+  .c-tl-date{font-size:10.5px;letter-spacing:var(--tk-wider);color:#b06478;margin-bottom:7px;font-variant-numeric:tabular-nums;}
+  .c-tl-text{font-family:var(--font-serif);font-size:13.5px;line-height:1.8;color:#5a4d3b;position:relative;z-index:2;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+  /* 批注 dock */
+  .dock{position:fixed;right:0;bottom:0;left:0;z-index:50;background:rgba(248,246,240,.95);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.1);
+    transform:translateY(calc(100% - 46px));transition:transform .4s var(--ease-out);box-shadow:0 -10px 40px rgba(120,96,54,.1);}
+  .dock.open{transform:translateY(0);}
+  .dock-handle{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;cursor:pointer;}
+  .dock-handle .t{font-size:12px;letter-spacing:var(--tk-wider);color:#5c554a;}
+  .dock-handle .t b{color:#9a7438;}
+  .dock-actions{display:flex;gap:10px;align-items:center;}
+  .dock-btn{font-size:11px;letter-spacing:var(--tk-wide);color:#5c554a;background:rgba(0,0,0,.05);
+    border:1px solid rgba(0,0,0,.1);padding:6px 14px;border-radius:999px;cursor:pointer;}
+  .dock-btn:hover{color:#23221f;background:rgba(0,0,0,.09);}
+  .dock-btn.gold{color:#8a6a30;border-color:rgba(176,134,66,.4);background:rgba(176,134,66,.12);}
+  .dock-body{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:8px 24px 26px;}
+  @media(max-width:900px){.dock-body{grid-template-columns:1fr 1fr;}}
+  .dock-field label{display:block;font-size:11px;letter-spacing:var(--tk-wide);color:#9a958c;margin-bottom:8px;}
+  .dock-field textarea{width:100%;height:96px;resize:vertical;background:#fff;
+    border:1px solid rgba(0,0,0,.1);border-radius:10px;padding:10px 12px;color:#2e2a24;
+    font-family:var(--font-body);font-size:12.5px;line-height:1.7;letter-spacing:var(--tk-normal);}
+  .dock-field textarea:focus{outline:none;border-color:rgba(176,134,66,.5);}
+  .dock-saved{font-size:10.5px;color:#a8a294;letter-spacing:var(--tk-wide);}
+</style>
+</head>
+<body>
+
+  <div class="intro">
+    <div class="eyebrow">Memory Sparks · 重要时刻 重做 · 浅色版</div>
+    <h1>三种「浅色日记本」，挑一种</h1>
+    <p>都不要深色，换成<b>明亮的纸页</b>来重做。三个方向用 App 里现成的示例时刻，正文统一宋体。情感重量仍按 PRD「<b>隐性、不显示数字</b>」处理——浅色里改用墨色与暖晕来表达，你能感觉到哪篇更重，但看不到分数。</p>
+    <p class="meta">右下角可拉开批注栏边看边记，写完点导出。</p>
+  </div>
+
+  <!-- A -->
+  <section class="dir dir-a">
+    <div class="dir-head"><span class="dir-tag">方向 A</span><h2>暖纸手账</h2></div>
+    <p class="dir-desc">奶油色 / 牛皮纸内页，细微纸纹，顶上一段<b>纸胶带</b>。棕墨色宋体、首字下沉，像 MUJI 笔记本或旅行手账。情感重的篇章，纸面会从底部<b>透出更暖的色</b>。<b>treasure 感最强，像一本会被珍藏的本子。</b></p>
+    <div class="stage">
+      <div>
+        <div class="stage-label">时间轴</div>
+        <div class="a-tl">
+          <div class="a-tl-item" style="--w:1"><div class="a-tl-date">11.12</div><div class="a-tl-text">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。第一次听她讲这个。</div></div>
+          <div class="a-tl-item" style="--w:.78"><div class="a-tl-date">9.28</div><div class="a-tl-text">决定不去那个工作面试了。我知道自己想要的不是那个。</div></div>
+          <div class="a-tl-item" style="--w:.55"><div class="a-tl-date">7.05</div><div class="a-tl-text">看完了那本读了三年的书。合上的那一刻，没有想象中那么激动，只是很安静。</div></div>
+          <div class="a-tl-item" style="--w:.33"><div class="a-tl-date">5.21</div><div class="a-tl-text">一个人吃了顿很好的晚饭。这次没有觉得孤单。</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="stage-label">展开一篇</div>
+        <div class="a-page">
+          <div class="a-tape"></div>
+          <div class="a-warm" style="--w:1"></div>
+          <div class="a-date">2024 年 11 月 12 日</div>
+          <div class="a-body"><span class="drop">今</span>天和妈妈聊了很久，她说她年轻的时候也想过当画家。
+
+第一次听她讲这个。她说那时候没钱买颜料，就用铅笔在练习本背面画，画完了又怕被外婆骂，撕掉。
+
+我忽然觉得，我好像从来没真正认识过她。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="dir dir-b">
+    <div class="dir-head"><span class="dir-tag">方向 B</span><h2>纯白极简</h2></div>
+    <p class="dir-desc">近纯白底，靠<b>排版与留白</b>取胜，不做纸纹。深墨宋体，大字距大行距，日期前一颗<b>小金印</b>，结尾一道发丝细线。像 iA Writer / 苹果备忘录的高级感。<b>冷静、现代、永不过时。</b></p>
+    <div class="stage">
+      <div>
+        <div class="stage-label">时间轴</div>
+        <div class="b-tl">
+          <div class="b-tl-item" style="--w:1"><div class="b-tl-date">2024.11.12</div><div class="b-tl-text">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。第一次听她讲这个。</div></div>
+          <div class="b-tl-item" style="--w:.78"><div class="b-tl-date">2024.09.28</div><div class="b-tl-text">决定不去那个工作面试了。我知道自己想要的不是那个。</div></div>
+          <div class="b-tl-item" style="--w:.55"><div class="b-tl-date">2024.07.05</div><div class="b-tl-text">看完了那本读了三年的书。合上的那一刻，没有想象中那么激动，只是很安静。</div></div>
+          <div class="b-tl-item" style="--w:.33"><div class="b-tl-date">2024.05.21</div><div class="b-tl-text">一个人吃了顿很好的晚饭。这次没有觉得孤单。</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="stage-label">展开一篇</div>
+        <div class="b-page">
+          <div class="b-seal"><span class="b-seal-dot" style="--w:1"></span><span class="b-date">2024 年 11 月 12 日</span></div>
+          <div class="b-body">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。
+
+第一次听她讲这个。她说那时候没钱买颜料，就用铅笔在练习本背面画，画完了又怕被外婆骂，撕掉。
+
+我忽然觉得，我好像从来没真正认识过她。</div>
+          <div class="b-rule"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="dir dir-c">
+    <div class="dir-head"><span class="dir-tag">方向 C</span><h2>米黄信笺</h2></div>
+    <p class="dir-desc">略带米黄的信纸，淡淡的<b>横向信纸细线</b>。宋体正文，桃玫瑰色点缀（呼应 App 里「温柔时刻」的玫瑰色）。情感重的篇章，上缘会<b>晕开一层暖桃色</b>。<b>柔软、亲密、有温度，最像写给在乎的人的信。</b></p>
+    <div class="stage">
+      <div>
+        <div class="stage-label">时间轴</div>
+        <div class="c-tl">
+          <div class="c-tl-item" style="--w:1"><div class="c-tl-date">11.12</div><div class="c-tl-text">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。第一次听她讲这个。</div></div>
+          <div class="c-tl-item" style="--w:.78"><div class="c-tl-date">9.28</div><div class="c-tl-text">决定不去那个工作面试了。我知道自己想要的不是那个。</div></div>
+          <div class="c-tl-item" style="--w:.55"><div class="c-tl-date">7.05</div><div class="c-tl-text">看完了那本读了三年的书。合上的那一刻，没有想象中那么激动，只是很安静。</div></div>
+          <div class="c-tl-item" style="--w:.33"><div class="c-tl-date">5.21</div><div class="c-tl-text">一个人吃了顿很好的晚饭。这次没有觉得孤单。</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="stage-label">展开一篇</div>
+        <div class="c-page">
+          <div class="c-aura" style="--w:1"></div>
+          <div class="c-date">2024 年 11 月 12 日</div>
+          <div class="c-body">今天和妈妈聊了很久，她说她年轻的时候也想过当画家。
+
+第一次听她讲这个。她说那时候没钱买颜料，就用铅笔在练习本背面画，画完了又怕被外婆骂，撕掉。
+
+我忽然觉得，我好像从来没真正认识过她。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="dock" id="dock">
+    <div class="dock-handle" id="dockHandle">
+      <span class="t">📝 <b>批注栏</b> — 边看边记，点这里展开/收起</span>
+      <span class="dock-actions">
+        <span class="dock-saved" id="dockSaved"></span>
+        <button class="dock-btn" id="clearBtn">清空</button>
+        <button class="dock-btn gold" id="exportBtn">导出批注</button>
+      </span>
+    </div>
+    <div class="dock-body">
+      <div class="dock-field"><label>方向 A · 暖纸手账</label><textarea data-k="a" placeholder="喜欢 / 不喜欢这里的什么…"></textarea></div>
+      <div class="dock-field"><label>方向 B · 纯白极简</label><textarea data-k="b" placeholder="…"></textarea></div>
+      <div class="dock-field"><label>方向 C · 米黄信笺</label><textarea data-k="c" placeholder="…"></textarea></div>
+      <div class="dock-field"><label>结论 / 选哪个 / 要混搭</label><textarea data-k="final" placeholder="例：A 的纸 + B 的留白…"></textarea></div>
+    </div>
+  </div>
+
+<script>
+  const KEY='ms-moment-diary-notes-v2';
+  const dock=document.getElementById('dock'),handle=document.getElementById('dockHandle');
+  const saved=document.getElementById('dockSaved');
+  const areas=[...document.querySelectorAll('.dock-field textarea')];
+  function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'{}');areas.forEach(a=>a.value=d[a.dataset.k]||'');}catch(e){}}
+  function save(){const d={};areas.forEach(a=>d[a.dataset.k]=a.value);localStorage.setItem(KEY,JSON.stringify(d));
+    const t=new Date();saved.textContent='已保存 '+t.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});}
+  areas.forEach(a=>a.addEventListener('input',()=>{clearTimeout(window._t);window._t=setTimeout(save,500);}));
+  handle.addEventListener('click',e=>{if(e.target.closest('.dock-btn'))return;dock.classList.toggle('open');});
+  document.getElementById('clearBtn').addEventListener('click',()=>{if(confirm('清空所有批注？')){areas.forEach(a=>a.value='');save();}});
+  document.getElementById('exportBtn').addEventListener('click',()=>{
+    const names={a:'方向 A · 暖纸手账',b:'方向 B · 纯白极简',c:'方向 C · 米黄信笺',final:'结论'};
+    let out='# 重要时刻 · 浅色日记本 批注\n\n';
+    areas.forEach(a=>{out+='## '+names[a.dataset.k]+'\n'+(a.value.trim()||'(空)')+'\n\n';});
+    const blob=new Blob([out],{type:'text/markdown'});const u=URL.createObjectURL(blob);
+    const link=document.createElement('a');link.href=u;link.download='moment-diary-notes.md';link.click();URL.revokeObjectURL(u);
+  });
+  load();
+</script>
+</body>
+</html>

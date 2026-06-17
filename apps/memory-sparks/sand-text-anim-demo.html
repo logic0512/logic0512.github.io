@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海星 · 沙滩文字完整动效</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<style>
+@font-face {
+  font-family: 'ZCOOL XiaoWei';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/fonts/zcool-xiaowei-chinese-simplified-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'ZCOOL XiaoWei';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/assets/fonts/zcool-xiaowei-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF;
+}
+</style>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0b0e16;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 44px 20px 60px;
+  font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.page-label {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: rgba(200, 182, 148, 0.38);
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+/* ── 沙滩舞台 ── */
+.stage {
+  position: relative;
+  width: 860px;
+  max-width: 96vw;
+  height: 340px;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 32px 90px rgba(0,0,0,0.62);
+  background:
+    radial-gradient(ellipse at 64% 14%, rgba(255,254,238,0.65), transparent 28%),
+    radial-gradient(ellipse at 14% 84%, rgba(150,195,218,0.10), transparent 26%),
+    linear-gradient(150deg, #faf3e3 0%, #ece0c8 48%, #dde8ee 100%);
+}
+
+/* 细沙颗粒叠层 */
+.stage::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 1;
+  pointer-events: none; opacity: 0.26;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.09'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+/* 沙面波纹线 */
+.stage::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background-image: repeating-linear-gradient(173deg, rgba(155,128,80,0.04) 0 1px, transparent 1px 14px);
+}
+
+/* ── 沙刻文字 ── */
+.worry-wrap {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  filter: url(#sand-carved);     /* 沙刻 SVG 滤镜 */
+}
+
+.worry-chars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(7deg) skewX(-2deg);
+  transform-origin: center;
+  white-space: nowrap;
+}
+
+.char {
+  display: inline-block;
+  font-family: "ZCOOL XiaoWei", "Kaiti SC", serif;
+  font-size: 40px;
+  font-weight: 500;
+  color: rgba(68, 47, 14, 0.70);
+  letter-spacing: 3px;
+  opacity: 0;            /* GSAP 控制，初始隐藏 */
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+/* 浮现后的"沙滩又干净了"提示 */
+.clean-msg {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  font-family: "Kaiti SC", "STKaiti", "Songti SC", serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: rgba(90, 65, 25, 0.42);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── 海浪 SVG ── */
+#wave-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 6;          /* 比文字高，能盖住文字 */
+  pointer-events: none;
+}
+
+/* 泡沫流动 */
+@keyframes foamShift {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -90; }
+}
+.foam-bubbles { animation: foamShift 10s linear infinite; }
+
+/* ── 控制栏 ── */
+.controls {
+  margin-top: 22px;
+  display: flex; align-items: center; gap: 16px;
+}
+.btn {
+  padding: 8px 22px;
+  border: 1px solid rgba(200,178,135,0.28);
+  border-radius: 99px;
+  background: transparent;
+  color: rgba(200,178,135,0.58);
+  font-size: 12px; letter-spacing: 0.12em;
+  cursor: pointer; font-family: inherit;
+  transition: all 160ms;
+}
+.btn:hover {
+  border-color: rgba(200,178,135,0.58);
+  color: rgba(200,178,135,0.88);
+  background: rgba(200,178,135,0.06);
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(180,158,115,0.35); flex-shrink: 0;
+  transition: background 0.4s;
+}
+.status-dot.active { background: rgba(37,169,223,0.85); }
+.status-txt {
+  font-size: 11.5px; letter-spacing: 0.1em;
+  color: rgba(175,155,118,0.42); transition: color 0.4s;
+}
+
+/* 阶段指示 */
+.phases {
+  margin-top: 16px;
+  display: flex; gap: 8px; align-items: center;
+}
+.phase-pill {
+  padding: 4px 12px; border-radius: 99px;
+  font-size: 10px; letter-spacing: 0.12em;
+  color: rgba(170,150,115,0.36);
+  border: 1px solid rgba(170,150,115,0.14);
+  transition: all 0.28s;
+}
+.phase-pill.on {
+  color: rgba(37,169,223,0.85);
+  border-color: rgba(37,169,223,0.35);
+  background: rgba(37,169,223,0.08);
+}
+</style>
+</head>
+<body>
+
+<!-- 隐藏 SVG：定义沙刻 filter，CSS filter:url(#) 引用 -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden;pointer-events:none">
+  <defs>
+    <filter id="sand-carved" x="-10%" y="-40%" width="120%" height="180%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.046 0.050" numOctaves="7" seed="17" result="grain"/>
+      <feDisplacementMap in="SourceGraphic" in2="grain" scale="2.6" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feOffset in="rough" dx="1.4" dy="2.1" result="od"/>
+      <feGaussianBlur in="od" stdDeviation="1.9" result="bd"/>
+      <feColorMatrix in="bd" type="matrix" values="0 0 0 0 0.17  0 0 0 0 0.10  0 0 0 0 0.03  0 0 0 0.72 0" result="groove-shadow"/>
+      <feOffset in="rough" dx="-0.9" dy="-1.6" result="ol"/>
+      <feGaussianBlur in="ol" stdDeviation="1.1" result="bl"/>
+      <feColorMatrix in="bl" type="matrix" values="0 0 0 0 1.00  0 0 0 0 0.94  0 0 0 0 0.70  0 0 0 0.58 0" result="groove-highlight"/>
+      <feMerge>
+        <feMergeNode in="groove-shadow"/>
+        <feMergeNode in="rough"/>
+        <feMergeNode in="groove-highlight"/>
+      </feMerge>
+    </filter>
+  </defs>
+</svg>
+
+<p class="page-label">海星 · 沙滩文字完整动效演示</p>
+
+<div class="stage">
+  <!-- 沙刻文字 -->
+  <div class="worry-wrap" id="worryWrap">
+    <div class="worry-chars" id="worryChars"></div>
+  </div>
+
+  <!-- 沙滩干净后的提示 -->
+  <p class="clean-msg" id="cleanMsg">沙滩又变干净了，像什么都可以重新开始。</p>
+
+  <!-- 海浪 -->
+  <svg id="wave-svg" viewBox="0 0 860 340" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="waveGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"  stop-color="#29aee6"/>
+        <stop offset="52%" stop-color="#0a7ec8"/>
+        <stop offset="100%" stop-color="#065ca0"/>
+      </linearGradient>
+      <pattern id="waterTex" width="20" height="130" patternUnits="userSpaceOnUse">
+        <path d="M4 0 C2 26 7 50 5 72 C3 96 6 114 4 130" stroke="rgba(255,255,255,0.19)" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <path d="M14 5 C16 28 11 52 13 77 C15 98 12 115 14 130" stroke="rgba(7,95,155,0.26)" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      </pattern>
+    </defs>
+
+    <!-- wave-group 整体 Y 轴由 GSAP 控制 -->
+    <g id="wave-group" transform="translate(0,360)">
+      <path d="M-20,0 C60,-18 160,-34 290,-22 C430,-8 520,-26 650,-14 C740,-6 800,-22 880,-10 L880,340 L-20,340 Z"
+            fill="url(#waveGrad)"/>
+      <path d="M-20,0 C60,-18 160,-34 290,-22 C430,-8 520,-26 650,-14 C740,-6 800,-22 880,-10 L880,340 L-20,340 Z"
+            fill="url(#waterTex)" opacity="0.34"/>
+      <!-- 浪花白边 -->
+      <path d="M-20,0 C60,-18 160,-34 290,-22 C430,-8 520,-26 650,-14 C740,-6 800,-22 880,-10"
+            fill="none" stroke="rgba(255,255,255,0.90)" stroke-width="22"
+            stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- 浮泡 -->
+      <path class="foam-bubbles"
+            d="M-20,0 C60,-18 160,-34 290,-22 C430,-8 520,-26 650,-14 C740,-6 800,-22 880,-10"
+            fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="38"
+            stroke-dasharray="2 30" stroke-linecap="round"/>
+    </g>
+  </svg>
+</div>
+
+<div class="controls">
+  <span class="status-dot" id="dot"></span>
+  <span class="status-txt" id="statusTxt">准备播放…</span>
+  <button class="btn" id="btnReplay">↺ 重播</button>
+  <button class="btn" id="btnAuto">自动循环：开</button>
+</div>
+
+<div class="phases">
+  <span class="phase-pill" id="ph1">文字浮现</span>
+  <span style="color:rgba(170,150,115,0.22);font-size:11px;">→</span>
+  <span class="phase-pill" id="ph2">潮水涌来</span>
+  <span style="color:rgba(170,150,115,0.22);font-size:11px;">→</span>
+  <span class="phase-pill" id="ph3">烦恼被带走</span>
+  <span style="color:rgba(170,150,115,0.22);font-size:11px;">→</span>
+  <span class="phase-pill" id="ph4">沙滩干净了</span>
+</div>
+
+<script>
+// ── 拆字符 ──────────────────────────────────────────────────
+const TEXT     = '把这些烦恼，交给今天的海风。';
+const charsEl  = document.getElementById('worryChars');
+const cleanMsg = document.getElementById('cleanMsg');
+const waveGroup = document.getElementById('wave-group');
+
+const worryWrap  = document.getElementById('worryWrap');
+const spans = [];
+for (const ch of TEXT) {
+  const s = document.createElement('span');
+  s.className   = 'char';
+  s.textContent = ch;
+  charsEl.appendChild(s);
+  spans.push(s);
+}
+
+// ── 工具 ──────────────────────────────────────────────────
+const dot       = document.getElementById('dot');
+const statusTxt = document.getElementById('statusTxt');
+const phs       = [null,
+  document.getElementById('ph1'), document.getElementById('ph2'),
+  document.getElementById('ph3'), document.getElementById('ph4')];
+
+function setStatus(msg, active) {
+  statusTxt.textContent = msg;
+  dot.classList.toggle('active', !!active);
+}
+function setPhase(n) {
+  phs.slice(1).forEach((el, i) => el.classList.toggle('on', i + 1 === n));
+}
+
+// ── 动画参数（对齐原版 playWash 的节奏） ──────────────────
+const SURGE_DUR   = 3.4;   // 海浪涌上时长（原版 weight=3 约 4.1s，demo 略快）
+const COVER_HOLD  = 0.76;  // 海浪盖住后停顿
+const RETREAT_DUR = 1.9;   // 退潮时长（原版 1.7s）
+const CLEAN_DELAY = 1.6;   // 退潮后→干净文字出现
+
+// ── 主循环 ──────────────────────────────────────────────────
+let currentTL = null;
+let autoLoop  = true;
+
+function resetState() {
+  // 所有字符：回到原位
+  gsap.set(spans, { opacity: 1, x: 0, y: 0, rotation: 0 });
+  // 整体容器：隐藏（浮现时整体淡入）
+  gsap.set(worryWrap, { opacity: 0 });
+  // 海浪：完全藏在舞台下方
+  gsap.set(waveGroup, { y: 360 });
+  // 干净提示隐藏
+  gsap.set(cleanMsg, { opacity: 0 });
+  setPhase(0);
+}
+
+function runCycle() {
+  if (currentTL) currentTL.kill();
+  resetState();
+
+  const tl = gsap.timeline({
+    onComplete() {
+      setPhase(4);
+      setStatus('沙滩又干净了，像什么都可以重新开始。', false);
+      if (autoLoop) setTimeout(runCycle, 2400);
+    }
+  });
+  currentTL = tl;
+
+  // ═══ 阶段一：文字整体浮现（整块同时慢慢显形，像从沙面渗出来）═══
+  tl.to(worryWrap, {
+    opacity: 1,
+    duration: 1.6,
+    ease: 'power1.inOut',
+    onStart() { setStatus('文字刻入沙面…', true); setPhase(1); }
+  }, 0.4);
+
+  // ═══ 停留，让文字清晰可读 ═══
+  tl.to({}, { duration: 1.8 });
+
+  // ═══ 阶段二：海浪从底部涌上（海浪组 y: 360 → 30） ═══
+  tl.to(waveGroup, {
+    y: 30,
+    duration: SURGE_DUR,
+    ease: 'power1.inOut',
+    onStart() { setStatus('潮水慢慢涌来…', true); setPhase(2); }
+  });
+
+  // ═══ 阶段三：停顿片刻（海浪盖住沙滩的状态）═══
+  tl.to({}, { duration: COVER_HOLD });
+
+  // ═══ 阶段四：退潮 + 字符随潮散开（同时触发，对齐原版 playWash 节奏）═══
+  // 退潮：y 从 30 回到 360
+  tl.to(waveGroup, {
+    y: 360,
+    duration: RETREAT_DUR,
+    ease: 'power1.inOut',
+    onStart() { setStatus('潮水退去，烦恼被带走…', true); setPhase(3); }
+  });
+
+  // 字符 scatter：和退潮同时开始（'<' = 上一个 tween 开始的时刻）
+  // 完全照搬原版 washTextAway() 的参数：y 下沉、随机 x/旋转、power2.in、from random
+  tl.to(spans, {
+    y:        () => gsap.utils.random(70, 200),
+    x:        () => gsap.utils.random(-60, 110),
+    rotation: () => gsap.utils.random(-50, 50),
+    opacity:  0,
+    duration: 1.3,
+    ease:     'power2.in',
+    stagger:  { each: 0.02, from: 'random' }
+  }, '<');   // ← 退潮开始的同一帧触发 scatter
+
+  // ═══ 阶段五：干净提示淡入 ═══
+  tl.to(cleanMsg, {
+    opacity: 1,
+    duration: 0.7,
+    ease: 'power2.out',
+    onStart() { setStatus('沙滩又干净了，像什么都可以重新开始。', false); }
+  }, `+=${CLEAN_DELAY - 0.7}`);
+
+  tl.to({}, { duration: 0.8 });
+}
+
+// ── 控件 ──────────────────────────────────────────────────
+document.getElementById('btnReplay').addEventListener('click', runCycle);
+
+const btnAuto = document.getElementById('btnAuto');
+btnAuto.addEventListener('click', () => {
+  autoLoop = !autoLoop;
+  btnAuto.textContent = `自动循环：${autoLoop ? '开' : '关'}`;
+});
+
+// 首次播放
+setTimeout(runCycle, 800);
+</script>
+
+</body>
+</html>

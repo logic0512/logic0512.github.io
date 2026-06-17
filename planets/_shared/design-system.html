@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Sparks · 关键词星球 · 设计系统</title>
+<style>
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-snap-type: y mandatory; overflow-y: scroll; height: 100%; }
+body { font-family: 'PingFang SC', -apple-system, sans-serif; height: 100%; }
+
+.planet {
+  width: 100vw; height: 100vh; scroll-snap-align: start;
+  position: relative; overflow: hidden;
+}
+
+/* ── nav ── */
+.nav {
+  position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 10px; z-index: 999;
+}
+.nav a {
+  display: block; width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(120,120,120,0.35); text-decoration: none; transition: all 0.3s;
+}
+.nav a:hover { transform: scale(1.6); }
+
+/* ── intro card (top-left floating) ── */
+.intro-card {
+  position: absolute;
+  top: clamp(28px, 4vh, 52px);
+  left: clamp(24px, 3.5vw, 48px);
+  z-index: 10;
+  width: min(360px, 31vw);
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,0.22);
+  backdrop-filter: blur(24px) saturate(1.1);
+  -webkit-backdrop-filter: blur(24px) saturate(1.1);
+}
+
+/* planet orb — real planet image, blended into card */
+.planet-orb {
+  width: 88%;
+  margin: 0 auto 14px;
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.planet-orb img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+}
+
+.p-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  margin-bottom: 8px;
+  opacity: 0.45;
+}
+
+.p-name {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+.p-story {
+  font-size: 13px;
+  line-height: 2.0;
+  letter-spacing: 0.04em;
+  font-weight: 300;
+  margin-bottom: 18px;
+  opacity: 0.72;
+}
+
+.hint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  opacity: 0.52;
+}
+.icon-btn {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+}
+
+/* ── floating add button ── */
+.float-btn {
+  position: absolute;
+  bottom: 44px;
+  right: 52px;
+  z-index: 10;
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  border: 1px solid;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: transparent;
+}
+
+/* ── orbit dots ── */
+.orbit-row {
+  position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; z-index: 20;
+}
+.pip { width: 5px; height: 5px; border-radius: 50%; }
+.pip.on { width: 6px; height: 6px; }
+
+.stars { position: absolute; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+
+/* ── card collapse ── */
+.intro-card {
+  transition: padding 0.38s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* hint-row: collapse trigger */
+.hint-row {
+  cursor: pointer;
+  user-select: none;
+}
+.hint-row:hover { opacity: 0.72; }
+
+/* collapsed card: click anywhere to expand */
+.intro-card.collapsed { cursor: pointer; padding: 14px 22px 16px; }
+
+/* collapsible sections */
+.card-fold {
+  overflow: hidden;
+  max-height: 600px;
+  opacity: 1;
+  transition:
+    max-height 0.42s cubic-bezier(0.4,0,0.2,1),
+    opacity    0.30s cubic-bezier(0.4,0,0.2,1);
+}
+.intro-card.collapsed .card-fold { max-height: 0; opacity: 0; }
+
+/* name and eyebrow adjust on collapse */
+.p-name    { transition: font-size 0.35s cubic-bezier(0.4,0,0.2,1), margin-bottom 0.35s cubic-bezier(0.4,0,0.2,1); }
+.p-eyebrow { transition: margin-bottom 0.35s cubic-bezier(0.4,0,0.2,1); }
+.intro-card.collapsed .p-name    { font-size: 19px; margin-bottom: 0; }
+.intro-card.collapsed .p-eyebrow { margin-bottom: 4px; }
+
+/* ════════════════════════════════════════════════════════ */
+
+/* 1 · 被子星 · 悲伤 */
+#beizi {
+  --accent: #5a88b0;
+  background: linear-gradient(180deg,
+    #8eb8d4 0%, #b0cee0 18%, #ccdce8 35%, #dce8f0 50%,
+    #e4e8ec 65%, #e8e4de 80%, #e4ddd4 100%);
+}
+#beizi::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 110px,
+    rgba(90,136,176,0.06) 110px, rgba(90,136,176,0.06) 112px
+  );
+}
+#beizi .intro-card {
+  background: rgba(255,255,255,0.58);
+  border-color: rgba(90,136,176,0.22);
+  box-shadow: 0 22px 64px rgba(42,80,120,0.16);
+  color: rgba(30,55,80,0.85);
+}
+#beizi .float-btn {
+  border-color: rgba(90,136,176,0.48);
+  color: rgba(30,55,80,0.70);
+  box-shadow: 0 8px 28px rgba(42,80,120,0.18);
+}
+#beizi .pip { background: rgba(40,70,100,0.20); }
+#beizi .pip.on { background: rgba(40,70,100,0.60); }
+
+/* 2 · 行星 · hike */
+#hiking {
+  --accent: #4a8820;
+  background: linear-gradient(180deg,
+    #f4fde8 0%, #edfad8 20%, #def5c4 35%, #ceeaa4 50%,
+    #b4da80 65%, #90c858 82%, #6ab030 100%);
+}
+#hiking .intro-card {
+  background: rgba(255,255,255,0.60);
+  border-color: rgba(74,136,32,0.22);
+  box-shadow: 0 22px 64px rgba(40,100,15,0.15);
+  color: rgba(22,68,8,0.85);
+}
+#hiking .float-btn {
+  border-color: rgba(74,136,32,0.50);
+  color: rgba(22,68,8,0.72);
+  box-shadow: 0 8px 28px rgba(40,100,15,0.18);
+}
+#hiking .pip { background: rgba(30,80,10,0.22); }
+#hiking .pip.on { background: rgba(30,80,10,0.60); }
+
+/* 3 · 治愈星 · 治愈 */
+#healing {
+  --accent: #f5c840;
+  background:
+    radial-gradient(ellipse 38% 38% at 50% 50%, rgba(255,200,70,0.38) 0%, rgba(255,140,30,0.22) 30%, rgba(200,60,180,0.10) 58%, transparent 78%),
+    radial-gradient(ellipse 95% 95% at 50% 50%, #30085e 0%, #1e0440 28%, #120230 55%, #08011a 78%, #030008 100%);
+}
+#healing::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 22% 22% at 50% 50%, rgba(255,210,90,0.26) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 60% at 50% 50%, rgba(180,40,200,0.08) 0%, transparent 72%);
+}
+#healing .intro-card {
+  background: rgba(28,6,55,0.55);
+  border-color: rgba(245,200,64,0.22);
+  box-shadow: 0 22px 64px rgba(0,0,0,0.42);
+  color: rgba(235,215,185,0.90);
+}
+#healing .float-btn {
+  border-color: rgba(245,200,64,0.52);
+  color: rgba(235,215,185,0.82);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.38);
+}
+#healing .pip { background: rgba(245,200,64,0.22); }
+#healing .pip.on { background: rgba(245,200,64,0.78); }
+
+/* 4 · 花星 · 爱 */
+#flower {
+  --accent: #c03870;
+  background:
+    radial-gradient(ellipse 68% 58% at 50% -4%, rgba(255,248,252,0.78) 0%, transparent 55%),
+    linear-gradient(175deg, #fde8f2 0%, #fad0e6 15%, #f4b8d8 32%, #eea0c8 52%, #e88cba 72%, #de7cae 88%, #d470a4 100%);
+}
+#flower .intro-card {
+  background: rgba(255,248,252,0.68);
+  border-color: rgba(192,56,112,0.22);
+  box-shadow: 0 22px 64px rgba(140,20,60,0.15);
+  color: rgba(88,10,38,0.85);
+}
+#flower .float-btn {
+  border-color: rgba(192,56,112,0.48);
+  color: rgba(88,10,38,0.72);
+  box-shadow: 0 8px 28px rgba(140,20,60,0.18);
+}
+#flower .pip { background: rgba(100,12,45,0.22); }
+#flower .pip.on { background: rgba(100,12,45,0.60); }
+
+/* 5 · 海星 · 烦恼 */
+#sea {
+  --accent: #198ed0;
+  background: linear-gradient(180deg, #198ed0 0%, #1480c0 50%, #1070b0 100%);
+}
+#sea::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 46%;
+  pointer-events: none; z-index: 2;
+  background: #fbf5e6;
+}
+.sea-wave {
+  position: absolute; top: 44%; left: 0; width: 100%; height: 100px;
+  z-index: 3; pointer-events: none; display: block;
+}
+#sea .intro-card {
+  background: rgba(251,245,230,0.76);
+  border-color: rgba(25,142,208,0.22);
+  box-shadow: 0 22px 64px rgba(10,50,80,0.18);
+  color: rgba(10,45,75,0.85);
+}
+#sea .float-btn {
+  border-color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.88);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+}
+#sea .pip { background: rgba(255,255,255,0.32); }
+#sea .pip.on { background: rgba(255,255,255,0.78); }
+
+/* 6 · 繁星 · 成就 */
+#starry {
+  --accent: #f0d870;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 100%, #0c1a35 0%, #06101e 55%, transparent 80%),
+    linear-gradient(180deg, #020610 0%, #030918 20%, #040c20 45%, #050e25 70%, #060f28 100%);
+}
+#starry::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 18%;
+  pointer-events: none; z-index: 2;
+  background: #030912;
+  clip-path: polygon(
+    0% 100%, 0% 62%, 5% 42%, 10% 55%, 16% 28%, 22% 50%, 29% 22%,
+    36% 48%, 43% 15%, 50% 44%, 57% 20%, 64% 46%, 71% 30%, 79% 52%,
+    86% 35%, 93% 54%, 98% 42%, 100% 48%, 100% 100%
+  );
+}
+#starry .intro-card {
+  background: rgba(5,12,28,0.55);
+  border-color: rgba(240,216,112,0.18);
+  box-shadow: 0 22px 64px rgba(0,0,0,0.48);
+  color: rgba(215,205,180,0.90);
+}
+#starry .float-btn {
+  border-color: rgba(240,216,112,0.50);
+  color: rgba(240,216,112,0.88);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.42);
+}
+#starry .pip { background: rgba(240,216,112,0.22); }
+#starry .pip.on { background: rgba(240,216,112,0.74); }
+
+/* 7 · 云星 · 自由 */
+#cloud {
+  --accent: #5070a8;
+  background:
+    radial-gradient(ellipse 55% 45% at 30% 55%, rgba(255,210,170,0.55) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 50% at 72% 35%, rgba(210,185,240,0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 55% 80%, rgba(255,235,200,0.40) 0%, transparent 60%),
+    linear-gradient(148deg, #d8c8ee 0%, #eee0f8 18%, #fff4ee 38%, #ffe8d8 58%, #f8d8c0 78%, #f0d0b5 100%);
+}
+#cloud .intro-card {
+  background: rgba(255,252,250,0.62);
+  border-color: rgba(80,112,168,0.22);
+  box-shadow: 0 22px 64px rgba(50,40,100,0.13);
+  color: rgba(40,30,80,0.85);
+}
+#cloud .float-btn {
+  border-color: rgba(80,112,168,0.48);
+  color: rgba(40,30,80,0.72);
+  box-shadow: 0 8px 28px rgba(50,40,100,0.15);
+}
+#cloud .pip { background: rgba(50,40,100,0.20); }
+#cloud .pip.on { background: rgba(50,40,100,0.54); }
+
+/* 8 · 树星 · 孤独 */
+#tree {
+  --accent: #9db898;
+  background:
+    radial-gradient(ellipse 18% 45% at 50% 2%, rgba(190,215,180,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 50% 100%, #021404 0%, #010903 50%, transparent 80%),
+    linear-gradient(180deg, #010302 0%, #020605 30%, #030a06 65%, #020805 100%);
+}
+#tree::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 1px; height: 52%; pointer-events: none; z-index: 2;
+  background: linear-gradient(180deg, rgba(175,205,165,0.22) 0%, transparent 100%);
+}
+#tree .intro-card {
+  background: rgba(2,12,4,0.58);
+  border-color: rgba(157,184,152,0.18);
+  box-shadow: 0 22px 64px rgba(0,0,0,0.52);
+  color: rgba(185,205,180,0.90);
+}
+#tree .float-btn {
+  border-color: rgba(157,184,152,0.48);
+  color: rgba(185,205,180,0.82);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.48);
+}
+#tree .pip { background: rgba(157,184,152,0.20); }
+#tree .pip.on { background: rgba(157,184,152,0.68); }
+
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <a href="#beizi"></a><a href="#hiking"></a><a href="#healing"></a><a href="#flower"></a>
+  <a href="#sea"></a><a href="#starry"></a><a href="#cloud"></a><a href="#tree"></a>
+</nav>
+
+<!-- ① 被子星 · 悲伤 -->
+<section class="planet" id="beizi">
+  <div class="stars" id="st1"></div>
+  <aside class="intro-card">
+    <div class="card-fold"><div class="planet-orb"><img src="assets/planets/beizi.png" alt=""></div></div>
+    <p class="p-eyebrow">KEYWORD PLANET · ORBIT 01</p>
+    <h1 class="p-name">被子星</h1>
+    <div class="card-fold">
+      <p class="p-story">被子星上到处都是被子。每户人家门前，都挂着一张自己的被子。<br><br>每当有人伤心难过，被子就会慢慢变湿。人们把被子晾在门口，让阳光和风一点点带走水分——等被子重新变干，伤心也不会一直留在身体里了。</p>
+      <div class="hint-row">
+        <button class="icon-btn" type="button">↺</button>
+        <span>把这件事挂出来晾晒</span>
+      </div>
+    </div>
+  </aside>
+  <button class="float-btn" type="button">＋</button>
+  <div class="orbit-row">
+    <div class="pip on"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+  </div>
+</section>
+
+<!-- ② 行星 · hike -->
+<section class="planet" id="hiking">
+  <div class="stars" id="st2"></div>
+  <aside class="intro-card">
+    <div class="card-fold"><div class="planet-orb"><img src="assets/planets/hiking.png" alt=""></div></div>
+    <p class="p-eyebrow">KEYWORD PLANET · ORBIT 02</p>
+    <h1 class="p-name">行星</h1>
+    <div class="card-fold">
+      <p class="p-story">行星上充满了不断延伸的山脊、森林、溪流和小径。这里的人没有任何交通工具，也没有固定的住处。<br><br>每当有人带回一张路上的照片，照片里的风景就会慢慢长出来，变成一片可以进入的山林。走得越远，星球上的路就越多。</p>
+      <div class="hint-row">
+        <button class="icon-btn" type="button">↺</button>
+        <span>带回一张路上的照片</span>
+      </div>
+    </div>
+  </aside>
+  <button class="float-btn" type="button">＋</button>
+  <div class="orbit-row">
+    <div class="pip"></div><div class="pip on"></div><div class="pip"></div><div class="pip"></div>
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+  </div>
+</section>
+
+<!-- ③ 治愈星 · 治愈 -->
+<section class="planet" id="healing">
+  <div class="stars" id="st3"></div>
+  <aside class="intro-card">
+    <div class="card-fold"><div class="planet-orb"><img src="assets/planets/healing.png" alt=""></div></div>
+    <p class="p-eyebrow">KEYWORD PLANET · ORBIT 03</p>
+    <h1 class="p-name">治愈星</h1>
+    <div class="card-fold">
+      <p class="p-story">治愈星像是一个被档案环绕的封闭星球，在这里的人们从来不会生病。<br><br>那些美好的时刻会自动变成环绕在星球上的微光，不断治愈他们。置身其中，四面八方都是美好的事物。</p>
+      <div class="hint-row">
+        <button class="icon-btn" type="button">↺</button>
+        <span>放进来一个美好的时刻</span>
+      </div>
+    </div>
+  </aside>
+  <button class="float-btn" type="button">＋</button>
+  <div class="orbit-row">
+    <div class="pip"></div><div class="pip"></div><div class="pip on"></div><div class="pip"></div>
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+  </div>
+</section>
+
+<!-- ④ 花星 · 爱 -->
+<section class="planet" id="flower">
+  <div class="stars" id="st4"></div>
+  <aside class="intro-card">
+    <div class="card-fold"><div class="planet-orb"><img src="assets/planets/flower.png" alt=""></div></div>
+    <p class="p-eyebrow">KEYWORD PLANET · ORBIT 04</p>
+    <h1 class="p-name">花星</h1>
+    <div class="card-fold">
+      <p class="p-story">花星是一颗花园一样的星球。这里的土地会听见人的心意。<br><br>当一个人开始爱另一个人，脚边就会长出花。爱情会开出热烈的花，友情会开出明亮的花，亲情会开出安静而长久的花。人们投入的时间越多，花园就越茂盛。</p>
+      <div class="hint-row">
+        <button class="icon-btn" type="button">↺</button>
+        <span>把爱意种下去</span>
+      </div>
+    </div>
+  </aside>
+  <button class="float-btn" type="button">＋</button>
+  <div class="orbit-row">
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip on"></div>
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+  </div>
+</section>
+
+<!-- ⑤ 海星 · 烦恼 -->
+<section class="planet" id="sea">
+  <svg class="sea-wave" viewBox="0 0 100 20" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sandFade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"   stop-color="#fbf5e6" stop-opacity="1"/>
+        <stop offset="55%"  stop-color="#fbf5e6" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="#fbf5e6" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="M0,0 L100,0 L100,8 C94,13 88,5 82,9 C76,13 70,5 64,9 C58,13 52,5 46,9 C40,13 34,5 28,9 C22,13 16,5 10,9 C6,11 3,7 0,8 Z" fill="url(#sandFade)"/>
+  </svg>
+  <aside class="intro-card">
+    <div class="card-fold"><div class="planet-orb"><img src="assets/planets/sea.png" alt=""></div></div>
+    <p class="p-eyebrow">KEYWORD PLANET · ORBIT 05</p>
+    <h1 class="p-name">海星</h1>
+    <div class="card-fold">
+      <p class="p-story">在海星上，每个人都有一片属于自己的海。<br><br>只要他们把烦恼写在沙滩上，潮水就会慢慢涨上来，把那些烦恼带走。第二天醒来，沙滩又会变得干干净净，像什么都可以重新开始。</p>
+      <div class="hint-row">
+        <button class="icon-btn" type="button">↺</button>
+        <span>写下烦恼，看海水把它带走</span>
+      </div>
+    </div>
+  </aside>
+  <button class="float-btn" type="button">✎</button>
+  <div class="orbit-row">
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+    <div class="pip on"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+  </div>
+</section>
+
+<!-- ⑥ 繁星 · 成就 -->
+<section class="planet" id="starry">
+  <div class="stars" id="st6"></div>
+  <aside class="intro-card">
+    <div class="card-fold"><div class="planet-orb"><img src="assets/planets/starry.png" alt=""></div></div>
+    <p class="p-eyebrow">KEYWORD PLANET · ORBIT 06</p>
+    <h1 class="p-name">繁星</h1>
+    <div class="card-fold">
+      <p class="p-story">繁星的天空很低，星球周围有很多的星星。人们每每抬头就能看见自己的星星。<br><br>每当有人愿意分享自己的收获、成长或小小的成就，星球旁边就会多出一颗新的星星。那些星星不分大小，都围绕着星球旋转，提醒人们：走过的路，也会发光。</p>
+      <div class="hint-row">
+        <button class="icon-btn" type="button">↺</button>
+        <span>记下一个闪光时刻</span>
+      </div>
+    </div>
+  </aside>
+  <button class="float-btn" type="button">✦</button>
+  <div class="orbit-row">
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+    <div class="pip"></div><div class="pip on"></div><div class="pip"></div><div class="pip"></div>
+  </div>
+</section>
+
+<!-- ⑦ 云星 · 自由 -->
+<section class="planet" id="cloud">
+  <aside class="intro-card">
+    <div class="card-fold"><div class="planet-orb"><img src="assets/planets/cloud.png" alt=""></div></div>
+    <p class="p-eyebrow">KEYWORD PLANET · ORBIT 07</p>
+    <h1 class="p-name">云星</h1>
+    <div class="card-fold">
+      <p class="p-story">云星上的重力很轻，这里的人基本都生活在天空当中。<br><br>天空的云朵是他们那些自由的念头生成的，人们在云层中穿梭，在云中休憩。每一朵云，都是某个人在某个瞬间感受到的轻盈。</p>
+      <div class="hint-row">
+        <button class="icon-btn" type="button">↺</button>
+        <span>把这个念头放进云里</span>
+      </div>
+    </div>
+  </aside>
+  <button class="float-btn" type="button">＋</button>
+  <div class="orbit-row">
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+    <div class="pip"></div><div class="pip"></div><div class="pip on"></div><div class="pip"></div>
+  </div>
+</section>
+
+<!-- ⑧ 树星 · 孤独 -->
+<section class="planet" id="tree">
+  <div class="stars" id="st8"></div>
+  <aside class="intro-card">
+    <div class="card-fold"><div class="planet-orb"><img src="assets/planets/tree.png" alt=""></div></div>
+    <p class="p-eyebrow">KEYWORD PLANET · ORBIT 08</p>
+    <h1 class="p-name">树星</h1>
+    <div class="card-fold">
+      <p class="p-story">树星离别的星星都很远，星球上只有一棵树。它安静地站在那里，把风、夜色和独处的时间都变成自己的养分。<br><br>每当有人写下一个人吃饭、散步、生活或熬过某段日子的时刻，文字就会流进树干，长成新的年轮。后来人们才明白，孤独也能把自己养大。</p>
+      <div class="hint-row">
+        <button class="icon-btn" type="button">↺</button>
+        <span>写下这段独处</span>
+      </div>
+    </div>
+  </aside>
+  <button class="float-btn" type="button">＋</button>
+  <div class="orbit-row">
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip on"></div>
+  </div>
+</section>
+
+<script>
+// Stars for dark planets
+const darkPlanets = {
+  st1: { n: 55,  a: [0.12, 0.38] },
+  st2: { n: 40,  a: [0.08, 0.30] },
+  st3: { n: 100, a: [0.15, 0.55] },
+  st4: { n: 45,  a: [0.06, 0.25] },
+  st6: { n: 160, a: [0.22, 0.80] },
+  st8: { n: 35,  a: [0.06, 0.22] },
+};
+Object.entries(darkPlanets).forEach(([id, cfg]) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < cfg.n; i++) {
+    const d = document.createElement('div');
+    const sz = Math.random() * 1.8 + 0.3;
+    const a  = (cfg.a[0] + Math.random() * (cfg.a[1] - cfg.a[0])).toFixed(2);
+    d.style.cssText = `position:absolute;width:${sz}px;height:${sz}px;border-radius:50%;` +
+      `background:rgba(255,255,255,${a});left:${(Math.random()*100).toFixed(1)}%;top:${(Math.random()*100).toFixed(1)}%;`;
+    frag.appendChild(d);
+  }
+  el.appendChild(frag);
+});
+
+// hint-row: collapse card
+document.querySelectorAll('.hint-row').forEach(row => {
+  row.addEventListener('click', e => {
+    e.stopPropagation();
+    row.closest('.intro-card').classList.add('collapsed');
+  });
+});
+// collapsed card: click anywhere to expand
+document.querySelectorAll('.intro-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (card.classList.contains('collapsed')) card.classList.remove('collapsed');
+  });
+});
+
+// Nav dot highlight
+const secs = document.querySelectorAll('.planet');
+const dots = document.querySelectorAll('.nav a');
+const obs  = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const i = [...secs].indexOf(e.target);
+    dots.forEach((d, j) => {
+      d.style.background = j === i ? 'rgba(160,160,160,0.85)' : 'rgba(120,120,120,0.32)';
+      d.style.transform  = j === i ? 'scale(1.5)' : 'scale(1)';
+    });
+  });
+}, { threshold: 0.6 });
+secs.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

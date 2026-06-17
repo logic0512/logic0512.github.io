@@ -1,0 +1,3188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行星 · Hike Planet MVP</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --cream: #eef1df;
+  --ink: #17301f;
+  --deep: #050805;
+  --glass: rgba(238, 241, 223, 0.58);
+  --glass-strong: rgba(238, 241, 223, 0.72);
+  --line: rgba(255, 255, 255, 0.42);
+  --muted: rgba(23, 48, 31, 0.62);
+  --gold: #e4c985;
+  --green: #c9e6a6;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--deep);
+  font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.hike-page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #050805;
+}
+
+.scene-bg,
+.scene-light,
+.scene-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.scene-bg {
+  background-image: url("../../assets/planets/hike-forest-reference-empty-v5.png");
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.02);
+  filter: saturate(1.06) contrast(1.03) brightness(0.94);
+}
+
+.scene-light {
+  background:
+    radial-gradient(circle at 56% 18%, rgba(255, 248, 195, 0.28), transparent 22%),
+    radial-gradient(circle at 70% 54%, rgba(201, 230, 166, 0.14), transparent 25%),
+    linear-gradient(90deg, rgba(2, 5, 3, 0.44), transparent 30%, transparent 76%, rgba(2, 5, 3, 0.28));
+  mix-blend-mode: screen;
+}
+
+.scene-vignette {
+  background:
+    radial-gradient(circle at 58% 50%, transparent 26%, rgba(0,0,0,0.12) 58%, rgba(0,0,0,0.7) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.18), transparent 32%, rgba(0,0,0,0.32));
+}
+
+/* ── 行星卡片（深色玻璃，配深色森林场景，跟 tree 同思路） ── */
+.intro-card {
+  position: fixed;
+  top: clamp(28px, 4vh, 52px);
+  left: clamp(24px, 3.5vw, 48px);
+  z-index: 20;
+  width: min(360px, 31vw);
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(180, 220, 130, 0.22);
+  background: rgba(8, 25, 12, 0.55);
+  color: rgba(230, 250, 215, 0.92);
+  box-shadow:
+    0 22px 64px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  transition: padding 0.38s cubic-bezier(0.4,0,0.2,1);
+  animation: introCardDrop 1.0s cubic-bezier(0.34, 1.56, 0.64, 1) 2.6s backwards;
+}
+
+@keyframes introCardDrop {
+  from { transform: translateY(-140%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+/* card-fold 折叠 */
+.card-fold {
+  overflow: hidden;
+  max-height: 600px;
+  opacity: 1;
+  transition: max-height 0.42s cubic-bezier(0.4,0,0.2,1), opacity 0.30s cubic-bezier(0.4,0,0.2,1);
+}
+.intro-card.collapsed .card-fold { max-height: 0; opacity: 0; }
+.intro-card.collapsed { cursor: pointer; padding: 14px 22px 16px; }
+
+/* planet-orb 用透明 PNG */
+.planet-orb {
+  width: 88%;
+  margin: 0 auto 14px;
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+}
+.planet-orb img {
+  width: 100%; height: 100%; object-fit: contain;
+}
+
+.p-eyebrow {
+  margin-bottom: 8px;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  opacity: 0.45;
+  transition: margin-bottom 0.35s;
+}
+.intro-card.collapsed .p-eyebrow { margin-bottom: 4px; }
+
+.p-name {
+  margin-bottom: 12px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  transition: font-size 0.35s, margin-bottom 0.35s;
+}
+.intro-card.collapsed .p-name { font-size: 19px; margin-bottom: 0; }
+
+.p-story {
+  margin-bottom: 18px;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 2;
+  letter-spacing: 0.04em;
+  opacity: 0.72;
+}
+
+.hint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  opacity: 0.52;
+  cursor: pointer;
+  user-select: none;
+}
+.hint-row:hover { opacity: 0.78; }
+.hint-row .icon-button {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  color: inherit;
+  pointer-events: none;
+}
+
+.hint-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.interaction-card {
+  position: fixed;
+  inset: 0;
+  z-index: 16;
+  color: rgba(238, 241, 223, 0.92);
+  pointer-events: auto;
+}
+
+.interaction-card::before {
+  display: none;
+}
+
+.album-space {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  perspective: 1500px;
+  transform-style: preserve-3d;
+  pointer-events: auto;
+}
+
+.route-glow {
+  position: absolute;
+  left: 35%;
+  right: 21%;
+  bottom: 23%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(238,241,223,0.3), transparent);
+  transform: rotate(-12deg);
+  box-shadow: 0 0 28px rgba(216, 240, 188, 0.24);
+}
+
+/* 任务 5：山形添加按钮 + 外圈光圈呼吸（hiking 主题语义） */
+.scene-upload {
+  position: fixed;
+  left: var(--upload-left, 74%);
+  top: var(--upload-top, 72%);
+  z-index: 24;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.88);
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.42);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 240ms cubic-bezier(0.34, 1.4, 0.64, 1),
+              background 240ms ease,
+              border-color 240ms ease;
+}
+
+/* 山形 SVG 图标 */
+.scene-upload svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.scene-upload svg circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* 外圈光圈：两个环错峰呼吸，提示"可以点击" */
+.scene-upload::before,
+.scene-upload::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  animation: scene-upload-ring 2.6s cubic-bezier(0.2, 0.7, 0.4, 1) infinite;
+}
+.scene-upload::after {
+  animation-delay: 1.3s;
+}
+@keyframes scene-upload-ring {
+  0%   { transform: scale(1);    opacity: 0.55; }
+  70%  { transform: scale(1.55); opacity: 0; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+.scene-upload:hover {
+  transform: scale(1.06);
+  background: rgba(20, 20, 20, 0.92);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.scene-upload:active {
+  transform: scale(0.96);
+}
+
+.memory-frame {
+  --x: 50%;
+  --y: 50%;
+  --s: 1;
+  --r: 0deg;
+  --ry: 0deg;
+  --tz: 0px;
+  --rx: 0deg;
+  --blur: 0px;
+  --alpha: 1;
+  --sat: 1;
+  --z: 4;
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: calc(150px * var(--s));
+  z-index: var(--z);
+  border: 0;
+  opacity: var(--alpha);
+  filter: blur(var(--blur)) saturate(var(--sat));
+  transform: translate3d(-50%, -50%, var(--tz)) rotateX(var(--rx)) rotateY(var(--ry)) rotateZ(var(--r));
+  transform-style: preserve-3d;
+  transition: all 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.memory-frame.pinned-frame {
+  cursor: grab;
+}
+
+.memory-frame.pinned-frame::after {
+  position: absolute;
+  left: 50%;
+  bottom: -26px;
+  content: "点击替换";
+  min-width: 64px;
+  padding: 4px 8px;
+  border: 1px solid rgba(238, 241, 223, 0.18);
+  border-radius: 999px;
+  background: rgba(7, 12, 8, 0.52);
+  color: rgba(238, 241, 223, 0.72);
+  font-size: 10px;
+  opacity: 0;
+  transform: translateX(-50%) translateY(4px);
+  transition: opacity 0.18s, transform 0.18s;
+  pointer-events: none;
+}
+
+.memory-frame.pinned-frame:hover::after,
+.memory-frame.pinned-frame.swap-target::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.memory-frame.preview-frame {
+  width: calc(210px * var(--s));
+  --z: 8;
+}
+
+.memory-frame.preview-frame .frame-photo {
+  /* 用 CSS 变量跟随图片实际比例（JS 在 img 加载完后设置 --photo-aspect） */
+  aspect-ratio: var(--photo-aspect, 5 / 6.4);
+}
+
+/* 任务 4c：E 方案 — 极简黑边 + 强投影
+   去掉金色重型边框、装饰光晕、内白边、内嵌渐变（错 22 性能炸弹一并解决）
+   5 个 frame 统一样式，靠大小区分主次 */
+.frame-shell {
+  position: relative;
+  padding: 3px;
+  border-radius: 2px;
+  background: #0a0a0a;
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.52),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+  transition:
+    transform 320ms cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 320ms ease;
+}
+
+/* hover: 轻浮起 + 投影更长 + 微微发亮（用 frame-shell 做 transform，
+   避开 .memory-frame 上的 3D translate3d + rotate 干扰）
+   用 .is-hover class（JS 通过 elementsFromPoint 设置）替代 :hover，
+   避开 3D 透视让浏览器 :hover hit-test 错乱的问题 */
+.memory-frame.is-hover .frame-shell {
+  transform: translateY(-4px);
+  box-shadow:
+    0 26px 58px rgba(0, 0, 0, 0.62),
+    0 6px 16px rgba(0, 0, 0, 0.38),
+    0 0 26px rgba(255, 255, 255, 0.05);
+}
+
+.frame-photo {
+  position: relative;
+  /* 用 CSS 变量跟随图片实际比例（JS 在 img 加载完后设置 --photo-aspect） */
+  aspect-ratio: var(--photo-aspect, 4 / 5);
+  overflow: hidden;
+  background: #0a0a0a;
+}
+
+.frame-photo img {
+  width: 100%;
+  height: 100%;
+  /* contain 不裁切（之前 cover 会裁掉不符合 aspect-ratio 的边） */
+  object-fit: contain;
+  display: block;
+}
+
+/* docx 反馈：空状态时整条预览/导航条隐藏（用 body class 控制） */
+body.hike-empty .active-detail { display: none !important; }
+body.hike-empty .walk-actions { display: none !important; }
+
+.active-detail {
+  position: fixed;
+  left: var(--detail-left, 52%);
+  top: var(--detail-top, 72%);
+  z-index: 3;
+  width: min(430px, 34vw);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: end;
+  padding: 15px 16px;
+  border: 1px solid rgba(238, 241, 223, 0.16);
+  border-radius: 18px;
+  background: rgba(7, 12, 8, 0.42);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+.active-detail h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.active-detail p {
+  max-height: 58px;
+  overflow: auto;
+  color: rgba(238, 241, 223, 0.7);
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.meta-row span {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(238, 241, 223, 0.15);
+  color: rgba(238, 241, 223, 0.58);
+  font-size: 11px;
+}
+
+.walk-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(238, 241, 223, 0.18);
+  color: rgba(255,255,255,0.82);
+}
+
+.thumb-strip {
+  position: fixed;
+  /* 强制底部居中 — 跟统一历史条对齐（之前默认 36% 偏左/右） */
+  left: 50%;
+  bottom: 24px;
+  top: auto;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: min(var(--thumb-width, 500px), 60vw);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(238,241,223,0.12);
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(5, 9, 6, 0.18), rgba(5, 9, 6, 0.36), rgba(5, 9, 6, 0.18));
+  box-shadow: 0 14px 50px rgba(0,0,0,0.22);
+  backdrop-filter: blur(12px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
+}
+
+.thumb-strip.dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.swap-mode .thumb-strip {
+  box-shadow: 0 0 0 1px rgba(228, 201, 133, 0.34), 0 18px 60px rgba(228, 201, 133, 0.22);
+}
+
+.thumb-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.thumb {
+  width: 68px;
+  height: 48px;
+  flex: 0 0 68px;
+  border: 2px solid rgba(238, 241, 223, 0.18);
+  border-radius: 12px;
+  overflow: hidden;
+  opacity: 0.72;
+  background: rgba(255,255,255,0.06);
+  transition: opacity 0.18s, border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+}
+
+.layout-edit [data-layout-target] {
+  outline: 1px dashed rgba(228, 201, 133, 0.62);
+  outline-offset: 6px;
+  cursor: move;
+}
+
+.layout-edit .composer-panel {
+  cursor: move;
+}
+
+.thumb-wrap {
+  position: relative;
+  flex: 0 0 68px;
+  scroll-snap-align: start;
+}
+
+.thumb-wrap .thumb {
+  width: 100%;
+}
+
+.thumb-edit {
+  position: absolute;
+  right: -4px;
+  top: -6px;
+  min-width: 32px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(238, 241, 223, 0.24);
+  background: rgba(7, 12, 8, 0.78);
+  color: rgba(238, 241, 223, 0.8);
+  font-size: 10px;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 0.18s, transform 0.18s;
+}
+
+.thumb-wrap:hover .thumb-edit,
+.thumb-wrap:focus-within .thumb-edit,
+.thumb-wrap.active .thumb-edit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.thumb.active {
+  opacity: 1;
+  border-color: rgba(238, 255, 223, 0.88);
+  box-shadow: 0 0 18px rgba(213, 246, 183, 0.52);
+  transform: translateY(-2px);
+}
+
+.swap-mode .thumb-wrap .thumb {
+  border-color: rgba(228, 201, 133, 0.42);
+  opacity: 0.92;
+}
+/* swap 模式下，已置顶图也允许选（互换支持）—— 视觉提示「已置顶 · 点击互换」即可 */
+.swap-mode .thumb-wrap .thumb.pinned-already {
+  border-color: rgba(228, 201, 133, 0.62);
+  box-shadow: 0 0 0 2px rgba(228, 201, 133, 0.18);
+}
+.swap-mode .thumb-wrap .thumb.pinned-already:hover {
+  border-color: rgba(228, 201, 133, 0.85);
+}
+
+.composer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  padding: clamp(28px, 5vw, 72px);
+  background: rgba(1, 5, 3, 0.48);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0s linear 0.2s;
+  backdrop-filter: blur(5px);
+}
+
+.composer-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.2s ease, visibility 0s linear 0s;
+}
+
+.composer-panel {
+  position: absolute;
+  left: var(--composer-left, 37%);
+  top: var(--composer-top, 12%);
+  width: min(920px, 72vw);
+  width: min(var(--composer-width, 920px), calc(100vw - var(--composer-left, 37%) - 28px));
+  max-height: min(720px, 82vh);
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid rgba(238, 241, 223, 0.18);
+  border-radius: 20px;
+  background: rgba(7, 12, 8, 0.78);
+  color: rgba(238, 241, 223, 0.9);
+  box-shadow: 0 24px 70px rgba(0,0,0,0.36);
+  backdrop-filter: blur(22px);
+  transform: translateY(18px) scale(0.98);
+  transition: opacity 0.2s ease, transform 0.24s ease;
+  overflow-y: auto;
+}
+
+.composer-backdrop.open .composer-panel {
+  transform: translate(0, 0) scale(1);
+}
+
+.composer-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+
+.composer-head h3 {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(238, 241, 223, 0.12);
+}
+
+.composer-preview,
+.composer-form {
+  min-width: 0;
+}
+
+.composer-preview { position: relative; }
+
+/* ── canvas-wrap：包住 paintCanvas，整块可点击换图，hover 浮出"换张照片"遮罩 ── */
+.canvas-wrap {
+  position: relative;
+  display: block;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.canvas-wrap:has(#paintCanvas:not(.ready)) { display: none; }   /* 无图时整块隐藏 */
+.photo-change-overlay {
+  position: absolute;
+  inset: 7px;          /* paintCanvas 自身 border 7px，遮罩贴齐图片 */
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.canvas-wrap:hover .photo-change-overlay { opacity: 1; }
+.photo-change-overlay svg { width: 32px; height: 32px; }
+
+.photo-drop {
+  position: relative;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  border: 1px dashed rgba(238, 241, 223, 0.3);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.045);
+  text-align: center;
+  color: rgba(238, 241, 223, 0.55);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+.photo-drop:hover {
+  border-color: rgba(232, 200, 120, 0.55);
+  background: rgba(255,255,255,0.08);
+}
+.photo-drop svg { width: 38px; height: 38px; }
+.photo-drop-text { font-size: 13px; letter-spacing: 0.06em; }
+
+.photo-drop.hidden {
+  display: none;
+}
+
+#paintCanvas {
+  width: 100%;
+  max-height: 260px;
+  display: none;
+  object-fit: contain;
+  margin-bottom: 12px;
+  border: 7px solid rgba(248, 243, 220, 0.92);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.28);
+}
+
+#paintCanvas.ready {
+  display: block;
+}
+
+.style-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.style-card {
+  min-width: 0;
+  border: 1px solid rgba(238, 241, 223, 0.14);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.055);
+  color: rgba(238, 241, 223, 0.66);
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s;
+}
+
+.style-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: block;
+  object-fit: cover;
+}
+
+.style-card span {
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.style-card.active {
+  border-color: rgba(228, 201, 133, 0.82);
+  box-shadow: 0 0 18px rgba(228, 201, 133, 0.28);
+  color: rgba(248, 243, 220, 0.96);
+  transform: translateY(-1px);
+}
+
+/* Lazy 滤镜：未生成 / 生成中的骨架样式 */
+.style-card-hint {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  place-items: center;
+  background: rgba(238, 241, 223, 0.04);
+  color: rgba(238, 241, 223, 0.5);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.style-card.generating {
+  cursor: progress;
+  border-color: rgba(228, 201, 133, 0.42);
+}
+.style-card.generating .style-card-hint {
+  background: rgba(228, 201, 133, 0.08);
+  color: rgba(248, 243, 220, 0.78);
+  animation: styleCardPulse 1.2s ease-in-out infinite;
+}
+@keyframes styleCardPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.field {
+  margin-bottom: 11px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(238, 241, 223, 0.48);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  border: 1px solid rgba(238, 241, 223, 0.14);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  color: rgba(238, 241, 223, 0.92);
+  outline: none;
+}
+
+.field input {
+  height: 38px;
+  padding: 0 11px;
+}
+
+.field textarea {
+  min-height: 88px;
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+.template-options {
+  display: flex;
+  gap: 8px;
+}
+
+.template-option {
+  flex: 1;
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(238, 241, 223, 0.14);
+  background: rgba(255,255,255,0.06);
+  color: rgba(238, 241, 223, 0.58);
+  font-size: 12px;
+}
+
+.template-option.active {
+  border-color: rgba(228, 201, 133, 0.72);
+  background: rgba(228, 201, 133, 0.18);
+  color: rgba(248, 243, 220, 0.94);
+}
+
+.submit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.submit-row button {
+  min-height: 38px;
+  border-radius: 12px;
+  background: rgba(238, 241, 223, 0.12);
+  color: rgba(238, 241, 223, 0.82);
+}
+
+.submit-row .submit {
+  background: rgba(228, 201, 133, 0.94);
+  color: #172014;
+  font-weight: 700;
+}
+
+.status {
+  margin-top: 10px;
+  color: rgba(238, 241, 223, 0.46);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.file-input {
+  display: none;
+}
+
+.layout-toggle {
+  position: fixed;
+  /* 移到左上避开右上的添加按钮，做明显些 */
+  left: 24px;
+  bottom: 24px;
+  z-index: 90;
+  height: 44px;
+  padding: 0 18px;
+  border: 1.5px solid rgba(180, 220, 130, 0.6);
+  border-radius: 999px;
+  background: rgba(8, 25, 12, 0.78);
+  color: rgba(230, 250, 215, 0.95);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: all 200ms ease;
+}
+.layout-toggle:hover {
+  background: rgba(15, 40, 20, 0.92);
+  border-color: rgba(180, 220, 130, 0.9);
+  transform: translateY(-2px);
+}
+
+.layout-panel {
+  position: fixed;
+  /* 跟 toggle 配套放左下，避开右侧按钮 */
+  left: 24px;
+  bottom: 80px;
+  z-index: 90;
+  width: 280px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid rgba(238, 241, 223, 0.18);
+  border-radius: 16px;
+  background: rgba(7, 12, 8, 0.78);
+  color: rgba(238, 241, 223, 0.86);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.34);
+  backdrop-filter: blur(18px);
+}
+
+.layout-panel[hidden] {
+  display: none;
+}
+
+.layout-panel h3 {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.layout-panel select,
+.layout-panel button,
+.layout-panel textarea {
+  width: 100%;
+  border: 1px solid rgba(238, 241, 223, 0.14);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  color: rgba(238, 241, 223, 0.86);
+}
+
+.layout-panel select,
+.layout-panel button {
+  min-height: 30px;
+}
+
+.layout-panel button {
+  margin-top: 10px;
+}
+
+.layout-panel p {
+  margin: 10px 0 8px;
+  color: rgba(238, 241, 223, 0.54);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.layout-panel textarea {
+  min-height: 110px;
+  padding: 8px;
+  resize: none;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.layout-control {
+  margin-top: 10px;
+}
+
+.layout-control label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  color: rgba(238, 241, 223, 0.58);
+  font-size: 11px;
+}
+
+.layout-control input {
+  width: 100%;
+}
+
+.swap-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 124px;
+  z-index: 30;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0 16px;
+  border: 1px solid rgba(228, 201, 133, 0.34);
+  border-radius: 999px;
+  background: rgba(7, 12, 8, 0.68);
+  color: rgba(248, 243, 220, 0.86);
+  font-size: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 8px);
+  transition: opacity 0.18s, transform 0.18s, visibility 0s linear 0.18s;
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+}
+
+.swap-toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition: opacity 0.18s, transform 0.18s, visibility 0s linear 0s;
+}
+
+@media (max-width: 980px) {
+  .intro-card {
+    top: 16px;
+    left: 16px;
+    width: calc(100vw - 32px);
+    padding: 16px;
+  }
+
+  .planet-orb,
+  .p-story,
+  .hint-row {
+    display: none;
+  }
+
+  .active-detail,
+  .thumb-strip {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    transform: none;
+  }
+
+  .active-detail {
+    bottom: 96px;
+  }
+
+  .composer-backdrop {
+    padding: 16px;
+    align-items: end;
+  }
+
+  .composer-panel {
+    width: 100%;
+    grid-template-columns: 1fr;
+    max-height: 84vh;
+  }
+
+  .scene-upload {
+    right: 18px;
+    bottom: 184px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   性能优化（任务 1）：所有 backdrop-filter 元素提示浏览器提升独立合成层
+   防止滚动 / hover / 任何 reflow 触发整页 blur 重算
+   视觉零变化 — 仅用 will-change + contain + isolation，不动 transform
+   （避免覆盖元素现有的 transform 位置）
+   ─────────────────────────────────────────────────────────
+*/
+.intro-card,
+.scene-upload,
+.active-detail,
+.thumb-strip,
+.composer-backdrop,
+.composer-panel,
+.layout-toggle,
+.layout-panel,
+.swap-toast {
+  will-change: backdrop-filter;
+  contain: layout style;
+  isolation: isolate; /* 创建独立 stacking context + 合成层 */
+  backface-visibility: hidden;
+}
+
+/* memory-frame 已经用 3D transform 定位（translate3d + rotateX/Y/Z），
+   自动促发 GPU 合成层。只补 will-change 和 contain，让浏览器更早准备 */
+.memory-frame {
+  contain: layout style;
+  will-change: transform, filter;
+  backface-visibility: hidden;
+}
+
+/* 收尾：「+ 带回照片」药丸按钮隐藏 — 跟右上山形添加按钮功能重复 */
+main.hike-page .scene-upload { display: none !important; }
+
+/* 收尾：视觉统一 — active-detail / thumb-strip 跟 E 极简黑边相框风格对齐
+   介绍卡（.intro-card）保持原暗绿玻璃风不变（用户明确要求） */
+main.hike-page .active-detail {
+  background: rgba(10, 10, 10, 0.78);
+  border-color: rgba(255, 255, 255, 0.14);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+main.hike-page .thumb-strip {
+  background: rgba(10, 10, 10, 0.7);
+  border-color: rgba(255, 255, 255, 0.12);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* 编辑/删除图标上移，浮出 active-detail 顶部，避免跟 ‹ › 按钮太贴 */
+main.hike-page .active-detail .ms-card-del-btn,
+main.hike-page .active-detail .ms-card-edit-btn {
+  top: -16px;
+  background: rgba(10, 10, 10, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+/* 任务 5：hiking 添加按钮（.ms-add-fab）本地强化
+   颜色：黑底白光（跟 E 极简黑边相框统一）
+   效果：跟被子星结构对齐（单道 16px 扩散光圈，2.8s 呼吸）。山形静止不旋转 */
+.ms-add-fab {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
+  background: rgba(10, 10, 10, 0.78) !important;
+  animation: hikeFabPulse 2.8s ease-in-out infinite;
+}
+.ms-add-fab:hover { animation-play-state: paused; }
+@keyframes hikeFabPulse {
+  0%, 100% {
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.42),
+      0 0 0 0 rgba(255, 255, 255, 0.50),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  50% {
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.42),
+      0 0 0 16px rgba(255, 255, 255, 0),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+}
+</style>
+<script>
+// Visibility pause: 父页面切 tab 时停掉本 iframe 的 RAF/setInterval，避免后台烧 CPU
+(function(){
+  let _raf = window.requestAnimationFrame.bind(window);
+  let _caf = window.cancelAnimationFrame.bind(window);
+  let _setInt = window.setInterval.bind(window);
+  let _clrInt = window.clearInterval.bind(window);
+  let active = true;
+  let pendingRafs = [];      // {cb, id}
+  let liveIntervals = new Map();
+  let nextId = 1;
+  window.requestAnimationFrame = function(cb){
+    if (active) return _raf(cb);
+    const id = nextId++;
+    pendingRafs.push({cb, id});
+    return id;
+  };
+  window.cancelAnimationFrame = function(id){
+    pendingRafs = pendingRafs.filter(x => x.id !== id);
+    return _caf(id);
+  };
+  window.setInterval = function(cb, ms){
+    const id = _setInt(function(){ if (active) cb(); }, ms);
+    liveIntervals.set(id, true);
+    return id;
+  };
+  window.clearInterval = function(id){
+    liveIntervals.delete(id);
+    return _clrInt(id);
+  };
+  window.addEventListener("message", function(e){
+    if (!e.data || e.data.type !== "memory-sparks:visibility") return;
+    const wasActive = active;
+    active = !!e.data.visible;
+    if (!wasActive && active && pendingRafs.length){
+      const q = pendingRafs; pendingRafs = [];
+      q.forEach(({cb}) => _raf(cb));
+    }
+  });
+})();
+</script>
+<!-- MS shared -->
+<link rel="stylesheet" href="../_shared/ms-shared.css?v=20260602f">
+<script src="../_shared/ms-config.js?v=20260606x"></script>
+<script src="../_shared/ms-sound.js?v=20260604i"></script>
+<script>window.MS_SOUND && MS_SOUND.init('hiking');</script>
+<script src="../_shared/ms-icons.js?v=20260603e"></script>
+<script src="../_shared/ms-feedback.js?v=20260530m"></script>
+<script src="../_shared/ms-mount.js?v=20260602f"></script>
+<script src="../_shared/ms-list-bridge.js?v=20260530m"></script>
+<script src="../_shared/ms-media-vault.js?v=20260605s"></script>
+<script src="../_shared/ms-media-store.js?v=20260606c"></script>
+<!-- ms-list-mode.js 已下线：列表模式改在父 App React 层渲染（v=20260530m+） -->
+</head>
+<body>
+<main class="hike-page">
+  <div class="scene-bg"></div>
+  <div class="scene-light"></div>
+  <div class="scene-vignette"></div>
+
+  <aside class="intro-card">
+    <div class="card-fold">
+      <div class="planet-orb" aria-hidden="true">
+        <img src="../../assets/planets/hiking.png" alt="">
+      </div>
+    </div>
+    <div class="p-eyebrow">KEYWORD PLANET · ORBIT 02</div>
+    <h1 class="p-name">行星</h1>
+    <div class="card-fold">
+      <p class="p-story">行星上充满了不断延伸的山脊、森林、溪流和小径。这里的人生活在自然当中，早已把身心与自然相融，他们专注于脚下的路途，没有城市的喧嚣烦扰，也没有电子屏幕来碎片化他们的时间。他们会为每一次在自然里的发现而雀跃，为遇见的每个生命而赞叹。</p>
+      <div class="hint-row">
+        <button class="icon-button" type="button" aria-hidden="true" tabindex="-1">↺</button>
+        <span>带回一张路上的照片</span>
+      </div>
+    </div>
+  </aside>
+
+  <section class="interaction-card" aria-label="行星相册交互区">
+    <div class="album-space" id="albumSpace">
+      <div class="route-glow"></div>
+    </div>
+
+    <button class="scene-upload" id="sceneUpload" type="button" aria-label="带回一张照片" data-open-composer data-layout-target="upload">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 19 L9 11 L13 15 L17 7 L21 19" />
+        <circle cx="17" cy="5.4" r="1.1" />
+      </svg>
+    </button>
+
+    <article class="active-detail" id="activeDetail" data-layout-target="detail">
+      <div>
+        <div class="meta-row">
+          <span id="detailPlace"></span>
+          <span id="detailDate"></span>
+        </div>
+        <h3 id="detailTitle"></h3>
+        <p id="detailText"></p>
+      </div>
+      <div class="walk-actions">
+        <button class="nav-btn" id="prevRecord" type="button" aria-label="上一张">‹</button>
+        <button class="nav-btn" id="nextRecord" type="button" aria-label="下一张">›</button>
+      </div>
+    </article>
+
+    <nav class="thumb-strip" id="thumbStrip" aria-label="相册导航" data-layout-target="thumbs"></nav>
+
+    <div class="composer-backdrop" id="composerBackdrop">
+      <section class="composer-panel" id="composerPanel" aria-label="带回一张照片" data-layout-target="modal">
+        <div class="composer-head">
+          <h3 id="composerTitle">带回一张照片</h3>
+          <button class="close-btn" id="closeComposer" type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="composer-preview">
+          <!-- 空状态：大相机 icon + "点这里添加照片"（视觉跟 React 列表 composer 统一） -->
+          <label class="photo-drop" id="photoDrop" for="photoInput">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+              <circle cx="12" cy="13" r="3"/>
+            </svg>
+            <span class="photo-drop-text">点这里添加照片</span>
+          </label>
+          <!-- 有图态：canvas 包在 label 里，整块可点；hover 浮出"换张照片"遮罩 -->
+          <label class="canvas-wrap" for="photoInput">
+            <canvas id="paintCanvas"></canvas>
+            <div class="photo-change-overlay">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                <circle cx="12" cy="13" r="3"/>
+              </svg>
+              <span>换张照片</span>
+            </div>
+          </label>
+          <input class="file-input" id="photoInput" type="file" accept="image/*">
+          <div class="style-preview-grid" id="stylePreviewGrid" aria-label="照片风格选择"></div>
+        </div>
+
+        <form class="composer-form" id="recordForm">
+          <!-- docx 反馈：去掉标题字段，只保留地名 + 日期 + 内容 -->
+          <input id="recordTitle" type="hidden">
+          <div class="field">
+            <label for="recordPlace">地点</label>
+            <input id="recordPlace" type="text" placeholder="梧桐山">
+          </div>
+          <div class="field">
+            <label for="recordDate">日期</label>
+            <input id="recordDate" type="date">
+          </div>
+          <div class="field">
+            <label for="recordText">路上的故事</label>
+            <textarea id="recordText" placeholder="这段路上，遇见了什么……"></textarea>
+          </div>
+          <div class="submit-row">
+            <button type="button" id="cancelComposer">取消</button>
+            <button class="submit" id="submitComposer" type="submit">放进相册</button>
+          </div>
+          <div class="status" id="status">上传后可在原图和 3 个滤镜之间选择。缩略图也可以再次编辑风格。</div>
+        </form>
+      </section>
+    </div>
+
+    <div class="swap-toast" id="swapToast">选择下方缩略图替换这张置顶图</div>
+
+  </section>
+
+  <button class="layout-toggle" id="layoutToggle" type="button">⚙ 调位置</button>
+  <section class="layout-panel" id="layoutPanel" hidden>
+    <h3>位置控制</h3>
+    <select id="layoutTarget" aria-label="选择调整对象"></select>
+    <p>打开后直接拖动页面模块定位。下面只用于查看和复制参数。</p>
+    <textarea id="layoutOutput" readonly></textarea>
+    <button id="layoutCopy" type="button">复制参数</button>
+    <button id="layoutReset" type="button">恢复默认</button>
+  </section>
+</main>
+
+<script>
+const STORAGE_KEY = "memory-sparks:hiking-records";
+const LAYOUT_STORAGE_KEY = "memory-sparks:hiking-layout-v4";
+
+// STORE-007：行星图片真文件存储。行星每条有两张图——image（带滤镜成品）+ source（无滤镜原图）。
+// 有盘时两张图都写成 U盘真文件，记录里只留 'fsa:' 引用，base64 大图不再塞进 localStorage（解决卡顿）。
+const HIKING_PLANET_KEY = 'hiking';
+const HIKING_MEDIA_FIELDS = ['image', 'source'];
+function msStore() { return window.MS && window.MS.mediaStore; }
+function msHasBackend() { const s = msStore(); return !!(s && s.hasBackend && s.hasBackend()); }
+// 有盘：先把 records 里的 fsa: 引用水合成可显示的 blob: URL，再 render；无盘直接 render（行为与改造前一致）。
+function hikingRender() {
+  const s = msStore();
+  if (s && s.hasBackend && s.hasBackend() && s.hydrateRecords) {
+    s.hydrateRecords(records, { mediaFields: HIKING_MEDIA_FIELDS })
+      .then(() => render())
+      .catch(err => { console.warn('[hiking] 水合失败，降级直接渲染：', err); render(); });
+  } else {
+    render();
+  }
+}
+
+// U盘建库（STORE-006）：行星文字记录建库（mediaFields 用于索引标记 hasImage）
+function hikingSyncFile() {
+  const s = window.MS && window.MS.mediaStore;
+  if (s && s.syncRecordsFromStorage) {
+    s.syncRecordsFromStorage('hiking', STORAGE_KEY, {
+      meta: { name: '行星', keyword: 'hike' }, mediaFields: ['image'],
+    }).catch(() => {});
+  }
+}
+function hikingRestoreFile() {
+  const s = window.MS && window.MS.mediaStore;
+  if (!s || !s.restoreToStorage) return Promise.resolve(false);
+  return s.restoreToStorage('hiking', STORAGE_KEY).then(restored => {
+    if (restored) {
+      try { window.parent && window.parent.postMessage({ type: 'memory-sparks:storage-changed', key: STORAGE_KEY }, '*'); } catch (_) {}
+    }
+    return restored;
+  });
+}
+const OLD_KEYS = ["hikePlanetMvpRecordsV11"];
+
+// ─── 一次性数据恢复：把前一版本误存到 IndexedDB 的数据搬回 localStorage ───
+// 错 35：项目最终方向是 U 盘文件存储，产品阶段不做 IndexedDB
+// 错 34：V2 React 端是唯一真源，localStorage 是单一存储
+(function recoverFromIDB() {
+  try {
+    if (!('indexedDB' in window)) return;
+    if (localStorage.getItem(STORAGE_KEY)) return;
+    const req = indexedDB.open('memory-sparks-hiking', 1);
+    req.onsuccess = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('records')) { db.close(); return; }
+      try {
+        const tx = db.transaction('records', 'readonly');
+        const getAll = tx.objectStore('records').getAll();
+        getAll.onsuccess = () => {
+          const list = getAll.result || [];
+          if (!list.length) {
+            db.close();
+            try { indexedDB.deleteDatabase('memory-sparks-hiking'); } catch (_) {}
+            return;
+          }
+          let savedOK = false;
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+            console.log('[hiking] recovered', list.length, 'records from IDB → LS');
+            savedOK = true;
+          } catch (_) {
+            console.warn('[hiking] recovery to LS failed (quota?). Keeping IDB as backup.');
+          }
+          db.close();
+          if (savedOK) {
+            // 只在 LS 写成功后才删 IDB，避免数据丢失
+            try { indexedDB.deleteDatabase('memory-sparks-hiking'); } catch (_) {}
+            // 跳过 reload — V2 React 父端会通过 storage event 自然同步
+          }
+        };
+      } catch (_) { db.close(); }
+    };
+    req.onerror = () => {};
+  } catch (_) {}
+})();
+// 启动迁移：从旧 key 拷一份过来
+(function migrateOld() {
+  try {
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      for (const k of ["hikePlanetMvpRecordsV11"]) {
+        const v = localStorage.getItem(k);
+        if (v) { localStorage.setItem(STORAGE_KEY, v); break; }
+      }
+    }
+    if (!localStorage.getItem(LAYOUT_STORAGE_KEY)) {
+      const v = localStorage.getItem("hikePlanetMvpLayoutV2");
+      if (v) localStorage.setItem(LAYOUT_STORAGE_KEY, v);
+    }
+  } catch (_) {}
+})();
+const FEATURED_LIMIT = 4;
+const THUMB_MAX = 20;  // STORE-008：底部缩略图条只放最近 20 张（全部内容仍在日志页）
+const DEFAULT_TEMPLATE = "original";
+// 胶片相机风格滤镜（替代旧油画滤镜 forest/soft/cyan）
+// 每个滤镜走「调色 → 颗粒 → 暗角 → 裁切/边框」流水线
+//
+// 设计原则（每个滤镜的画幅是滤镜本身的特征）：
+//   - 135Ti  ：不裁切，保留原图全画幅 + 调色 + RGB 颗粒
+//   - 503cw  ：1:1 中画幅强制裁切 + 黑色厚边框
+//   - instax ：永远竖向 3:4 拍立得 + 白色非对称卡片边
+//
+// 共同基调：冷调灰蓝 + 红色保鲜艳 + 绿色偏冷，对比略提（不能过头）
+// 颗粒：RGB 三通道独立噪点（grainHue 控制 mono→color 比例）
+// Split-toning 配色（阴影/中间/高光分通道独立调）
+// 比"全图加 tint"细腻得多 — 真实胶片就是这样工作的
+const FILM_TEMPLATES = {
+  film135: {
+    label: "135Ti",
+    aspect: null,
+    border: null,
+    contrast: 1.08,
+    saturation: 0.96,
+    // 电影感 teal & orange 分离
+    shadow:    { r: -10, g:   0, b: 12 },  // 阴影加青蓝（树林偏冷绿）
+    highlight: { r:  10, g:   4, b: -8 },  // 高光加暖橙（红楼更鲜）
+    midTint:   { r:  -2, g:  -1, b:  4 },  // 中间略冷紫（天空灰紫感）
+    grain: 0.11,
+    grainHue: 0.7,
+    vignette: 0.08
+  },
+  film503: {
+    label: "503cw",
+    aspect: 1,
+    border: { type: "black", outer: 0.012, inner: 0.038 },
+    contrast: 1.06,
+    saturation: 1.08,                       // 提饱和（中画幅通透）
+    shadow:    { r: -4, g:  0, b:  6 },     // 阴影轻冷
+    highlight: { r:  4, g:  4, b:  0 },     // 高光轻暖
+    midTint:   { r:  0, g:  0, b:  2 },     // 中性
+    grain: 0.07,                            // 颗粒细
+    grainHue: 0.6,
+    vignette: 0.06
+  },
+  instax: {
+    label: "ins W",
+    aspect: 3 / 4,
+    forceVertical: true,
+    border: { type: "polaroid", top: 0.06, side: 0.06, bottom: 0.18 },
+    contrast: 0.94,                         // 降对比（朦胧）
+    saturation: 0.82,
+    shadow:    { r:  0, g: -2, b:  0 },     // 阴影中性偏深
+    highlight: { r: -8, g:-10, b: -4 },     // 高光压暗（天空灰暗）
+    midTint:   { r:  2, g: -2, b:  4 },     // 中间略品红紫
+    grain: 0.10,
+    grainHue: 0.7,
+    vignette: 0.08
+  }
+};
+const STYLE_OPTIONS = [
+  { key: "original", label: "原图" },
+  { key: "film135", label: "135Ti" },
+  { key: "film503", label: "503cw" },
+  { key: "instax",  label: "ins W" }
+];
+// 旧 record 兼容：老 template key → 新 key 映射（保留显示，但不重算）
+const LEGACY_TEMPLATE_MAP = { forest: "film135", soft: "instax", cyan: "film503" };
+const DEMO_IMAGES = [
+  "../../assets/planets/hike-user-forest-source.webp",
+  "../../assets/planets/hike-scene-generated.png",
+  "../../assets/planets/hike-scene-bg.png",
+  "../../assets/planets/hike-scene-empty-v3.png"
+];
+
+const defaultLayout = {
+  previewX: 73.08,
+  previewY: 42.61,
+  previewS: 1.24,
+  detailX: 60.58,
+  detailY: 68.05,
+  thumbX: 50,
+  thumbY: 87.27,
+  thumbW: 500,
+  uploadX: 78,
+  uploadY: 64.4,
+  modalX: 36.93,
+  modalY: 12.01,
+  modalW: 920,
+  pin0X: 37.66,
+  pin0Y: 51.71,
+  pin0S: 0.88,
+  pin1X: 42.31,
+  pin1Y: 28.32,
+  pin1S: 0.78,
+  pin2X: 35.65,
+  pin2Y: 74.8,
+  pin2S: 0.86,
+  pin3X: 52.04,
+  pin3Y: 18.32,
+  pin3S: 0.72
+};
+
+// 5 框布局模板：根据 preview 主图构图（横/竖/方）只切换 preview 框
+// pin 框排版始终固定（用 layout 当前值），保证 4 个 pin 永远稳在原位
+const LAYOUT_PRESETS = {
+  portrait: { preview: { x: 73.08, y: 42.61, s: 1.24 } }, // 竖图（跟 defaultLayout 同步，用户调过）
+  landscape:{ preview: { x: 70,    y: 46,    s: 1.75 } }, // 横图：高度小，s 提到 1.75 维持视觉重量
+  square:   { preview: { x: 72,    y: 45,    s: 1.45 } }  // 方图：稳定 s 居中
+};
+// pin 框 s 系数：位置不动，仅按各自图构图微调大小，让横/竖/方视觉重量相当
+const PIN_S_MULTIPLIER = {
+  portrait:  1.00,  // 竖图基准
+  landscape: 1.40,  // 横图高度小，乘 1.4 补偿
+  square:    1.18   // 方图微补偿
+};
+// 构图分类（任务 4 用）
+function classifyAspect(w, h) {
+  if (!w || !h) return 'portrait';
+  const a = w / h;
+  if (a > 1.2) return 'landscape';
+  if (a < 0.85) return 'portrait';
+  return 'square';
+}
+
+const slots = [
+  { x: "35%", y: "38%", s: 0.88, r: "-2deg", ry: "17deg", role: "near", depth: 0.78 },
+  { x: "48%", y: "31%", s: 0.78, r: "2deg", ry: "-18deg", role: "mid", depth: 0.42 },
+  { x: "34%", y: "63%", s: 0.86, r: "-1deg", ry: "15deg", role: "near", depth: 0.9 },
+  { x: "49%", y: "61%", s: 0.72, r: "1deg", ry: "-16deg", role: "far", depth: 0.24 }
+];
+
+const previewSlot = { x: "77%", y: "47%", s: 1.34, r: "1deg", ry: "-7deg", role: "preview", depth: 1 };
+
+const els = {
+  album: document.getElementById("albumSpace"),
+  thumbStrip: document.getElementById("thumbStrip"),
+  detailPlace: document.getElementById("detailPlace"),
+  detailDate: document.getElementById("detailDate"),
+  detailTitle: document.getElementById("detailTitle"),
+  detailText: document.getElementById("detailText"),
+  backdrop: document.getElementById("composerBackdrop"),
+  composer: document.getElementById("composerPanel"),
+  composerTitle: document.getElementById("composerTitle"),
+  submitComposer: document.getElementById("submitComposer"),
+  photoInput: document.getElementById("photoInput"),
+  photoDrop: document.getElementById("photoDrop"),
+  paintCanvas: document.getElementById("paintCanvas"),
+  form: document.getElementById("recordForm"),
+  stylePreviewGrid: document.getElementById("stylePreviewGrid"),
+  status: document.getElementById("status"),
+  swapToast: document.getElementById("swapToast"),
+  layoutToggle: document.getElementById("layoutToggle"),
+  layoutPanel: document.getElementById("layoutPanel"),
+  layoutTarget: document.getElementById("layoutTarget"),
+  layoutOutput: document.getElementById("layoutOutput"),
+  layoutCopy: document.getElementById("layoutCopy"),
+  layoutReset: document.getElementById("layoutReset")
+};
+
+const ctx = els.paintCanvas.getContext("2d", { willReadFrequently: true });
+let records = loadRecords();
+let activeIndex = 0;
+let pendingImage = "";
+let pendingSource = "";
+let pendingSourceFile = null; // STORE-007：用户上传的原始 File，用于原画质落盘 + 全分辨率重跑滤镜
+let pendingVariants = {};
+let currentTemplate = DEFAULT_TEMPLATE;
+let editingIndex = -1;
+let swapPinSlot = null;
+let pressTimer = null;
+let layout = loadLayout();
+let dragState = null;
+let thumbDragState = null;
+let suppressThumbClick = false;
+
+function loadRecords() {
+  try {
+    const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    if (Array.isArray(current) && current.length) {
+      const normalized = current.map(normalizeRecord);
+      // 统一排序：最新的在前（和其他星 + 列表页一致）。交互页另按时间戳排序，不受数组顺序影响。
+      const sorted = [...normalized].sort((a, b) => recordTimestamp(b) - recordTimestamp(a));
+      const orderChanged = sorted.some((r, i) => r !== normalized[i]);
+      // 旧版 record（含 source 字段）需精简释放 quota；或顺序需纠正 → 立即重写到 localStorage
+      const hasOldSource = current.some(r => r.source);
+      if (hasOldSource || orderChanged) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'memory-sparks:storage-changed', key: STORAGE_KEY }, '*');
+            window.parent.postMessage({ type: 'memory-sparks:records-saved' }, '*');
+          }
+        } catch (_) {}
+      }
+      return sorted;
+    }
+    for (const key of OLD_KEYS) {
+      const old = JSON.parse(localStorage.getItem(key) || "null");
+      if (Array.isArray(old) && old.length) {
+        const normalized = old.map(normalizeRecord);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'memory-sparks:storage-changed', key: STORAGE_KEY }, '*');
+            window.parent.postMessage({ type: 'memory-sparks:records-saved' }, '*');
+          }
+        } catch (_) {}
+        return normalized;
+      }
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function normalizeAssetPath(src) {
+  if (!src || src.startsWith("data:") || src.startsWith("blob:") || src.startsWith("http")) return src;
+  const assetIndex = src.indexOf("assets/planets/");
+  if (assetIndex >= 0) return `../../${src.slice(assetIndex)}`;
+  return src;
+}
+
+function normalizeRecord(record) {
+  // 保留 source 字段：让二次编辑能基于原图重新跑滤镜（不是叠加）
+  const imageSrc = normalizeAssetPath(record.image || record.source);
+  const sourceSrc = record.source ? normalizeAssetPath(record.source) : undefined;
+  return {
+    ...record,
+    template: record.template === "vintage" ? "film503" : record.template,
+    // 任务 4：aspectClass 缺省 portrait（兼容老 record，大多数手机拍照默认竖图）
+    aspectClass: record.aspectClass || 'portrait',
+    source: sourceSrc,
+    image: imageSrc
+  };
+}
+
+// localStorage 软警告（产品阶段过渡方案，U 盘封装时拆掉）
+// 5MB 是浏览器域级总限，8 颗星 + layout 共享 → 实际 hiking 配额更少
+function _estimateLocalStorageUsage() {
+  let total = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      const v = localStorage.getItem(k) || '';
+      total += (k.length + v.length) * 2; // UTF-16
+    }
+  } catch (_) {}
+  return total;
+}
+function _checkQuotaWarning() {
+  const QUOTA = 5 * 1024 * 1024;
+  const WARN_THRESHOLD = 1 * 1024 * 1024; // 剩 < 1MB 警告
+  const used = _estimateLocalStorageUsage();
+  const remaining = QUOTA - used;
+  if (remaining >= WARN_THRESHOLD) return;
+  const avgPerRecord = 450 * 1024; // 单条估算 450KB
+  const slots = Math.max(0, Math.floor(remaining / avgPerRecord));
+  const msg = slots > 0
+    ? `本地空间快满了，大约还能存 ${slots} 张。可以在列表里删些旧的腾空间。`
+    : '本地空间快满了，下一张可能保存失败。请在列表里删些旧的腾空间。';
+  try { if (window.msToast) window.msToast(msg, { duration: 5000 }); } catch (_) {}
+}
+
+function saveRecords() {
+  try {
+    // STORE-007：有盘时内存里 image/source 是 blob: URL，写 localStorage 前按 _fsaRefs
+    // 还原成持久 'fsa:' 引用，否则刷新即丢图。无盘时为 no-op，行为与改造前一致。
+    const s = msStore();
+    const toSave = (s && s.serializeForStorage)
+      ? s.serializeForStorage(records, { mediaFields: HIKING_MEDIA_FIELDS })
+      : records;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    if (typeof _makeStorageFingerprint === 'function') {
+      _storageFingerprint = _makeStorageFingerprint();
+    }
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'memory-sparks:storage-changed', key: STORAGE_KEY }, '*');
+        window.parent.postMessage({ type: 'memory-sparks:records-saved' }, '*');
+        window.parent.postMessage({ type: 'memory-sparks:composer-closed' }, '*');
+      }
+    } catch (_) {}
+    // 保存成功后软警告：剩 < 1MB 时提示用户
+    _checkQuotaWarning();
+    // U盘建库（STORE-006）：本地写盘成功后同步到 U盘 records.json（无盘自动 no-op）
+    hikingSyncFile();
+  } catch (e) {
+    if (e && (e.name === 'QuotaExceededError' || e.code === 22 || /quota/i.test(e.message || ''))) {
+      try { window.alert('保存失败：本地存储空间不够。\n可能是图片太大或旧记录太多。\n请删除一些旧记录后重试。'); } catch (_) {}
+    } else {
+      console.warn('[hiking] saveRecords failed:', e);
+    }
+    throw e;
+  }
+}
+
+function loadLayout() {
+  try {
+    return { ...defaultLayout, ...JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY) || "{}") };
+  } catch {
+    return { ...defaultLayout };
+  }
+}
+
+function saveLayout() {
+  try {
+    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+  } catch {}
+}
+
+function applyLayout() {
+  const root = document.documentElement;
+  root.style.setProperty("--detail-left", `${layout.detailX}%`);
+  root.style.setProperty("--detail-top", `${layout.detailY}%`);
+  root.style.setProperty("--thumb-left", `${layout.thumbX}%`);
+  root.style.setProperty("--thumb-top", `${layout.thumbY}%`);
+  root.style.setProperty("--thumb-width", `${layout.thumbW}px`);
+  root.style.setProperty("--upload-left", `${layout.uploadX}%`);
+  root.style.setProperty("--upload-top", `${layout.uploadY}%`);
+  root.style.setProperty("--composer-left", `${layout.modalX}%`);
+  root.style.setProperty("--composer-top", `${layout.modalY}%`);
+  root.style.setProperty("--composer-width", `${layout.modalW}px`);
+
+  previewSlot.x = `${layout.previewX}%`;
+  previewSlot.y = `${layout.previewY}%`;
+  previewSlot.s = layout.previewS;
+
+  slots.forEach((slot, index) => {
+    slot.x = `${layout[`pin${index}X`]}%`;
+    slot.y = `${layout[`pin${index}Y`]}%`;
+    slot.s = layout[`pin${index}S`];
+  });
+  updateFramePositions();
+  renderLayoutOutput();
+}
+
+function updateFramePositions() {
+  const preview = document.querySelector(".preview-frame");
+  if (preview) {
+    preview.style.setProperty("--x", `${layout.previewX}%`);
+    preview.style.setProperty("--y", `${layout.previewY}%`);
+    preview.style.setProperty("--s", String(layout.previewS));
+  }
+  document.querySelectorAll(".pinned-frame").forEach(frame => {
+    const index = Number(frame.dataset.pinSlot);
+    if (!Number.isFinite(index)) return;
+    frame.style.setProperty("--x", `${layout[`pin${index}X`]}%`);
+    frame.style.setProperty("--y", `${layout[`pin${index}Y`]}%`);
+    // pin 框 s 按该 record 自己构图系数微调
+    const recIdx = Number(frame.dataset.recordIndex);
+    const rec = Number.isFinite(recIdx) ? records[recIdx] : null;
+    const cls = rec?.aspectClass || 'portrait';
+    const mult = PIN_S_MULTIPLIER[cls] || 1;
+    frame.style.setProperty("--s", String((Number(layout[`pin${index}S`]) || 1) * mult));
+    applyFrameDepth(frame, slots[index]);
+  });
+}
+
+// 任务 4：根据 active preview 的构图切换 preview 框（pin 框始终不动）
+function applyLayoutForAspect(cls) {
+  let preview;
+  if (cls === 'portrait') {
+    // 竖图用 layout 当前值（保留用户用 layout-toggle 调整过的位置）
+    preview = { x: layout.previewX, y: layout.previewY, s: layout.previewS };
+  } else {
+    const preset = LAYOUT_PRESETS[cls];
+    if (!preset) return;
+    preview = preset.preview;
+  }
+  // 同步 preview slot 到数据 + DOM
+  previewSlot.x = `${preview.x}%`;
+  previewSlot.y = `${preview.y}%`;
+  previewSlot.s = preview.s;
+  const previewEl = document.querySelector(".preview-frame");
+  if (previewEl) {
+    previewEl.style.setProperty("--x", previewSlot.x);
+    previewEl.style.setProperty("--y", previewSlot.y);
+    previewEl.style.setProperty("--s", String(previewSlot.s));
+  }
+  // pin 框不动 —— 永远沿用 layout 当前值（已经在 applyLayout / updateFramePositions 内处理过）
+}
+
+function renderLayoutOutput() {
+  if (!els.layoutOutput) return;
+  els.layoutOutput.value = JSON.stringify(layout, null, 2);
+}
+
+const layoutGroups = {
+  preview: {
+    label: "右侧预览",
+    controls: [
+      ["previewX", "横向", 58, 88, 1],
+      ["previewY", "纵向", 24, 68, 1],
+      ["previewS", "大小", 0.9, 1.7, 0.01]
+    ]
+  },
+  detail: {
+    label: "文字卡片",
+    controls: [
+      ["detailX", "横向", 36, 72, 1],
+      ["detailY", "纵向", 58, 82, 1]
+    ]
+  },
+  thumbs: {
+    label: "缩略图栏",
+    controls: [
+      ["thumbX", "横向", 24, 54, 1],
+      ["thumbY", "纵向", 78, 93, 1],
+      ["thumbW", "宽度", 560, 980, 10]
+    ]
+  },
+  upload: {
+    label: "添加按钮",
+    controls: [
+      ["uploadX", "横向", 55, 84, 1],
+      ["uploadY", "纵向", 56, 80, 1]
+    ]
+  },
+  modal: {
+    label: "添加弹窗",
+    controls: [
+      ["modalX", "横向", 28, 48, 1],
+      ["modalY", "纵向", 6, 22, 1],
+      ["modalW", "宽度", 720, 980, 10]
+    ]
+  },
+  pin0: { label: "置顶 1", controls: [["pin0X", "横向", 28, 52, 1], ["pin0Y", "纵向", 22, 72, 1], ["pin0S", "大小", 0.55, 1.1, 0.01]] },
+  pin1: { label: "置顶 2", controls: [["pin1X", "横向", 34, 60, 1], ["pin1Y", "纵向", 18, 66, 1], ["pin1S", "大小", 0.55, 1.1, 0.01]] },
+  pin2: { label: "置顶 3", controls: [["pin2X", "横向", 28, 56, 1], ["pin2Y", "纵向", 36, 76, 1], ["pin2S", "大小", 0.55, 1.1, 0.01]] },
+  pin3: { label: "置顶 4", controls: [["pin3X", "横向", 38, 62, 1], ["pin3Y", "纵向", 38, 76, 1], ["pin3S", "大小", 0.55, 1.1, 0.01]] }
+};
+
+function renderLayoutPanel() {
+  els.layoutTarget.innerHTML = Object.entries(layoutGroups)
+    .map(([key, group]) => `<option value="${key}">${group.label}</option>`)
+    .join("");
+  els.layoutTarget.value = els.layoutTarget.value || "preview";
+  renderLayoutOutput();
+}
+
+function renderLayoutControls() {
+  renderLayoutOutput();
+}
+
+function draggableKeys(target) {
+  if (target === "preview") return ["previewX", "previewY"];
+  if (target === "detail") return ["detailX", "detailY"];
+  if (target === "thumbs") return ["thumbX", "thumbY"];
+  if (target === "upload") return ["uploadX", "uploadY"];
+  if (target === "modal") return ["modalX", "modalY"];
+  if (/^pin[0-3]$/.test(target)) return [`${target}X`, `${target}Y`];
+  return null;
+}
+
+function beginLayoutDrag(event) {
+  if (!document.body.classList.contains("layout-edit")) return;
+  if (event.target.closest(".layout-panel, .layout-toggle, input, textarea, select, .thumb-edit")) return;
+  // 用 elementsFromPoint 找 layout-target，绕过 3D transform 让 event.target.closest 失效的问题
+  // 优先找 pin（用户视觉看到 pin 框就想拖 pin），找不到再找其他 layout 元素
+  const elements = document.elementsFromPoint(event.clientX, event.clientY);
+  let targetNode = elements.find(el => el.dataset?.layoutTarget?.startsWith('pin'));
+  if (!targetNode) targetNode = elements.find(el => el.dataset?.layoutTarget);
+  if (!targetNode) return;
+  const target = targetNode.dataset.layoutTarget;
+  const keys = draggableKeys(target);
+  if (!keys) return;
+
+  event.preventDefault();
+  targetNode.setPointerCapture?.(event.pointerId);
+  dragState = {
+    target,
+    node: targetNode,
+    startX: event.clientX,
+    startY: event.clientY,
+    keyX: keys[0],
+    keyY: keys[1],
+    valueX: layout[keys[0]],
+    valueY: layout[keys[1]]
+  };
+}
+
+function moveLayoutDrag(event) {
+  if (!dragState) return;
+  const dx = (event.clientX - dragState.startX) / window.innerWidth * 100;
+  const dy = (event.clientY - dragState.startY) / window.innerHeight * 100;
+  layout[dragState.keyX] = Number((dragState.valueX + dx).toFixed(2));
+  layout[dragState.keyY] = Number((dragState.valueY + dy).toFixed(2));
+  applyLayout();
+}
+
+function endLayoutDrag() {
+  if (!dragState) return;
+  dragState = null;
+  saveLayout();
+  renderLayoutOutput();
+}
+
+function todayValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDate(date) {
+  if (!date) return "未标注日期";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return `${parsed.getFullYear()}.${String(parsed.getMonth() + 1).padStart(2, "0")}.${String(parsed.getDate()).padStart(2, "0")}`;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function clamp(value, min = 0, max = 255) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function fitImage(img) {
+  const max = 600;   // 原 900：81 万像素 → 现在 36 万，CPU 节省 55%，列表滤镜切换流畅多
+  const scale = Math.min(max / img.width, max / img.height, 1);
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  els.paintCanvas.width = w;
+  els.paintCanvas.height = h;
+  ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+}
+
+// 胶片相机风格滤镜 ── 替代旧 buildOilPaint
+// 流水线：原图（paintCanvas 已有）→ 比例裁切 → 调色 → 颗粒 → 暗角 → 边框 → toDataURL
+function buildFilmVariant(templateKey, srcCanvas = els.paintCanvas) {
+  const t = FILM_TEMPLATES[templateKey];
+  if (!t) return srcCanvas.toDataURL("image/jpeg", 0.95);
+
+  const srcW = srcCanvas.width;
+  const srcH = srcCanvas.height;
+
+  // ── 1. 画幅处理 ──
+  //   - aspect = null → 不裁切，保留原图（135Ti）
+  //   - aspect = 1   → 1:1 方裁，不需要方向（503cw）
+  //   - forceVertical = true → 永远竖向（instax，横图也强裁成竖）
+  //   - 其他情况：跟随原图方向（横图保横，竖图变竖向 1/aspect）
+  let cropW = srcW, cropH = srcH;
+  if (t.aspect) {
+    let targetAspect = t.aspect;
+    if (!t.forceVertical && targetAspect !== 1) {
+      const isPortrait = srcH > srcW;
+      if (isPortrait) targetAspect = 1 / targetAspect;
+    }
+    const srcAspect = srcW / srcH;
+    if (srcAspect > targetAspect) {
+      cropH = srcH;
+      cropW = Math.round(srcH * targetAspect);
+    } else {
+      cropW = srcW;
+      cropH = Math.round(srcW / targetAspect);
+    }
+  }
+  const cropX = Math.round((srcW - cropW) / 2);
+  const cropY = Math.round((srcH - cropH) / 2);
+
+  const mid = document.createElement("canvas");
+  mid.width = cropW;
+  mid.height = cropH;
+  const mctx = mid.getContext("2d");
+  mctx.drawImage(srcCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+  // ── 2. 调色（split-toning：阴影/中间/高光分通道独立）──
+  const img = mctx.getImageData(0, 0, cropW, cropH);
+  const d = img.data;
+  const sat = t.saturation;
+  const con = t.contrast;
+  const sh = t.shadow, mh = t.midTint, hi = t.highlight;
+
+  for (let i = 0; i < d.length; i += 4) {
+    let r = d[i], g = d[i + 1], b = d[i + 2];
+    // 对比度（围绕 128）
+    r = (r - 128) * con + 128;
+    g = (g - 128) * con + 128;
+    b = (b - 128) * con + 128;
+    // 饱和度
+    const lum = r * 0.299 + g * 0.587 + b * 0.114;
+    r = lum + (r - lum) * sat;
+    g = lum + (g - lum) * sat;
+    b = lum + (b - lum) * sat;
+    // Split-toning：根据亮度分三段独立调色
+    const lumaN = (r + g + b) / 3 / 255;
+    if (lumaN < 0.45) {
+      // 阴影：越暗强度越大
+      const k = (0.45 - lumaN) / 0.45;
+      r += sh.r * k;
+      g += sh.g * k;
+      b += sh.b * k;
+    } else if (lumaN > 0.55) {
+      // 高光：越亮强度越大
+      const k = (lumaN - 0.55) / 0.45;
+      r += hi.r * k;
+      g += hi.g * k;
+      b += hi.b * k;
+    } else {
+      // 中间色调：常驻偏移
+      r += mh.r;
+      g += mh.g;
+      b += mh.b;
+    }
+    d[i]     = clamp(r);
+    d[i + 1] = clamp(g);
+    d[i + 2] = clamp(b);
+  }
+  mctx.putImageData(img, 0, 0);
+
+  // ── 3. 颗粒（RGB 三通道独立噪点，更接近真实胶片）──
+  // grainHue: 0 = 单色亮度噪点（粗糙）, 1 = 完全 RGB 独立（细腻带色彩）
+  if (t.grain > 0) {
+    const gImg = mctx.getImageData(0, 0, cropW, cropH);
+    const gd = gImg.data;
+    const amount = t.grain * 50;
+    const hue = t.grainHue != null ? t.grainHue : 0.6;
+    const mono = 1 - hue;
+    for (let i = 0; i < gd.length; i += 4) {
+      const m = (Math.random() - 0.5) * amount * mono;
+      const nR = m + (Math.random() - 0.5) * amount * hue;
+      const nG = m + (Math.random() - 0.5) * amount * hue;
+      const nB = m + (Math.random() - 0.5) * amount * hue;
+      gd[i]     = clamp(gd[i]     + nR);
+      gd[i + 1] = clamp(gd[i + 1] + nG);
+      gd[i + 2] = clamp(gd[i + 2] + nB);
+    }
+    mctx.putImageData(gImg, 0, 0);
+  }
+
+  // ── 4. 暗角（径向 multiply）──
+  if (t.vignette > 0) {
+    const cx = cropW / 2, cy = cropH / 2;
+    const inner = Math.min(cropW, cropH) * 0.42;
+    const outer = Math.hypot(cropW, cropH) * 0.55;
+    const grad = mctx.createRadialGradient(cx, cy, inner, cx, cy, outer);
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(1, `rgba(0,0,0,${t.vignette})`);
+    mctx.globalCompositeOperation = "multiply";
+    mctx.fillStyle = grad;
+    mctx.fillRect(0, 0, cropW, cropH);
+    mctx.globalCompositeOperation = "source-over";
+  }
+
+  // ── 5. 边框 ──
+  let out = mid;
+  if (t.border) {
+    if (t.border.type === "black") {
+      // 中画幅黑边
+      const margin = Math.round(cropW * (t.border.outer + t.border.inner));
+      out = document.createElement("canvas");
+      out.width = cropW + margin * 2;
+      out.height = cropH + margin * 2;
+      const octx = out.getContext("2d");
+      octx.fillStyle = "#0c0c0c";
+      octx.fillRect(0, 0, out.width, out.height);
+      // 内侧极细白线（中画幅底片常见）
+      octx.fillStyle = "rgba(255,255,255,0.06)";
+      octx.fillRect(margin - 2, margin - 2, cropW + 4, cropH + 4);
+      octx.drawImage(mid, margin, margin);
+    } else if (t.border.type === "polaroid") {
+      // 拍立得白边（上/侧/下 非对称）—— 纯净白卡片，参考图不带内边阴影
+      const top    = Math.round(cropW * t.border.top);
+      const side   = Math.round(cropW * t.border.side);
+      const bottom = Math.round(cropW * t.border.bottom);
+      out = document.createElement("canvas");
+      out.width = cropW + side * 2;
+      out.height = cropH + top + bottom;
+      const octx = out.getContext("2d");
+      // 拍立得纸面：略微暖白（不是纯白）
+      octx.fillStyle = "#fbfaf6";
+      octx.fillRect(0, 0, out.width, out.height);
+      octx.drawImage(mid, side, top);
+    }
+  }
+
+  return out.toDataURL("image/jpeg", 0.95);
+}
+
+async function buildImageVariant(src, templateKey) {
+  const img = await loadImage(src);
+  fitImage(img);
+  if (templateKey === "original") {
+    return els.paintCanvas.toDataURL("image/jpeg", 0.92);
+  }
+  return buildFilmVariant(templateKey);
+}
+
+// STORE-007：保存时用——从原始 File / U盘原图(blob:) 以「原分辨率」重跑选中滤镜，导出高画质。
+// 预览阶段为了不卡仍用 600px 小图；只有最终落盘的这一张走全分辨率。
+async function renderVariantFullRes(src, templateKey) {
+  let url, revoke = false;
+  if (src instanceof Blob) { url = URL.createObjectURL(src); revoke = true; }
+  else { url = src; } // 已是 blob:/data: URL
+  try {
+    const img = await loadImage(url);
+    const full = document.createElement('canvas');
+    full.width = img.naturalWidth || img.width;
+    full.height = img.naturalHeight || img.height;
+    full.getContext('2d').drawImage(img, 0, 0);
+    if (templateKey === 'original' || !FILM_TEMPLATES[templateKey]) {
+      return full.toDataURL('image/jpeg', 0.95);
+    }
+    return buildFilmVariant(templateKey, full);
+  } finally {
+    if (revoke) URL.revokeObjectURL(url);
+  }
+}
+
+// Lazy 滤镜生成：上传后只跑 original，其他 3 个滤镜点了才生成
+// pendingVariants[key] 三态：undefined（未生成）/ 'generating'（生成中）/ dataURL（已完成）
+function renderStyleChoices() {
+  els.stylePreviewGrid.innerHTML = "";
+  STYLE_OPTIONS.forEach(option => {
+    const card = document.createElement("button");
+    card.type = "button";
+    const variant = pendingVariants[option.key];
+    const isReady = typeof variant === "string";
+    const isGenerating = variant === "generating";
+    card.className = `style-card${option.key === currentTemplate ? " active" : ""}${isGenerating ? " generating" : ""}`;
+    card.dataset.template = option.key;
+    if (isReady) {
+      card.innerHTML = `<img src="${variant}" alt="${option.label}"><span>${option.label}</span>`;
+    } else if (isGenerating) {
+      card.innerHTML = `<span class="style-card-hint">生成中…</span><span>${option.label}</span>`;
+    } else {
+      card.innerHTML = `<span class="style-card-hint">点击生成</span><span>${option.label}</span>`;
+    }
+    card.addEventListener("click", async () => {
+      const cur = pendingVariants[option.key];
+      if (cur === "generating") return;
+      if (typeof cur === "string") {
+        currentTemplate = option.key;
+        pendingImage = cur;
+        drawPreviewImage(pendingImage);
+        renderStyleChoices();
+        return;
+      }
+      // Lazy 生成
+      pendingVariants[option.key] = "generating";
+      renderStyleChoices();
+      els.status.textContent = `正在生成「${option.label}」预览…`;
+      try {
+        // 让 UI 先重绘出「生成中」再开始 CPU 密集计算
+        await new Promise(r => setTimeout(r, 16));
+        const variantSrc = await buildImageVariant(pendingSource, option.key);
+        pendingVariants[option.key] = variantSrc;
+        currentTemplate = option.key;
+        pendingImage = variantSrc;
+        drawPreviewImage(pendingImage);
+        renderStyleChoices();
+        els.status.textContent = "选择一个风格后保存。点其他风格会生成新预览。";
+      } catch (err) {
+        console.warn("[hiking] build variant failed:", err);
+        pendingVariants[option.key] = undefined;
+        renderStyleChoices();
+        els.status.textContent = "这个风格生成失败了，请试试别的。";
+      }
+    });
+    els.stylePreviewGrid.appendChild(card);
+  });
+}
+
+function drawPreviewImage(src) {
+  const img = new Image();
+  img.onload = () => {
+    fitImage(img);
+    els.paintCanvas.classList.add("ready");
+  };
+  img.src = src;
+}
+
+async function prepareStyleChoices(src, preferredTemplate = DEFAULT_TEMPLATE) {
+  pendingSource = src;
+  pendingVariants = {};
+  currentTemplate = "original";
+  els.status.textContent = "正在生成原图预览…";
+  els.photoDrop.classList.add("hidden");
+  renderStyleChoices();
+
+  // 只跑 original（几十毫秒，主线程几乎不阻塞）
+  // 3 个 oil paint 滤镜改为 lazy：用户点哪个才生成，避免上传一次卡 1-3 秒
+  pendingVariants.original = await buildImageVariant(src, "original");
+  pendingImage = pendingVariants.original;
+  drawPreviewImage(pendingImage);
+  renderStyleChoices();
+
+  // 如果用户编辑老 record，preferredTemplate 不是 original → 自动后台生成那个滤镜
+  if (preferredTemplate && preferredTemplate !== "original" && pendingVariants[preferredTemplate] === undefined) {
+    pendingVariants[preferredTemplate] = "generating";
+    renderStyleChoices();
+    try {
+      const variantSrc = await buildImageVariant(src, preferredTemplate);
+      pendingVariants[preferredTemplate] = variantSrc;
+      currentTemplate = preferredTemplate;
+      pendingImage = variantSrc;
+      drawPreviewImage(pendingImage);
+      renderStyleChoices();
+    } catch (err) {
+      console.warn("[hiking] restore preferred template failed:", err);
+      pendingVariants[preferredTemplate] = undefined;
+      renderStyleChoices();
+    }
+  }
+
+  els.status.textContent = "选择一个风格后保存。点其他风格会生成新预览。";
+  return pendingImage;
+}
+
+async function paintFromSrc(src) {
+  return prepareStyleChoices(src, currentTemplate);
+}
+
+function pinnedRecords() {
+  // docx 反馈：第 4 张开始就可以出现（< 4 才隐藏）
+  if (records.length < FEATURED_LIMIT) return [];
+  const pinned = records
+    .filter(record => typeof record.pinSlot === "number")
+    .sort((a, b) => a.pinSlot - b.pinSlot);
+  if (pinned.length) return pinned.slice(0, FEATURED_LIMIT);
+  // 默认从最早的 4 张作为初始置顶（也可改为最新 4 张）
+  const sorted = [...records].sort((a, b) => recordTimestamp(a) - recordTimestamp(b));
+  return sorted.slice(0, FEATURED_LIMIT);
+}
+
+function recordTimestamp(record) {
+  const parsed = Date.parse(record.date || "");
+  if (Number.isFinite(parsed)) return parsed;
+  const idTime = Number(String(record.id || "").match(/\d+/)?.[0] || 0);
+  return Number.isFinite(idTime) ? idTime : 0;
+}
+
+function orderedThumbEntries() {
+  return records
+    .map((record, index) => ({ record, index }))
+    .sort((a, b) => recordTimestamp(b.record) - recordTimestamp(a.record) || b.index - a.index);
+}
+
+// ─── DOM 复用 + diff（性能优化）─────────────────────────
+// 旧实现每次 render 全删 album + thumbStrip 重建 → 切换缩略图就卡
+// 新实现：维护 frameMap / thumbMap，复用现有 DOM，只更新 CSS variable / className
+// 视觉零变化，但 GPU 重绘次数减少 N 倍
+const frameMap = new Map();  // key: 'preview' | `pin${n}`
+const thumbMap = new Map();  // key: record.id
+
+function render() {
+  // B2.1.4 / docx 反馈：空状态时右侧预览区整条隐藏
+  const hasRecords = records.length > 0;
+  document.body.classList.toggle('hike-empty', !hasRecords);
+  if (els.activeDetail) els.activeDetail.style.display = hasRecords ? '' : 'none';
+
+  // 1. 计算当前应展示的 frame（STORE-008：只保留右侧 preview 大框，不再显示左侧 4 个 pinned 框）
+  const visibleFrames = new Map();
+  const activeRecord = records[activeIndex];
+  if (activeRecord) {
+    visibleFrames.set('preview', {
+      record: activeRecord, index: activeIndex, slot: previewSlot, isPreview: true, pinSlot: null
+    });
+  }
+
+  // 2. 删除不再展示的 frame
+  frameMap.forEach((el, key) => {
+    if (!visibleFrames.has(key)) {
+      el.remove();
+      frameMap.delete(key);
+    }
+  });
+
+  // 3. 创建或更新 frame
+  visibleFrames.forEach((data, key) => {
+    let el = frameMap.get(key);
+    if (!el) {
+      el = createFrame(data);
+      frameMap.set(key, el);
+      els.album.appendChild(el);
+    } else {
+      updateFrame(el, data);
+    }
+  });
+
+  // 3.5 任务 4：按 active preview 构图切换 5 框布局模板
+  if (activeRecord) {
+    applyLayoutForAspect(activeRecord.aspectClass || 'portrait');
+  }
+
+  // 4. thumb 区同样的 diff
+  const visibleThumbs = new Map();
+  const pinnedIds = new Set(pinnedRecords().map(r => r.id));
+  orderedThumbEntries().slice(0, THUMB_MAX).forEach(({ record, index }) => {
+    visibleThumbs.set(record.id, {
+      record, index,
+      isPinned: pinnedIds.has(record.id),
+      disabledInSwap: swapPinSlot !== null && pinnedIds.has(record.id),
+      isActive: index === activeIndex
+    });
+  });
+
+  thumbMap.forEach((el, id) => {
+    if (!visibleThumbs.has(id)) {
+      el.remove();
+      thumbMap.delete(id);
+    }
+  });
+
+  visibleThumbs.forEach((data, id) => {
+    let el = thumbMap.get(id);
+    if (!el) {
+      el = createThumb(data);
+      thumbMap.set(id, el);
+      els.thumbStrip.appendChild(el);
+    } else {
+      updateThumb(el, data);
+    }
+  });
+
+  // 5. 重排 thumb 顺序（appendChild 已存在元素 = 移动到末尾，浏览器优化过）
+  visibleThumbs.forEach((data, id) => {
+    const el = thumbMap.get(id);
+    if (el) els.thumbStrip.appendChild(el);
+  });
+
+  renderDetail();
+}
+
+// ─── frame DOM 创建 / 更新 ─────────────────────────
+function createFrame(data) {
+  const frame = document.createElement("button");
+  frame.type = "button";
+  frame.innerHTML = `
+    <div class="frame-shell">
+      <div class="frame-photo">
+        <img alt="">
+      </div>
+    </div>
+  `;
+  // 事件绑定一次性（从 dataset 读最新值，避免闭包 stale）
+  if (data.isPreview) {
+    frame.addEventListener("click", () => {
+      const idx = +frame.dataset.recordIndex;
+      openComposerPanel(idx);
+    });
+    // pin 框 click 由 document 级代理统一处理（见文件末尾），避免被未知元素遮挡时 click 丢失
+  }
+  updateFrame(frame, data);
+  return frame;
+}
+
+function updateFrame(frame, data) {
+  const { record, index, slot, isPreview, pinSlot } = data;
+  // dataset
+  frame.dataset.recordIndex = String(index);
+  frame.dataset.layoutTarget = isPreview ? "preview" : `pin${pinSlot}`;
+  if (!isPreview) frame.dataset.pinSlot = String(pinSlot);
+  // className
+  const swapClass = !isPreview && swapPinSlot === pinSlot ? " swap-target" : "";
+  frame.className = `memory-frame ${isPreview ? "preview-frame" : `${slot.role} pinned-frame`}${swapClass}`;
+  // 位置 / 视觉 CSS variables
+  frame.style.setProperty("--x", slot.x);
+  frame.style.setProperty("--y", slot.y);
+  // pin 框：位置不动，s 按 record 自己的构图系数微调
+  // preview 框：s 已由 applyLayoutForAspect 设到 slot.s，直接用
+  let finalS = slot.s;
+  if (!isPreview) {
+    const cls = record.aspectClass || 'portrait';
+    const mult = PIN_S_MULTIPLIER[cls] || 1;
+    finalS = (Number(slot.s) || 1) * mult;
+  }
+  frame.style.setProperty("--s", String(finalS));
+  frame.style.setProperty("--r", slot.r);
+  frame.style.setProperty("--ry", slot.ry);
+  applyFrameDepth(frame, slot, isPreview);
+  // 图片（变了才更新，避免触发重新解码）
+  const img = frame.querySelector("img");
+  const newSrc = record.image;
+  const newAlt = record.title || '';
+  if (img.getAttribute("src") !== newSrc) {
+    img.src = newSrc;
+    // 加载完成后把图片真实比例写到 frame-photo CSS 变量（让相框跟着图自然变形）
+    img.onload = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const photo = frame.querySelector(".frame-photo");
+        if (photo) photo.style.setProperty("--photo-aspect", `${img.naturalWidth} / ${img.naturalHeight}`);
+      }
+    };
+    // 如果 img 已经在 cache 里，onload 不会触发，主动检查一次
+    if (img.complete && img.naturalWidth > 0) {
+      const photo = frame.querySelector(".frame-photo");
+      if (photo) photo.style.setProperty("--photo-aspect", `${img.naturalWidth} / ${img.naturalHeight}`);
+    }
+  }
+  if (img.getAttribute("alt") !== newAlt) img.alt = newAlt;
+}
+
+// ─── thumb DOM 创建 / 更新 ─────────────────────────
+function createThumb(data) {
+  const wrap = document.createElement("div");
+  const thumb = document.createElement("button");
+  thumb.type = "button";
+  thumb.innerHTML = `<img alt="">`;
+  const edit = document.createElement("button");
+  edit.type = "button";
+  edit.className = "thumb-edit";
+  edit.textContent = "编辑";
+  wrap.appendChild(thumb);
+  wrap.appendChild(edit);
+  // 引用存到 wrap 上，避免每次 querySelector
+  wrap._thumb = thumb;
+  wrap._edit = edit;
+  // 事件绑定一次性
+  thumb.addEventListener("click", event => {
+    const idx = +wrap.dataset.recordIndex;
+    const isPinned = wrap.dataset.isPinned === 'true';
+    // swap 模式优先：用户处在选择替换图的状态，必须响应（不被 drag suppress 拦截）
+    if (swapPinSlot !== null) {
+      suppressThumbClick = false;
+      const selectedRecord = records[idx];
+      if (selectedRecord?.pinSlot === swapPinSlot) {
+        if (window.msToast) window.msToast('已经在这个位置了');
+        return;
+      }
+      replacePinnedRecord(swapPinSlot, idx);
+      return;
+    }
+    // 非 swap 模式：drag 滚动时不响应 click
+    if (suppressThumbClick) {
+      event.preventDefault();
+      suppressThumbClick = false;
+      return;
+    }
+    activeIndex = idx;
+    render();
+  });
+  edit.addEventListener("click", event => {
+    event.stopPropagation();
+    const idx = +wrap.dataset.recordIndex;
+    openComposerPanel(idx);
+  });
+  updateThumb(wrap, data);
+  return wrap;
+}
+
+function updateThumb(wrap, data) {
+  const { record, index, isPinned, disabledInSwap, isActive } = data;
+  wrap.dataset.recordIndex = String(index);
+  wrap.dataset.isPinned = String(isPinned);
+  wrap.className = `thumb-wrap${isActive ? " active" : ""}`;
+  const thumb = wrap._thumb;
+  thumb.className = `thumb${isActive ? " active" : ""}${disabledInSwap ? " pinned-already" : ""}`;
+  if (disabledInSwap) thumb.title = '这张图已经在置顶位';
+  else thumb.removeAttribute('title');
+  const img = thumb.querySelector("img");
+  const newSrc = record.image;
+  const newAlt = record.title || '';
+  if (img.getAttribute("src") !== newSrc) img.src = newSrc;
+  if (img.getAttribute("alt") !== newAlt) img.alt = newAlt;
+}
+
+function applyFrameDepth(frame, slot, isPreview = false) {
+  const depth = isPreview ? 1 : slot.depth ?? 0.7;
+  frame.style.setProperty("--alpha", "1");
+  frame.style.setProperty("--blur", `${isPreview ? 0 : Math.max(0, (1 - depth) * 0.72)}px`);
+  frame.style.setProperty("--sat", String(isPreview ? 1.05 : 0.92 + depth * 0.12));
+  frame.style.setProperty("--tz", `${isPreview ? 150 : Math.round((depth - 0.5) * 420)}px`);
+  frame.style.setProperty("--rx", `${isPreview ? 0 : (1 - depth) * -5}deg`);
+  frame.style.setProperty("--glow", `${Math.round(18 + depth * 34)}px`);
+  frame.style.setProperty("--glow-alpha", String(0.18 + depth * 0.22));
+  frame.style.setProperty("--shadow-y", `${Math.round(14 + depth * 24)}px`);
+  frame.style.setProperty("--shadow-blur", `${Math.round(36 + depth * 58)}px`);
+  frame.style.setProperty("--shadow-alpha", String(0.34 + depth * 0.16));
+  frame.style.setProperty("--z", String(isPreview ? 8 : Math.round(2 + depth * 5)));
+}
+
+function clearPressTimer() {
+  if (!pressTimer) return;
+  window.clearTimeout(pressTimer);
+  pressTimer = null;
+}
+
+function showSwapToast(message) {
+  els.swapToast.textContent = message;
+  els.swapToast.classList.add("show");
+  window.clearTimeout(showSwapToast.timer);
+  showSwapToast.timer = window.setTimeout(() => els.swapToast.classList.remove("show"), 2200);
+}
+
+function beginThumbDrag(event) {
+  if (document.body.classList.contains("layout-edit")) return;
+  if (event.button !== undefined && event.button !== 0) return;
+  thumbDragState = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startScroll: els.thumbStrip.scrollLeft,
+    moved: false
+  };
+  // 不再 setPointerCapture：它会把所有 pointer 事件锁到 thumbStrip 上，
+  // 导致 pointerup 不在 thumb 子元素上派发 → 缩略图 click 失效
+}
+
+function moveThumbDrag(event) {
+  if (!thumbDragState || thumbDragState.pointerId !== event.pointerId) return;
+  const delta = event.clientX - thumbDragState.startX;
+  if (Math.abs(delta) > 4) {
+    thumbDragState.moved = true;
+    els.thumbStrip.classList.add("dragging");
+    event.preventDefault();
+  }
+  if (thumbDragState.moved) {
+    els.thumbStrip.scrollLeft = thumbDragState.startScroll - delta;
+  }
+}
+
+function endThumbDrag(event) {
+  if (!thumbDragState || thumbDragState.pointerId !== event.pointerId) return;
+  suppressThumbClick = thumbDragState.moved;
+  thumbDragState = null;
+  els.thumbStrip.classList.remove("dragging");
+}
+
+function scrollThumbsWithWheel(event) {
+  if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+  if (els.thumbStrip.scrollWidth <= els.thumbStrip.clientWidth) return;
+  event.preventDefault();
+  els.thumbStrip.scrollLeft += event.deltaY;
+}
+
+function startPinSwap(pinSlot) {
+  swapPinSlot = pinSlot;
+  document.body.classList.add("swap-mode");
+  showSwapToast(`选择下方缩略图替换置顶 ${pinSlot + 1}（再次点击取消）`);
+  render();
+}
+
+function replacePinnedRecord(pinSlot, recordIndex) {
+  const selected = records[recordIndex];
+  const selectedOldSlot = selected?.pinSlot;
+  records = records.map((record, index) => {
+    if (index === recordIndex) return { ...record, featured: true, pinSlot };
+    if (record.pinSlot === pinSlot) return { ...record, featured: selectedOldSlot !== undefined, pinSlot: selectedOldSlot };
+    return record;
+  });
+  swapPinSlot = null;
+  document.body.classList.remove("swap-mode");
+  saveRecords();
+  showSwapToast("置顶图已替换");
+  render();
+}
+
+function nextEmptyPinSlot() {
+  const used = new Set(records.map(record => record.pinSlot).filter(value => typeof value === "number"));
+  for (let index = 0; index < FEATURED_LIMIT; index += 1) {
+    if (!used.has(index)) return index;
+  }
+  return undefined;
+}
+
+function renderDetail() {
+  const record = records[activeIndex];
+  if (!record) return;
+  els.detailPlace.textContent = record.place || "未标注地点";
+  els.detailDate.textContent = formatDate(record.date);
+  // docx 反馈：卡片只留地名，不显示标题
+  els.detailTitle.textContent = '';
+  els.detailTitle.style.display = 'none';
+  els.detailText.textContent = record.text || "这张照片已经被带回行星，还没有写下这段路的故事。";
+  const container = els.activeDetail || document.getElementById('activeDetail');
+  // 统一编辑按钮（hiking 已有 openComposerPanel(index) 支持编辑模式）
+  if (window.MS && MS.bindEdit) {
+    MS.bindEdit({
+      container,
+      getId: () => records[activeIndex]?.id,
+      label: '重写这一段',
+      onEdit: () => openComposerPanel(activeIndex),
+    });
+  }
+  // 统一删除按钮
+  if (window.MS && MS.bindDelete) {
+    MS.bindDelete({
+      container,
+      getId: () => records[activeIndex]?.id,
+      question: '让这段路重新隐去？',
+      yes: '隐去',
+      onDelete: (rid) => {
+        // 删除前：文字整条进回收站 + 两张真文件（image+source）进回收站（无盘 / base64 时为 no-op）
+        const removed = records.find(r => r.id === rid);
+        const s = msStore();
+        if (removed && s) {
+          try { if (s.trashRecord) s.trashRecord(HIKING_PLANET_KEY, removed); } catch (_) {} // 文字进回收站（盘点 H1 补）
+          try { if (s.trashRecordMedia) s.trashRecordMedia(removed, { mediaFields: HIKING_MEDIA_FIELDS, planetKey: HIKING_PLANET_KEY }); } catch (_) {}
+        }
+        records = records.filter(r => r.id !== rid);
+        if (activeIndex >= records.length) activeIndex = Math.max(0, records.length - 1);
+        saveRecords();
+        render();
+      },
+    });
+  }
+}
+
+function moveActive(step) {
+  if (!records.length) return;
+  const ordered = orderedThumbEntries().map(entry => entry.index);
+  const current = ordered.indexOf(activeIndex);
+  const next = current >= 0 ? current + step : 0;
+  activeIndex = ordered[(next + ordered.length) % ordered.length];
+  render();
+}
+
+async function openComposerPanel(index = -1) {
+  editingIndex = typeof index === "number" ? index : -1;
+  const record = records[editingIndex];
+  pendingImage = "";
+  pendingSource = "";
+  pendingSourceFile = null; // STORE-007：编辑模式默认无新上传 File → 保存时复用已有原图引用
+  pendingVariants = {};
+  currentTemplate = record?.template || DEFAULT_TEMPLATE;
+  els.form.reset();
+  els.composerTitle.textContent = record ? "编辑这张照片" : "带回一张照片";
+  els.submitComposer.textContent = record ? "保存调整" : "放进相册";
+  document.getElementById("recordTitle").value = record?.title || "";
+  document.getElementById("recordPlace").value = record?.place || "";
+  document.getElementById("recordDate").value = record?.date || todayValue();
+  document.getElementById("recordText").value = record?.text || "";
+  els.paintCanvas.width = 0;
+  els.paintCanvas.height = 0;
+  els.paintCanvas.classList.remove("ready");
+  els.photoDrop.classList.remove("hidden");
+  renderStyleChoices();
+  els.status.textContent = "上传后可在原图和 3 个滤镜之间选择。";
+  els.backdrop.classList.add("open");
+  // 列表模式下 V2 lm2-overlay z-index 180 会盖住 composer-backdrop（原 z-index 40）→ 用 inline style 强制升上来
+  // 同时把 backdrop 移到 body 直接子，避免被 stage 等 ancestor 的 stacking context 限制
+  try {
+    if (els.backdrop.parentElement !== document.body) document.body.appendChild(els.backdrop);
+    els.backdrop.style.zIndex = '999999';
+    els.backdrop.style.position = 'fixed';
+    els.backdrop.style.inset = '0';
+    const panel = document.getElementById('composerPanel');
+    if (panel) panel.style.zIndex = '999999';
+  } catch (_) {}
+  // 通知父 App composer 已打开（列表模式用来隐藏列表覆盖层让 composer 浮出来）
+  try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'memory-sparks:composer-open' }, '*'); } catch {}
+  if (record?.source || record?.image) {
+    await prepareStyleChoices(record.source || record.image, currentTemplate);
+  } else {
+    // 新增模式：空状态，等用户上传，不加载示例图
+    pendingImage = "";
+    pendingSource = "";
+    pendingVariants = {};
+    els.paintCanvas.width = 0;
+    els.paintCanvas.height = 0;
+    els.paintCanvas.classList.remove("ready");
+    els.photoDrop.classList.remove("hidden");
+    if (els.stylePreviewGrid) els.stylePreviewGrid.innerHTML = '';
+    els.status.textContent = "上传你的照片，会自动生成 4 个滤镜版本可选。";
+  }
+}
+
+function closeComposerPanel() {
+  els.backdrop.classList.remove("open");
+  // 关 composer 时清空 4 个滤镜 base64 缓存（每个可能几 MB）+ 释放预览 canvas
+  pendingVariants = {};
+  pendingImage = "";
+  pendingSource = "";
+  pendingSourceFile = null; // STORE-007：释放原始 File 引用
+  try {
+    els.paintCanvas.width = 0;
+    els.paintCanvas.height = 0;
+  } catch {}
+  // 通知父 App composer 已关闭（列表模式用来恢复列表覆盖层）
+  try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'memory-sparks:composer-close' }, '*'); } catch {}
+  // 列表层关 composer 后总是 reload 一次（dirty=true）— 简单可靠
+  if (window.MS?.notifyComposerClosed) MS.notifyComposerClosed({ dirty: true });
+}
+
+window.openComposerPanel = openComposerPanel;
+window.closeComposerPanel = closeComposerPanel;
+
+// 父 App 列表点 +/编辑触发：直接走交互页的 openComposerPanel(index)
+window.__msOpenComposer = function(editIdx) {
+  if (typeof editIdx !== 'number' || editIdx < 0) openComposerPanel(-1);
+  else openComposerPanel(editIdx);
+};
+
+// 父 App 列表删除/编辑后同步：重读 records + render（C4）
+window.__msReloadAll = function() {
+  records = loadRecords();
+  if (activeIndex >= records.length) activeIndex = Math.max(0, records.length - 1);
+  hikingRender(); // STORE-007：重读的 records 含 fsa: 引用，先水合再渲染
+  hikingSyncFile(); // 父级删除/编辑后同步 records.json，避免插盘复活已删记录（STORE-006）
+};
+
+// U盘建库（STORE-006）：父级传 U盘句柄时，从 U盘读回记录合并进 localStorage 再重渲
+(function installHikingFsaHandle(){
+  const s = window.MS && window.MS.mediaStore;
+  if (s && s.installHandleListener) {
+    s.installHandleListener(() => {
+      hikingRestoreFile().then(restored => {
+        if (restored) {
+          records = loadRecords();
+          if (activeIndex >= records.length) activeIndex = Math.max(0, records.length - 1);
+          if (typeof hikingRender === 'function') hikingRender(); // STORE-007：插盘恢复后水合再渲染
+        }
+      }).catch(() => {});
+    });
+  }
+})();
+
+// ── 列表模式上下文：父 App 通知本 iframe 进/出列表模式 ──
+// 进列表：给 body 加 .ms-list-context（CSS 隐藏 hike-page），composer 移到 body 下
+// 出列表：还原
+(function setupListContext() {
+  let composerOriginalParent = null;
+  let composerOriginalNext = null;
+  window.addEventListener('message', (e) => {
+    if (!e.data) return;
+    // 列表上下文切换
+    if (e.data.type === 'memory-sparks:list-mode') {
+      const enabled = !!e.data.enabled;
+      document.body.classList.toggle('ms-list-context', enabled);
+      const cb = document.getElementById('composerBackdrop');
+      if (cb) {
+        if (enabled) {
+          if (cb.parentElement !== document.body) {
+            composerOriginalParent = cb.parentElement;
+            composerOriginalNext = cb.nextSibling;
+            document.body.appendChild(cb);
+          }
+        } else {
+          if (composerOriginalParent) {
+            if (composerOriginalNext) composerOriginalParent.insertBefore(cb, composerOriginalNext);
+            else composerOriginalParent.appendChild(cb);
+            composerOriginalParent = null;
+            composerOriginalNext = null;
+          }
+        }
+      }
+    }
+    // 父 App 列表 composer 保存后通知重新加载 records，保持两边同步
+    if (e.data.type === 'memory-sparks:records-reload') {
+      try {
+        if (typeof loadRecords === 'function') {
+          records = loadRecords();
+          if (typeof hikingRender === 'function') hikingRender(); // STORE-007：水合再渲染
+        }
+      } catch {}
+    }
+  });
+})();
+
+// 给 ms-list-mode.js 用：通过 window 稳定访问 records（避免闭包失效）
+window.__getRecords = () => records;
+window.__saveAndRender = () => { saveRecords(); render(); };
+
+// 给父 App ListComposer 用：基于一张原图，生成 4 个滤镜版本的 dataURL
+// 返回 { original, forest, soft, cyan } 全是 dataURL
+window.__buildPhotoVariants = async function(src) {
+  if (!src) return {};
+  const out = {};
+  for (const opt of STYLE_OPTIONS) {
+    try {
+      out[opt.key] = await buildImageVariant(src, opt.key);
+    } catch (e) {
+      console.warn('[hiking] buildImageVariant failed for', opt.key, e);
+    }
+  }
+  return out;
+};
+
+function addDemoRecords() {
+  const demoStyles = STYLE_OPTIONS.map(option => option.key);
+  const seed = [
+    ["山林入口", "梧桐山", "2026-05-02", "刚进山的时候，树影很密，路像是从脚下慢慢长出来。"],
+    ["溪谷转弯", "马峦山", "2026-05-06", "水声一直在旁边，走到一半突然觉得今天可以不用急着抵达。"],
+    ["雾里的石阶", "七娘山", "2026-05-09", "树冠把光切得很碎，脚下每一级台阶都像旧照片。"],
+    ["苔石旁的停顿", "梅林山", "2026-05-11", "休息的时候没有说话，只听见风从叶子后面经过。"],
+    ["林间光束", "阳台山", "2026-05-13", "那一束光落下来时，整条路突然安静了几秒。"],
+    ["小径尽头", "凤凰山", "2026-05-15", "以为快到了，结果只是另一段更深的森林开始。"],
+    ["风吹过山脊", "银瓶山", "2026-05-18", "站在高处看见远处的云，才知道这段路真的被身体记住了。"],
+    ["雨后泥土", "塘朗山", "2026-05-19", "湿掉的泥土味很明显，像把一天从城市里拎了出来。"],
+    ["树影午后", "梧桐山", "2026-05-21", "午后的树影很慢，走路也自然慢了下来。"],
+    ["溪边补水", "马峦山", "2026-05-23", "把水壶拿出来的时候，忽然发现自己已经走了很远。"],
+    ["岩石旁的风", "七娘山", "2026-05-24", "风从岩石边擦过去，声音像一条很细的线。"],
+    ["下山前一眼", "梅沙尖", "2026-05-25", "回头看了一眼，才觉得这段路应该被留下。"],
+    ["叶片上的光", "大南山", "2026-05-26", "叶片上的光一点点移动，像有人在替森林翻页。"],
+    ["傍晚回程", "笔架山", "2026-05-27", "天色暗下来的时候，路上的每个转弯都变得柔和。"]
+  ];
+  records = seed.map(([title, place, date, text], index) => ({
+    id: `demo-${Date.now()}-${index}`,
+    title,
+    place,
+    date,
+    text,
+    featured: index < FEATURED_LIMIT,
+    pinSlot: index < FEATURED_LIMIT ? index : undefined,
+    template: demoStyles[index % demoStyles.length],
+    source: DEMO_IMAGES[index % DEMO_IMAGES.length],
+    image: DEMO_IMAGES[index % DEMO_IMAGES.length]
+  }));
+  activeIndex = records.length - 1;
+  saveRecords();
+  render();
+}
+
+document.getElementById("sceneUpload").addEventListener("click", openComposerPanel);
+document.getElementById("closeComposer").addEventListener("click", closeComposerPanel);
+document.getElementById("cancelComposer").addEventListener("click", closeComposerPanel);
+document.getElementById("prevRecord").addEventListener("click", () => moveActive(-1));
+document.getElementById("nextRecord").addEventListener("click", () => moveActive(1));
+
+els.layoutToggle.addEventListener("click", () => {
+  els.layoutPanel.hidden = !els.layoutPanel.hidden;
+  document.body.classList.toggle("layout-edit", !els.layoutPanel.hidden);
+  renderLayoutOutput();
+});
+
+els.layoutTarget.addEventListener("change", renderLayoutOutput);
+
+els.layoutCopy.addEventListener("click", async () => {
+  renderLayoutOutput();
+  try {
+    await navigator.clipboard.writeText(els.layoutOutput.value);
+    els.layoutCopy.textContent = "已复制";
+    window.setTimeout(() => els.layoutCopy.textContent = "复制参数", 1200);
+  } catch {
+    els.layoutOutput.select();
+  }
+});
+
+els.layoutReset.addEventListener("click", () => {
+  layout = { ...defaultLayout };
+  applyLayout();
+  saveLayout();
+  renderLayoutOutput();
+  render();
+});
+
+document.addEventListener("pointerdown", beginLayoutDrag);
+document.addEventListener("pointermove", moveLayoutDrag);
+document.addEventListener("pointerup", endLayoutDrag);
+document.addEventListener("pointercancel", endLayoutDrag);
+els.thumbStrip.addEventListener("pointerdown", beginThumbDrag);
+els.thumbStrip.addEventListener("pointermove", moveThumbDrag);
+els.thumbStrip.addEventListener("pointerup", endThumbDrag);
+els.thumbStrip.addEventListener("pointercancel", endThumbDrag);
+els.thumbStrip.addEventListener("wheel", scrollThumbsWithWheel, { passive: false });
+
+els.backdrop.addEventListener("click", event => {
+  if (event.target === els.backdrop) closeComposerPanel();
+});
+
+// 把 File 读成 dataURL + 压缩到 maxDim 内 / JPEG quality
+// 注意：record 含 image（滤镜版本）字段，4-5 条 record 总和必须 < 5MB localStorage quota
+// 单图压到 ~300-400KB 才能保证 4-5 条不超
+async function compressImageFile(file, maxDim = 960, quality = 0.78) {
+  const rawDataUrl = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  return new Promise((res) => {
+    const img = new Image();
+    img.onerror = () => res(rawDataUrl);
+    img.onload = () => {
+      let { width: w, height: h } = img;
+      if (w > maxDim || h > maxDim) {
+        const scale = maxDim / Math.max(w, h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      try { res(canvas.toDataURL('image/jpeg', quality)); }
+      catch { res(rawDataUrl); }
+    };
+    img.src = rawDataUrl;
+  });
+}
+
+els.photoInput.addEventListener("change", async event => {
+  const file = event.target.files[0];
+  if (!file || !file.type.startsWith("image/")) return;
+  pendingSourceFile = file; // STORE-007：留住原始 File，保存时原画质落盘；预览仍用压缩小图（不卡）
+  try {
+    const compressed = await compressImageFile(file, 1280, 0.85);
+    await prepareStyleChoices(compressed, DEFAULT_TEMPLATE);
+  } catch (err) {
+    console.warn('[hiking] image compress failed, fallback to raw:', err);
+    const reader = new FileReader();
+    reader.onload = async e => { await prepareStyleChoices(e.target.result, DEFAULT_TEMPLATE); };
+    reader.readAsDataURL(file);
+  }
+});
+
+["dragover", "drop"].forEach(type => {
+  document.addEventListener(type, event => event.preventDefault());
+});
+
+document.querySelector(".composer-panel").addEventListener("drop", event => {
+  const file = event.dataTransfer.files[0];
+  if (!file || !file.type.startsWith("image/")) return;
+  els.photoInput.files = event.dataTransfer.files;
+  els.photoInput.dispatchEvent(new Event("change"));
+});
+
+els.form.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!pendingImage) {
+    els.status.textContent = "先带回一张照片。行星的右侧相册只展示有照片的 hike 记录。";
+    return;
+  }
+  const place = document.getElementById("recordPlace").value.trim();
+  // record 双存：source（无滤镜原图）+ image（带滤镜成品）
+  // source 让用户在二次编辑时能切换滤镜（基于原图重跑），而不是在已滤镜图上叠加
+  // 优先复用 pendingVariants.original（已有的原图副本），fallback 到 pendingSource
+  const sourceForRecord = pendingVariants.original || pendingSource || pendingImage;
+  // 任务 4：计算 aspectClass，让 5 框布局能切对应模板
+  // paintCanvas 当前尺寸 = 原图按 fitImage 比例后的尺寸（保留原图比例）
+  let aspectClass = 'portrait';
+  try {
+    if (els.paintCanvas && els.paintCanvas.width && els.paintCanvas.height) {
+      aspectClass = classifyAspect(els.paintCanvas.width, els.paintCanvas.height);
+    }
+  } catch (_) {}
+  const rid = records[editingIndex]?.id || `hike-${Date.now()}`;
+  const dateVal = document.getElementById("recordDate").value || todayValue();
+  const editingRec = editingIndex >= 0 ? records[editingIndex] : null;
+  // 兜底（无盘时）：原图/滤镜都用压缩 base64，行为与改造前一致。
+  let imageRef = pendingImage;
+  let sourceRef = sourceForRecord;
+  const s = msStore();
+  if (s && s.hasBackend && s.hasBackend()) {
+    try {
+      // ① 原图（original/ 文件夹）：优先把上传的原始 File 原画质落盘（vault 写二进制不重编码）；
+      //    编辑且没换图时，复用已有原图引用，不重新落盘（避免把高清原图覆盖成压缩图）。
+      if (pendingSourceFile) {
+        const r = await s.putMedia({ planetKey: HIKING_PLANET_KEY, id: rid, kind: 'image', dateStr: dateVal, group: 'original', source: pendingSourceFile });
+        if (r.wroteFile) sourceRef = r.ref;
+      } else if (editingRec) {
+        const existing = (editingRec._fsaRefs && editingRec._fsaRefs.source) || editingRec.source;
+        if (typeof existing === 'string' && existing.startsWith('fsa:')) sourceRef = existing;
+      }
+      // ② 滤镜成品（filtered/ 文件夹）：用「原分辨率」重跑选中滤镜（新上传用原 File，编辑用 U盘原图 blob:）。
+      const fullSrc = pendingSourceFile || (editingRec && editingRec.source) || null;
+      let filteredSource = pendingImage;
+      if (fullSrc) {
+        els.status.textContent = '正在生成高清照片…';
+        try { filteredSource = await renderVariantFullRes(fullSrc, currentTemplate); }
+        catch (e) { console.warn('[hiking] 全分辨率滤镜失败，退回预览图：', e); }
+      }
+      const r1 = await s.putMedia({ planetKey: HIKING_PLANET_KEY, id: rid, kind: 'image', dateStr: dateVal, group: 'filtered', source: filteredSource });
+      if (r1.wroteFile) imageRef = r1.ref;
+    } catch (err) { console.warn('[hiking] putMedia 失败，保留 base64：', err); }
+  }
+  const record = {
+    id: rid,
+    // docx 反馈：卡片只留地名 → title 就用 place（地名），不再写"未命名的山路"
+    title: place,
+    place,
+    date: dateVal,
+    text: document.getElementById("recordText").value.trim(),
+    featured: records[editingIndex]?.featured ?? records.filter(item => item.featured).length < FEATURED_LIMIT,
+    pinSlot: records[editingIndex]?.pinSlot ?? nextEmptyPinSlot(),
+    template: currentTemplate,
+    aspectClass,
+    source: sourceRef,
+    image: imageRef
+  };
+  if (editingIndex >= 0) {
+    records = records.map((item, index) => index === editingIndex ? record : item);
+    activeIndex = editingIndex;
+  } else {
+    // 新记录插到开头（最新在前），和其他星 + 列表页保持一致
+    records = [record, ...records];
+    activeIndex = 0;
+  }
+  saveRecords();
+  closeComposerPanel();
+  // STORE-007：record.image 现在是 fsa: 引用，需先水合成 blob: URL 再渲染（无盘时直接渲染）
+  hikingRender();
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeComposerPanel();
+  if (event.key === "ArrowLeft") moveActive(-1);
+  if (event.key === "ArrowRight") moveActive(1);
+});
+
+applyLayout();
+renderLayoutPanel();
+
+// 不再自动加 demo records；用户首次进来看空状态
+if (records.length) {
+  activeIndex = orderedThumbEntries()[0]?.index || 0;
+}
+
+// ════════════════════════════════════════════════════════════════
+// 方案 A：双轨同步 — hiking iframe 每 200ms 检查 localStorage 是否变化
+// 目的：确保 V2 React 端写入（删除/编辑）能立即反映到交互页
+//      避免依赖跨 frame message（之前多轮失败的根本原因）
+// ════════════════════════════════════════════════════════════════
+let _storageFingerprint = '';
+function _makeStorageFingerprint() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY) || '[]';
+    // 用长度 + 全 ID + raw 字符串长度作为快速指纹（不全文 parse 比较）
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return '0';
+    return arr.length + ':' + raw.length + ':' + arr.map(r => r.id).join(',');
+  } catch { return ''; }
+}
+_storageFingerprint = _makeStorageFingerprint();
+
+function _syncFromStorage() {
+  const fp = _makeStorageFingerprint();
+  if (fp === _storageFingerprint) return;
+  _storageFingerprint = fp;
+  try {
+    records = loadRecords();
+    if (activeIndex >= records.length) activeIndex = Math.max(0, records.length - 1);
+    if (typeof hikingRender === 'function') hikingRender(); // STORE-007：水合再渲染
+  } catch (e) { console.warn('[hiking] _syncFromStorage failed:', e); }
+}
+
+// 主同步路径：监听 storage event（V2 recordStore 写入会主动 dispatch）
+// 同步零延迟、无 polling 开销
+// Pin hover 代理：3D transform 让浏览器 :hover hit-test 错乱（某些 pin 鼠标在上面但 :hover 不触发）
+// 改用 mousemove + elementsFromPoint 找当前指针真正在的 frame，加 .is-hover class
+// RAF throttle 避免 mousemove 高频导致性能问题
+let _lastHoverFrame = null;
+let _hoverRafPending = false;
+document.addEventListener('mousemove', (event) => {
+  if (_hoverRafPending) return;
+  _hoverRafPending = true;
+  const x = event.clientX, y = event.clientY;
+  requestAnimationFrame(() => {
+    _hoverRafPending = false;
+    const elements = document.elementsFromPoint(x, y);
+    const frame = elements.find(el => el.classList?.contains('memory-frame')) || null;
+    if (frame === _lastHoverFrame) return;
+    if (_lastHoverFrame) _lastHoverFrame.classList.remove('is-hover');
+    _lastHoverFrame = frame;
+    if (frame) frame.classList.add('is-hover');
+  });
+});
+
+// Pin click 代理：用 elementsFromPoint 找该点上所有元素里的 pinned-frame
+// 不能用 event.target.closest() — 因为 3D transform 让 click 落在别的 frame 的子元素上时，
+// event.target 在另一个 DOM 树里，closest 找不到 pin[N]
+document.addEventListener('click', (event) => {
+  // 调位置编辑模式：让出 click 给拖拽逻辑
+  if (document.body.classList.contains('layout-edit')) return;
+  const elements = document.elementsFromPoint(event.clientX, event.clientY);
+  const frame = elements.find(el =>
+    el.classList && el.classList.contains('memory-frame') && el.classList.contains('pinned-frame')
+  );
+  if (!frame) return;
+  const pin = +frame.dataset.pinSlot;
+  if (!Number.isFinite(pin)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (swapPinSlot === pin) {
+    swapPinSlot = null;
+    document.body.classList.remove("swap-mode");
+    showSwapToast("已取消替换");
+    render();
+  } else {
+    startPinSwap(pin);
+  }
+}, true);
+
+window.addEventListener('storage', (e) => {
+  if (!e.key || e.key === STORAGE_KEY) _syncFromStorage();
+});
+// 兜底心跳：从 200ms 降到 2000ms（CPU 占用降 10 倍，极端情况下仍能同步）
+setInterval(_syncFromStorage, 2000);
+
+// 启动时主动告诉 parent：hiking 的 records 已就绪（迁移可能写入新数据）
+try {
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'memory-sparks:storage-changed', key: STORAGE_KEY }, '*');
+    window.parent.postMessage({ type: 'memory-sparks:records-saved' }, '*');
+  }
+} catch (_) {}
+// 必须始终 render 一次，让空状态时 active-detail 被 display:none（B2.1.4：空状态不露空框）
+// STORE-007：启动时 records 可能含 fsa: 引用（有盘），先水合成 blob: URL 再渲染
+hikingRender();
+
+if (new URLSearchParams(location.search).get("composer") === "1") {
+  window.setTimeout(() => openComposerPanel(), 120);
+}
+
+// 统一：hint-row 折叠 / 点收起的卡片任意位置展开
+document.querySelectorAll('.hint-row').forEach(row => {
+  row.addEventListener('click', e => {
+    e.stopPropagation();
+    row.closest('.intro-card')?.classList.add('collapsed');
+  });
+});
+document.querySelectorAll('.intro-card').forEach(card => {
+  card.addEventListener('click', () => {
+    if (card.classList.contains('collapsed')) card.classList.remove('collapsed');
+  });
+});
+</script>
+
+<script>
+  // ── Memory Sparks · 统一组件挂载（介绍卡 + 添加按钮） ──
+  // 在 DOM ready 后挂载，避免被原有 init 顺序覆盖
+  (function bootMSShared() {
+    function go() {
+      if (!window.MS || !window.MS.bootstrap) { setTimeout(go, 60); return; }
+      MS.bootstrap('hiking', {
+        // 直接调本地全局函数，不经 selector 中转，避免 click 事件被吞
+        onAdd: () => { if (typeof openComposerPanel === 'function') openComposerPanel(); },
+        listMode: {
+          storageKey: 'memory-sparks:hiking-records',
+          // 编辑：用 window 函数稳定访问 records，避开闭包问题
+          onEdit: (id) => {
+            const arr = window.__getRecords?.() || [];
+            const idx = arr.findIndex(r => r.id === id);
+            if (idx >= 0 && window.openComposerPanel) {
+              // 等 detail modal 关闭动画结束再开 composer，避免 z-index 冲突
+              setTimeout(() => window.openComposerPanel(idx), 250);
+            } else if (window.msToast) {
+              window.msToast(`找不到记录 id=${id}, 共${arr.length}条`);
+            }
+          },
+          onDelete: (id) => {
+            const arr = window.__getRecords?.();
+            if (!arr) return;
+            const idx = arr.findIndex(r => r.id === id);
+            if (idx < 0) return;
+            { const s = window.MS && window.MS.mediaStore;
+              if (s && arr[idx]) {
+                try { if (s.trashRecord) s.trashRecord('hiking', arr[idx]); } catch (_) {} // 文字进回收站
+                try { if (s.trashRecordMedia) s.trashRecordMedia(arr[idx], { planetKey: 'hiking' }); } catch (_) {} // 媒体进回收站（盘点 H2 补对称）
+              }
+            }
+            arr.splice(idx, 1);
+            window.__saveAndRender?.();
+          },
+          // onOpen 不传 → 用框架默认的"放大详情弹窗"
+        }
+      });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+    else go();
+  })();
+</script>
+
+</body>
+</html>

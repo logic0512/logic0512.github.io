@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>转场 + 历史 + 性能 · 当前实现说明</title>
+<style>
+  :root {
+    --bg: #080c16;
+    --surface: #131b2c;
+    --surface-2: #1a2238;
+    --border: rgba(255,255,255,0.1);
+    --gold: #ffd070;
+    --green: #8fd47b;
+    --red: #ff8a8a;
+    --blue: #78bcff;
+    --text: #e8edf5;
+    --text-mute: rgba(232,237,245,0.55);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 50px clamp(20px, 5vw, 60px);
+    max-width: 1080px;
+    margin: 0 auto;
+    line-height: 1.8;
+  }
+  h1 { font-size: 26px; font-weight: 400; margin-bottom: 10px; }
+  h1 .sub { color: var(--text-mute); font-size: 13px; margin-left: 12px; }
+  h2 {
+    font-size: 18px;
+    color: var(--gold);
+    margin: 44px 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.04em;
+  }
+  h3 {
+    font-size: 14px;
+    color: var(--text);
+    margin: 22px 0 8px;
+    font-weight: 500;
+  }
+  p { font-size: 13.5px; color: rgba(232,237,245,0.78); margin: 6px 0; }
+  ul { margin: 6px 0 12px 22px; }
+  ul li { font-size: 13.5px; color: rgba(232,237,245,0.78); margin: 4px 0; }
+  code {
+    background: rgba(0,0,0,0.3);
+    color: var(--gold);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12.5px;
+    font-family: ui-monospace, monospace;
+  }
+  .lead {
+    background: var(--surface);
+    border-left: 3px solid var(--gold);
+    padding: 16px 22px;
+    margin: 18px 0 30px;
+    border-radius: 4px;
+  }
+
+  /* 时间轴可视化 */
+  .timeline-vis {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 22px 26px;
+    margin: 14px 0;
+    border: 1px solid var(--border);
+  }
+  .timeline-track {
+    position: relative;
+    height: 36px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+    margin: 16px 0 8px;
+    overflow: hidden;
+  }
+  .timeline-bar {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    color: white;
+    padding: 0 6px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .timeline-bar.b1 { background: rgba(143,212,123,0.7); }
+  .timeline-bar.b2 { background: rgba(255,208,112,0.7); color: #2a1a04; }
+  .timeline-bar.b3 { background: rgba(120,188,255,0.7); }
+  .timeline-bar.b4 { background: rgba(255,138,138,0.7); }
+  .timeline-bar.b5 { background: rgba(200,176,232,0.7); color: #2a1a04; }
+  .timeline-axis {
+    position: relative;
+    height: 18px;
+    font-size: 10px;
+    color: var(--text-mute);
+    border-top: 1px solid var(--border);
+    padding-top: 4px;
+  }
+  .timeline-axis span {
+    position: absolute;
+    transform: translateX(-50%);
+  }
+
+  .reco {
+    background: var(--surface);
+    border-left: 3px solid var(--blue);
+    padding: 14px 20px;
+    margin: 10px 0;
+    border-radius: 4px;
+  }
+  .reco.urgent { border-left-color: var(--red); }
+  .reco.mid { border-left-color: var(--gold); }
+  .reco h3 { color: var(--blue); font-size: 14px; margin: 0 0 6px; }
+  .reco.urgent h3 { color: var(--red); }
+  .reco.mid h3 { color: var(--gold); }
+
+  /* 历史 audit 表 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: rgba(255,255,255,0.04);
+    color: var(--gold);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  td.yes { color: var(--green); }
+  td.no { color: var(--red); }
+  td.mix { color: var(--gold); }
+
+  .perf-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .perf-card {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+  }
+  .perf-card h4 {
+    font-size: 12px;
+    color: var(--gold);
+    margin-bottom: 6px;
+    letter-spacing: 0.06em;
+  }
+  .perf-card p {
+    font-size: 12.5px;
+    color: rgba(232,237,245,0.75);
+  }
+</style>
+</head>
+<body>
+
+<h1>3 件事 · 当前实现说明 <span class="sub">看完后告诉我怎么优化</span></h1>
+
+<div class="lead">
+  按你刚才提的 4 个问题：① composer 居中 已经修了（sea/starry/flower 的 right-shift 改 0，tree composer 改成 fixed 居中）。<br>
+  ② 转场动画 / ③ 历史能力 / ④ 性能 — 这三件我先写说明，你看完决定怎么优化。
+</div>
+
+<!-- ═════ ② 转场动画 ═════ -->
+<h2>① 转场动画 · 当前 8 个步骤时序</h2>
+
+<div class="timeline-vis">
+  <p style="font-size:12px;color:var(--text-mute);">从「点击星图上的某颗星」开始计时，到「进入星球完全可见」总时长 ≈ 3.2 秒</p>
+  <div class="timeline-track">
+    <div class="timeline-bar b1"  style="left:0%;    width:75%; ">1. Camera 飞向星球 (2.4s, power2.inOut)</div>
+    <div class="timeline-bar b3"  style="left:50%;   width:34%; top:50%;">2. flash 径向光出现 (1.1s)</div>
+    <div class="timeline-bar b2"  style="left:68%;   width:22%; top:50%;">3. iframe fade in (0.7s)</div>
+    <div class="timeline-bar b4"  style="left:81%;   width:19%; top:75%;">4. flash 淡出 (0.6s)</div>
+  </div>
+  <div class="timeline-axis">
+    <span style="left:0%;">0s</span>
+    <span style="left:25%;">0.8s</span>
+    <span style="left:50%;">1.6s</span>
+    <span style="left:75%;">2.4s</span>
+    <span style="left:100%;">3.2s</span>
+  </div>
+  <p style="margin-top:14px;font-size:12.5px;">然后 iframe 内介绍卡延迟 <code>2.0s</code> 后从屏幕上方掉下来（在 step3 iframe fade in 期间已经开始），1.0s 用 <code>back.out(1.56)</code> 弹性落定。</p>
+</div>
+
+<h3>你提到的两个问题 + 根因</h3>
+<ul>
+  <li>
+    <b>"中间星球抖动太夸张"</b> — 是 step1 的 camera 飞行末段：camera 从 (0,6,16) 加速冲向目标星球 (planet.x, 0, planet.z)，最后阶段进 sprite 内部时 sprite 在视野里**急剧放大**，给人"星球被推到脸上"的冲击感。<br>
+    曲线是 <code>power2.inOut</code>（先加速后减速），但减速段在 70%-100% 之间，那段视觉上仍很猛。
+  </li>
+  <li>
+    <b>"星球半透明叠在彩色页"</b> — step2-3 的并行：flash 径向光在 1.6s 开始，iframe fade in 在 2.2s 开始（在 flash 还没淡完时叠加）。这中间 0.6s 里 iframe 透明度从 0 渐到 1，**但背后的 3D 星球场景仍在渲染**，所以你看到的是「半透明 iframe + 透明星球 sprite + 渐弱 flash」三层叠加。<br>
+    根本原因：R3F Canvas 在 entering 阶段没有「淡出 sprite」这一步。
+  </li>
+</ul>
+
+<h3>可选的优化方向（你来选）</h3>
+<div class="reco">
+  <h3>A. 弱化抖动 — camera 飞行参数调整</h3>
+  <ul>
+    <li>把 camera 飞行从 <code>2.4s</code> → <code>3.0s</code>，曲线换成 <code>power2.out</code>（单边减速，末段更柔）</li>
+    <li>飞行终点不再贴 sprite 表面（surfacePos planet.size * 0.6），改成 <code>planet.size * 1.5</code>，离星球远一点</li>
+    <li>结果：进入感更"飘进去"而不是"撞进去"</li>
+  </ul>
+</div>
+<div class="reco">
+  <h3>B. 干净的过渡 — 星球完全消失后再显示 iframe</h3>
+  <ul>
+    <li>step2 flash 出来后，**同时**把所有 sprite + 其他星淡出 (opacity 1→0)</li>
+    <li>flash 全屏白光（不再是径向）覆盖 200ms 完全遮挡</li>
+    <li>iframe 在 flash 全白时 fade in（用户看不到 sprite 叠加层）</li>
+    <li>结果：白光闪过 → 进入星球界面，无视觉破绽</li>
+  </ul>
+</div>
+<div class="reco">
+  <h3>C. 用 GSAP 平滑接力</h3>
+  <ul>
+    <li>camera 飞行末段不再加速冲撞，最后 0.5s 用 GSAP 让星球 sprite 加速放大占满全屏 → fade out</li>
+    <li>iframe 在 sprite 占满时立即可见（无需 flash）</li>
+    <li>结果：星球本身就是"过渡"，没有中间的闪光层</li>
+  </ul>
+</div>
+
+<p style="margin-top:14px;"><b>我建议 A + B 结合做</b>。要做就告诉我，5-10 分钟改完。</p>
+
+<!-- ═════ ③ 历史能力 ═════ -->
+<h2>② 8 颗星 · 查看历史记录的能力 audit</h2>
+
+<table>
+<thead>
+  <tr>
+    <th>星</th>
+    <th>"能不能看到所有记录"</th>
+    <th>查看方式</th>
+    <th>是否有「查看全部」按钮</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td><b>被子星</b></td><td class="yes">能</td><td>底部 timeline 节点 + 历史按钮 → history-modal</td><td class="yes">✓ 有（独有）</td></tr>
+  <tr><td><b>云星</b></td><td class="yes">能</td><td>2D 卡片层 + 翻页提示</td><td class="no">无（靠翻页）</td></tr>
+  <tr><td><b>花星</b></td><td class="mix">部分</td><td>3D 花园里点单朵花 popup</td><td class="no">无（花多了找不到老的）</td></tr>
+  <tr><td><b>行星</b></td><td class="yes">能</td><td>右下相册 + 缩略图条全列</td><td class="no">无</td></tr>
+  <tr><td><b>海星</b></td><td class="mix">部分</td><td>底部 timeline 只显示 <b>最新 7 条</b></td><td class="no">无（老的 timeline 就没了）</td></tr>
+  <tr><td><b>繁星</b></td><td class="yes">能</td><td>3D 星空里点单颗星</td><td class="no">无</td></tr>
+  <tr><td><b>云星</b></td><td class="yes">能</td><td>云朵层翻页</td><td class="no">无</td></tr>
+  <tr><td><b>树星</b></td><td class="yes">能</td><td>3D 树上点单片叶</td><td class="no">无</td></tr>
+</tbody>
+</table>
+
+<h3>关键发现</h3>
+<ul>
+  <li><b>海星</b>只显示最新 7 条 timeline 节点，第 8 条以后<b>就再也找不到</b>（这是真 bug）</li>
+  <li>花星记录多了之后，老的花会被新的盖在场景下方/被遮挡，没"全部列表"找不回</li>
+  <li>其他 5 颗记录都能在场景里看到，但都没有"查看全部"的兜底入口</li>
+  <li>只有被子星有独立的 history-modal — 它是这个能力的"完整体"</li>
+</ul>
+
+<h3>建议</h3>
+<div class="reco urgent">
+  <h3>给 8 颗星统一加「查看全部」入口</h3>
+  <ul>
+    <li>在介绍卡上方或下方加一个统一的 <code>📜 查看全部</code> 按钮</li>
+    <li>点击 → 弹一个共享的 ms-history-modal（左边日期、中间内容、右边权重 + 编辑/删除按钮）</li>
+    <li>列表项点击 → 跳到该星自己的展示方式（高亮某朵花/某颗星）</li>
+    <li>这样兜底能力一致，被子星原有的 history-modal 可以保留也可以替换</li>
+  </ul>
+  <p style="font-size:12.5px;color:var(--text-mute);margin-top:8px;">工时：建 ms-history-modal 共用组件 30min + 挨颗接入 5min × 7 颗 ≈ 1.5 小时</p>
+</div>
+
+<!-- ═════ ④ 性能 ═════ -->
+<h2>③ 性能 · 当前现状 + 可能卡顿源</h2>
+
+<div class="perf-grid">
+  <div class="perf-card">
+    <h4>主 App（PlanetsOverview）</h4>
+    <p>R3F Canvas 60fps，frameloop=always 在 idle 时跑。8 颗 sprite + stars + 太阳 = 几十个 draw call。<br>
+    inside 时切 frameloop='never' 完全停止。<br>
+    <b>已优化</b>。</p>
+  </div>
+  <div class="perf-card">
+    <h4>iframe 单星（如海星）</h4>
+    <p>每颗 iframe 加载：<br>
+    · 自己的 main.js（~12-30KB）<br>
+    · 共享 ms-shared.css / ms-config.js / ms-icons.js / ms-feedback.js / ms-mount.js（~28KB）<br>
+    · 多个 GSAP timeline + SVG animation<br>
+    · localStorage hook（每次写入触发 toast）</p>
+  </div>
+  <div class="perf-card">
+    <h4>已知性能问题</h4>
+    <p>· <b>海星刚才 mix-blend-mode 闪烁</b>（已删）<br>
+    · <b>花星 3D（GLTFLoader）</b>在加载 8 个 .glb 文件，每个 ~50KB-1MB<br>
+    · <b>healing 用了 Three.js</b>（独立 WebGL context），跟主 App 的 R3F 同时跑就要 2 个 WebGL</p>
+  </div>
+  <div class="perf-card">
+    <h4>新增内容（这次改动）</h4>
+    <p>· bindDelete + bindEdit 每个详情卡多注入 1 个 SVG 按钮<br>
+    · ms-card-collapsed body class 触发 transition<br>
+    · MS.bootstrap 在 DOM ready 后才跑（不阻塞首屏）<br>
+    <b>新增开销很小</b>，"变卡"主要来自原有 GSAP / SVG animation 数量</p>
+  </div>
+</div>
+
+<h3>"现在感觉变卡了"可能原因（按概率）</h3>
+<ul>
+  <li><b>30%</b>：海星之前闪烁影响了你对整体的感受（已修，刷新看看是不是好转）</li>
+  <li><b>25%</b>：进入星球的转场动画 step1 camera 飞行 + sprite 急剧放大期间 GPU 渲染压力大</li>
+  <li><b>20%</b>：花星 3D 模型加载（如果你能成功打开），8 个 .glb 文件 + 3D 渲染</li>
+  <li><b>15%</b>：healing 进入后 Three.js + R3F 主 App 双 WebGL（虽然主 App frameloop=never 但 context 还在）</li>
+  <li><b>10%</b>：其他</li>
+</ul>
+
+<div class="reco mid">
+  <h3>具体优化方案（你来选）</h3>
+  <ul>
+    <li><b>P1</b>：进入星球时主 App 的 sprite 也淡出 + R3F Canvas 加 <code>dpr={[1,1]}</code>（之前 1.25）</li>
+    <li><b>P2</b>：iframe 内的 GSAP timeline 在 visibility-pause 时也暂停（之前只 hook 了 RAF）</li>
+    <li><b>P3</b>：healing 的 Three.js 在 iframe 进入时延迟初始化（用户没动作前不建场景）</li>
+    <li><b>P4</b>：花星 .glb 模型懒加载（首屏只加载 fallback，用户点了才加载真模型）</li>
+  </ul>
+</div>
+
+<hr style="border:0;border-top:1px solid var(--border);margin:40px 0 24px;">
+<p style="text-align:center;color:var(--text-mute);font-size:12px;">
+  生成时间：2026-05-28 · 看完告诉我：转场用 A/B/C 哪个、历史按钮做不做、性能 P1-P4 做哪个
+</p>
+
+</body>
+</html>

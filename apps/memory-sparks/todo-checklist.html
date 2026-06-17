@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Memory Sparks · 8 颗星修订总览（逐星核对清单）</title>
+<style>
+  :root {
+    --bg: #1a1620;
+    --surface: #261e2e;
+    --surface-2: #2f2738;
+    --line: rgba(255, 240, 200, 0.08);
+    --text: #ece2d4;
+    --mute: rgba(220, 200, 175, 0.65);
+    --mute-2: rgba(220, 200, 175, 0.42);
+    --accent: #f5dca8;
+    --good: #8ec694;
+    --warn: #e4c772;
+    --bad: #d88a8a;
+    --info: #8fb5d8;
+    --type-mono: "SF Mono", "Menlo", monospace;
+    --type-sans: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--type-sans); font-weight: 300; }
+  body { padding: 48px 32px 120px; }
+
+  /* ─── 顶部 ─── */
+  .header {
+    max-width: 1280px;
+    margin: 0 auto 36px;
+    padding: 30px 36px;
+    background: var(--surface);
+    border-radius: 18px;
+    border: 1px solid var(--line);
+  }
+  .header h1 { margin: 0 0 10px; font-size: 22px; font-weight: 500; letter-spacing: 0.1em; color: var(--accent); }
+  .header p { margin: 0; font-size: 13px; line-height: 1.85; color: var(--mute); }
+  .header code { background: rgba(255,238,200,0.10); padding: 1px 6px; border-radius: 3px; font-family: var(--type-mono); font-size: 11.5px; color: var(--accent); }
+
+  /* 全局进度 */
+  .global-stats {
+    max-width: 1280px;
+    margin: 0 auto 24px;
+    padding: 22px 28px;
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .global-stats .label { font-size: 11px; letter-spacing: 0.28em; color: var(--mute-2); text-transform: uppercase; }
+  .global-stats .num { font-family: var(--type-mono); font-size: 28px; color: var(--accent); margin-left: 8px; }
+  .global-stats .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.32);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 180px;
+  }
+  .global-stats .progress-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--good), var(--accent));
+    transition: width 240ms ease;
+  }
+  .global-stats button {
+    background: rgba(255, 220, 168, 0.12);
+    color: var(--accent);
+    border: 1px solid rgba(245, 220, 168, 0.32);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    transition: all 160ms ease;
+  }
+  .global-stats button:hover { background: rgba(255, 220, 168, 0.22); }
+
+  /* ─── 星卡片栅格 ─── */
+  .cards {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+  @media (max-width: 880px) {
+    .cards { grid-template-columns: 1fr; }
+  }
+  .card {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .card.full {
+    grid-column: 1 / -1;
+  }
+  .card-head {
+    padding: 18px 22px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .card-head .star-num {
+    font-family: "EB Garamond", "Cormorant Garamond", "Georgia", serif;
+    font-style: italic;
+    font-size: 24px;
+    color: rgba(245, 200, 120, 0.55);
+    width: 32px;
+  }
+  .card-head .name { font-size: 17px; font-weight: 500; letter-spacing: 0.08em; color: var(--accent); flex: 1; }
+  .card-head .keyword { font-size: 10.5px; letter-spacing: 0.24em; color: var(--mute-2); text-transform: uppercase; }
+  .card-head .copy-btn {
+    background: rgba(143, 181, 216, 0.14);
+    color: var(--info);
+    border: 1px solid rgba(143, 181, 216, 0.32);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    transition: all 160ms ease;
+  }
+  .card-head .copy-btn:hover { background: rgba(143, 181, 216, 0.26); }
+  .card-head .copy-btn.copied { color: var(--good); border-color: rgba(142, 198, 148, 0.5); }
+
+  .card-stats {
+    padding: 11px 22px;
+    font-size: 11px;
+    color: var(--mute-2);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .card-stats .stat-num { font-family: var(--type-mono); color: var(--text); margin-left: 4px; }
+  .card-stats .progress-mini {
+    flex: 1;
+    height: 5px;
+    background: rgba(0, 0, 0, 0.32);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-left: 8px;
+  }
+  .card-stats .progress-mini .fill { height: 100%; background: linear-gradient(90deg, var(--good), var(--accent)); transition: width 240ms ease; }
+
+  .card-body { padding: 14px 22px 22px; }
+
+  /* 单项 */
+  .item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed rgba(255, 240, 200, 0.05);
+  }
+  .item:last-child { border-bottom: 0; }
+  .item input[type="checkbox"] {
+    margin-top: 4px;
+    width: 16px; height: 16px;
+    accent-color: var(--good);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .item .body { flex: 1; }
+  .item .top-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .item .id {
+    font-family: var(--type-mono);
+    font-size: 10px;
+    color: var(--mute-2);
+    background: rgba(255, 240, 200, 0.06);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+  .item .tag {
+    font-size: 9.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+  .item .tag.t-common { background: rgba(143, 181, 216, 0.15); color: var(--info); }
+  .item .tag.t-fixed { background: rgba(142, 198, 148, 0.18); color: var(--good); }
+  .item .tag.t-partial { background: rgba(228, 199, 114, 0.18); color: var(--warn); }
+  .item .tag.t-unknown { background: rgba(180, 140, 220, 0.18); color: #c4a8d8; }
+  .item .text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .item.done .text {
+    color: var(--mute-2);
+    text-decoration: line-through;
+    text-decoration-color: rgba(220, 200, 175, 0.32);
+  }
+  .item .quote {
+    margin-top: 4px;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--mute-2);
+    font-style: italic;
+    padding-left: 10px;
+    border-left: 2px solid rgba(255, 240, 200, 0.10);
+  }
+
+  /* 分节标题 */
+  .section-title {
+    font-size: 10.5px;
+    letter-spacing: 0.28em;
+    color: var(--mute-2);
+    text-transform: uppercase;
+    margin: 14px 0 4px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 240, 200, 0.06);
+  }
+  .section-title:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+
+  /* 通知 */
+  .toast {
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(120%);
+    padding: 10px 22px;
+    background: var(--surface-2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 99px;
+    font-size: 12.5px;
+    z-index: 999;
+    transition: transform 280ms ease;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Memory Sparks · 8 颗星修订总览</h1>
+  <p>数据源：<code>关键词星球修改2.docx</code> · <code>todo.md</code> · <code>mistakes-log.md</code> · 近 7 轮治愈星会话</p>
+  <p>用法：每个星卡片独立、可单独复制。所有勾选状态自动保存到浏览器（刷新不丢）。每颗星标了 <span style="color:var(--good)">已修✅</span> / <span style="color:var(--warn)">部分修🟡</span> / <span style="color:var(--bad)">未修❌</span> / <span style="color:#c4a8d8">不确定❓</span>，前面的 <span style="color:var(--info)">「共性」</span> 是跨多颗星的同类问题。</p>
+</div>
+
+<div class="global-stats">
+  <div><span class="label">总进度</span> <span class="num" id="globalProgress">0/0</span></div>
+  <div class="progress-bar"><div class="fill" id="globalFill" style="width:0%"></div></div>
+  <button onclick="resetAll()">重置所有勾选</button>
+  <button onclick="copyAll()">复制全部清单</button>
+</div>
+
+<div class="cards" id="cards"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ────────────────────────────────────────────────────────
+// 数据：8 颗星 + 共性问题映射 + 架构遗留
+// ────────────────────────────────────────────────────────
+const STARS = [
+  {
+    key: 'beizi', num: '01', name: '被子星', keyword: '悲伤',
+    items: [
+      { id: 'A1', common: true, status: 'partial', text: '列表卡显示"未命名"标题', quote: 'ms-composer 砍掉了 title 字段，新增内容不会写 title。但老 record 仍带 title:"未命名"，V2 UnifiedCard 直接读 record.title' },
+      { id: 'A2', common: true, status: 'partial', text: '列表页添加内容时背景丢失/变黑', quote: '已做 setListMode + composer-closed postMessage，需要每星 listMode → 加内容 → 关 composer 完整路径重测' },
+      { id: 'A3', common: true, status: 'unknown', text: '交互页添加内容时极其卡顿', quote: '需 Performance 火焰图抓一次' },
+      { id: 'A5', common: true, status: 'open', text: '切换页面时上一页弹窗没关，回来还显示' },
+      { id: 'P-010', status: 'open', text: '没历史记录时历史条线条隐藏', quote: '不要盖在文字上，有内容之后才有时间线' },
+      { id: 'P-011', status: 'open', text: '"晾晒时间"显示 1、2、3 数字', quote: '这个时间是背后设置的时长，不是放在前面看的' },
+      { id: 'P-013', status: 'open', text: '"悲伤记录"图标去掉' },
+      { id: 'P-016', status: 'unknown', text: '交互页背景两侧黑边（极端比例下可能露边）' },
+      { id: 'P-017', status: 'open', text: '列表加内容历史条出现但被子上不映射' },
+      { id: 'P-018', status: 'open', text: '历史条缩略窗口点了没反应' },
+    ]
+  },
+  {
+    key: 'hiking', num: '02', name: '行星', keyword: 'hike',
+    items: [
+      { id: 'A1', common: true, status: 'partial', text: '列表卡显示"未命名"标题' },
+      { id: 'A2', common: true, status: 'partial', text: '列表页添加内容时背景丢失/变黑（行星-4）' },
+      { id: 'A3', common: true, status: 'unknown', text: '交互页点添加图片页面卡死（行星-2）' },
+      { id: 'A4', common: true, status: 'partial', text: '列表 → 切回交互页新内容丢失（行星-N4）' },
+      { id: 'P-020', status: 'open', text: '空状态时右侧内容框隐藏', quote: '跟随预览窗口一起，填写了第一个内容后才出现' },
+      { id: 'P-022', status: 'open', text: '填写信息页砍标题，只留地名 + 内容', quote: '卡片同理，只留地名' },
+      { id: 'P-024', status: 'open', text: '添加照片失败没反应' },
+      { id: 'P-025', status: 'open', text: '图片不限张数', quote: '原"超过 4 张"上限取消' },
+      { id: 'P-026', status: 'partial', text: '列表添加样式按交互页统一' },
+      { id: 'P-027', status: 'open', text: '列表写"图文可选"但不能只传图文（行星-N2）' },
+      { id: 'P-028', status: 'open', text: '输入规则修正：只允许图 或 图+文，走交互页样式（行星-N3）' },
+    ]
+  },
+  {
+    key: 'healing', num: '03', name: '治愈星', keyword: '治愈',
+    items: [
+      // 最近会话已修
+      { id: 'B3', status: 'fixed', text: '介绍卡 hint 按钮配色（rgba 替代 rgb 修复正则 bug）' },
+      { id: 'B4', status: 'fixed', text: '卡片大小放大（CARD_SIZE 1.32 → 2.25）+ 横竖编排不重叠（RING_SLOTS 12 + jitter 0.14）' },
+      { id: 'B5', status: 'fixed', text: '3D 卡片磨砂玻璃 + 3 层 SCENE_PALETTE 色调流动' },
+      { id: 'B6', status: 'fixed', text: '文字卡左侧细线 / 音频卡播放按钮 + 波形 / 删装饰引号' },
+      { id: 'B7', status: 'fixed', text: '删除按钮被 reader stacking 遮挡（错 39 · MS.bindDelete 临时关 container）' },
+      { id: 'B8', status: 'fixed', text: 'reader / overlay 的 backdrop-filter 残留导致虚化（错 38）' },
+      { id: 'B9', status: 'fixed', text: '列表加完自动切回 3D 场景（postMessage isNew + setListMode false）' },
+      { id: 'B10', status: 'fixed', text: 'composer 配色对齐同色系 + 层选按钮装中文 2 字胶囊化' },
+      { id: 'B11', status: 'fixed', text: 'reader 多余标题删除（"一颗微光" + "没有标题的微光" 去掉）' },
+      { id: 'B12', status: 'fixed', text: '介绍卡固定中性浅奶米色（取 3 层 SCENE_PALETTE 平均）' },
+      { id: 'B13', status: 'fixed', text: '滚轮/触控板改为相机 fov 缩放（取消层切换，层只走方向键）' },
+      // 未修
+      { id: 'B1', status: 'open', text: '介绍卡动画跟其他星不一致（"别的从上面掉下来，治愈不是"）', quote: '可能跟 init 800ms delay 让动画过去后用户才看到有关，需 timeline 对比 cloud 进入' },
+      { id: 'B2', status: 'open', text: '错 38 预警未核对其他 7 颗星 backdrop-filter 残留模式' },
+    ]
+  },
+  {
+    key: 'flower', num: '04', name: '花星', keyword: '爱',
+    items: [
+      { id: 'A1', common: true, status: 'partial', text: '卡片页直接展示正文，不要"未命名"（花-2）' },
+      { id: 'A2', common: true, status: 'partial', text: '列表页点击添加后卡死（花-5）' },
+      { id: 'A3', common: true, status: 'unknown', text: '交互页卡顿（花-N1）' },
+      { id: 'A4', common: true, status: 'partial', text: '删除内容时花还在、卡片删了不同步（花-6）' },
+      { id: 'P-030', status: 'open', text: '星球过渡动画抖动' },
+      { id: 'P-032', status: 'open', text: '下方装饰图案删去', quote: '无意义' },
+      { id: 'P-033', status: 'open', text: '简化花朵弹窗', quote: '只显示内容 + 日期。右下"朵数"去掉、上方标题去掉，只留花名' },
+      { id: 'P-037', status: 'open', text: '添加页按通用模板重做（花-N2）' },
+      { id: 'P-038', status: 'open', text: '列表页图文录入跑不通（花-N3）' },
+      { id: 'P-039', status: 'open', text: '列表页加内容没法选花种、回交互页加不上花（花-N4）' },
+    ]
+  },
+  {
+    key: 'sea', num: '05', name: '海星', keyword: '烦恼',
+    items: [
+      { id: 'A1', common: true, status: 'partial', text: '列表页只显示内容，不要"未命名"' },
+      { id: 'A4', common: true, status: 'partial', text: '历史条 ⇄ 卡片页删除不同步' },
+      { id: 'P-042', status: 'open', text: '列表页点卡 → 跳转星图卡顿' },
+      { id: 'P-043', status: 'partial', text: '添加样式按交互页统一' },
+    ]
+  },
+  {
+    key: 'starry', num: '06', name: '繁星', keyword: '成就',
+    items: [
+      { id: 'A1', common: true, status: 'partial', text: '卡片只留内容，不要标题' },
+      { id: 'A2', common: true, status: 'partial', text: '列表页添加内容背景丢失 + 不出添加窗口（繁-4）' },
+      { id: 'A3', common: true, status: 'unknown', text: '交互页添加内容卡顿（繁-1）+ 完全卡死录不进（繁-N2）' },
+      { id: 'A4', common: true, status: 'partial', text: '列表和交互页不同步：删卡片 → 列表星星不消失（繁-5）' },
+      { id: 'A6', common: true, status: 'open', text: '录入星星后强制弹出记录内容（繁-6）', quote: '星星动画落位完成之后就停了，不用弹出对应内容' },
+      { id: 'A7', common: true, status: 'partial', text: '图/视频卡参考治愈星卡片模板样式（繁-3）', quote: '在固定卡片尺寸里有不同排版设定' },
+      { id: 'P-071', status: 'partial', text: '添加内容去掉主题填写，只留内容 + 图片 + 视频' },
+      { id: 'P-076', status: 'open', text: '添加样式重做（旧设计太敷衍）' },
+    ]
+  },
+  {
+    key: 'cloud', num: '07', name: '云星', keyword: '自由',
+    items: [
+      { id: 'A1', common: true, status: 'partial', text: '列表页不出现标题（云-5）' },
+      { id: 'A2', common: true, status: 'partial', text: '列表页加内容时背景丢失，变星图背景（云-7）' },
+      { id: 'A4', common: true, status: 'partial', text: '列表页修改保存不下来、也不更新到交互页（云-6 / N4）' },
+      { id: 'P-050', status: 'open', text: '云朵库图形不对', quote: '【用户原话强调】不要说服我，图形就是不对的，需要你自己仔细看代码关系，说明出来问题，你一定是错的，我一定是对的' },
+      { id: 'P-051', status: 'open', text: '云朵在屏幕边缘看不全 → 画面要可左右拖拽', quote: '确保云朵能够完整看见' },
+      { id: 'P-052', status: 'open', text: '删除云朵动画方向：应该上下飘走（现在只往左右飘）' },
+      { id: 'P-053', status: 'open', text: '新增云缺动画看不见飘哪儿', quote: '默认新内容在左、旧的往右移' },
+      { id: 'P-057', status: 'partial', text: '添加样式按交互页统一' },
+      { id: 'P-058', status: 'open', text: '添加页重做支持图文（云-N2）' },
+    ]
+  },
+  {
+    key: 'tree', num: '08', name: '树星', keyword: '孤独',
+    items: [
+      { id: 'A1', common: true, status: 'partial', text: '消息页卡片不要标题（树-1）' },
+      { id: 'A4', common: true, status: 'partial', text: '列表和交互页未做好变化同步（树-4）' },
+      { id: 'A5', common: true, status: 'open', text: '切换页面时上一页弹窗没关，回来还显示（树-5）', quote: '每次切换页面，不应该保留前一页面打开的弹窗内容' },
+      { id: 'P-081', status: 'open', text: '消息页点卡片黑屏（树-2）' },
+      { id: 'P-082', status: 'open', text: '列表页没办法编辑修改（树-3）' },
+      { id: 'P-085', status: 'partial', text: '添加样式按交互页统一（树-N1）' },
+    ]
+  },
+];
+
+const EXTRAS = [
+  {
+    title: '架构遗留（错 35）',
+    items: [
+      { id: 'D1', status: 'open', text: 'localStorage 临时方案要拆', quote: '错 35："把浏览器临时方案当成产品设计，未来 U 盘存储后 quota 兜底全部要拆掉"。等 U 盘方案落地' },
+      { id: 'D2', status: 'open', text: '原图保存（不压缩）', quote: '现状：ms-composer 的 fileToCompressedImage 1280px / JPEG 0.85。U 盘方案落地后拆压缩，存原图 + 滤镜版' },
+    ]
+  },
+  {
+    title: '总结报告',
+    items: [
+      { id: 'E1', status: 'open', text: 'P-099 最终报告', quote: '64 项逐一附「修改前截图 / 修改后截图 / 改了什么」' },
+    ]
+  }
+];
+
+// ────────────────────────────────────────────────────────
+// 渲染
+// ────────────────────────────────────────────────────────
+const STORAGE_KEY = 'memory-sparks-checklist-2026-06-01';
+const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function uid(starKey, itemId) { return `${starKey}__${itemId}`; }
+
+function tagFor(item) {
+  if (item.status === 'fixed') return '<span class="tag t-fixed">已修 ✓</span>';
+  if (item.status === 'partial') return '<span class="tag t-partial">部分修</span>';
+  if (item.status === 'unknown') return '<span class="tag t-unknown">不确定</span>';
+  return '';
+}
+
+function renderItem(starKey, item) {
+  const id = uid(starKey, item.id);
+  // 已修项目默认勾上（除非用户取消过）
+  if (item.status === 'fixed' && state[id] === undefined) state[id] = true;
+  const checked = state[id] ? 'checked' : '';
+  const doneClass = state[id] ? ' done' : '';
+  const commonTag = item.common ? '<span class="tag t-common">共性</span>' : '';
+  const quote = item.quote ? `<div class="quote">${item.quote}</div>` : '';
+  return `
+    <div class="item${doneClass}" data-uid="${id}">
+      <input type="checkbox" ${checked} onchange="toggleItem('${id}', this)">
+      <div class="body">
+        <div class="top-row">
+          <span class="id">${item.id}</span>
+          ${commonTag}
+          ${tagFor(item)}
+        </div>
+        <div class="text">${item.text}</div>
+        ${quote}
+      </div>
+    </div>
+  `;
+}
+
+function renderStar(s) {
+  const total = s.items.length;
+  const done = s.items.filter(it => state[uid(s.key, it.id)]).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const itemsHTML = s.items.map(it => renderItem(s.key, it)).join('');
+  return `
+    <section class="card" data-star="${s.key}">
+      <div class="card-head">
+        <span class="star-num">${s.num}</span>
+        <span class="name">${s.name}</span>
+        <span class="keyword">· ${s.keyword}</span>
+        <button class="copy-btn" onclick="copyStar('${s.key}', this)">复制本星清单</button>
+      </div>
+      <div class="card-stats">
+        总计<span class="stat-num">${total}</span> · 已完成<span class="stat-num">${done}</span> · 剩余<span class="stat-num">${total - done}</span>
+        <div class="progress-mini"><div class="fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="card-body">${itemsHTML}</div>
+    </section>
+  `;
+}
+
+function renderExtras(group) {
+  const itemsHTML = group.items.map(it => renderItem('extra-' + group.title.replace(/[^a-z]/gi, ''), it)).join('');
+  return `
+    <section class="card full">
+      <div class="card-head">
+        <span class="star-num">·</span>
+        <span class="name">${group.title}</span>
+        <button class="copy-btn" onclick="copyGroup('${group.title}', this)">复制本组清单</button>
+      </div>
+      <div class="card-body">${itemsHTML}</div>
+    </section>
+  `;
+}
+
+function renderAll() {
+  const cards = document.getElementById('cards');
+  cards.innerHTML = STARS.map(renderStar).join('') + EXTRAS.map(renderExtras).join('');
+  updateGlobal();
+}
+
+// ────────────────────────────────────────────────────────
+// 交互
+// ────────────────────────────────────────────────────────
+function toggleItem(id, el) {
+  state[id] = el.checked;
+  saveState();
+  el.closest('.item').classList.toggle('done', el.checked);
+  // 局部更新统计（重新渲染该卡片头部）
+  const card = el.closest('.card');
+  if (card && card.dataset.star) {
+    const s = STARS.find(x => x.key === card.dataset.star);
+    if (s) {
+      const total = s.items.length;
+      const done = s.items.filter(it => state[uid(s.key, it.id)]).length;
+      const pct = total ? Math.round(done / total * 100) : 0;
+      card.querySelector('.card-stats').innerHTML = `
+        总计<span class="stat-num">${total}</span> · 已完成<span class="stat-num">${done}</span> · 剩余<span class="stat-num">${total - done}</span>
+        <div class="progress-mini"><div class="fill" style="width:${pct}%"></div></div>
+      `;
+    }
+  }
+  updateGlobal();
+}
+
+function updateGlobal() {
+  let total = 0, done = 0;
+  STARS.forEach(s => s.items.forEach(it => {
+    total++;
+    if (state[uid(s.key, it.id)]) done++;
+  }));
+  EXTRAS.forEach(g => g.items.forEach(it => {
+    total++;
+    if (state[uid('extra-' + g.title.replace(/[^a-z]/gi, ''), it.id)]) done++;
+  }));
+  document.getElementById('globalProgress').textContent = `${done}/${total}`;
+  document.getElementById('globalFill').style.width = (total ? (done / total * 100) : 0) + '%';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// 复制本星清单（纯文本）
+function copyStar(starKey, btn) {
+  const s = STARS.find(x => x.key === starKey);
+  if (!s) return;
+  const lines = [`## ${s.num} · ${s.name}（${s.keyword}）`, ''];
+  s.items.forEach(it => {
+    const mark = state[uid(s.key, it.id)] ? '[x]' : '[ ]';
+    const tagStr = it.status === 'fixed' ? ' ✅' :
+                   it.status === 'partial' ? ' 🟡' :
+                   it.status === 'unknown' ? ' ❓' : '';
+    const common = it.common ? '【共性】' : '';
+    lines.push(`- ${mark} **${it.id}**${tagStr} ${common}${it.text}`);
+    if (it.quote) lines.push(`  > ${it.quote}`);
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    btn.textContent = '已复制 ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制本星清单'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function copyGroup(title, btn) {
+  const g = EXTRAS.find(x => x.title === title);
+  if (!g) return;
+  const lines = [`## ${g.title}`, ''];
+  g.items.forEach(it => {
+    const key = uid('extra-' + g.title.replace(/[^a-z]/gi, ''), it.id);
+    const mark = state[key] ? '[x]' : '[ ]';
+    lines.push(`- ${mark} **${it.id}** ${it.text}`);
+    if (it.quote) lines.push(`  > ${it.quote}`);
+  });
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    btn.textContent = '已复制 ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制本组清单'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function copyAll() {
+  const parts = STARS.map(s => {
+    const lines = [`## ${s.num} · ${s.name}（${s.keyword}）`, ''];
+    s.items.forEach(it => {
+      const mark = state[uid(s.key, it.id)] ? '[x]' : '[ ]';
+      const tagStr = it.status === 'fixed' ? ' ✅' :
+                     it.status === 'partial' ? ' 🟡' :
+                     it.status === 'unknown' ? ' ❓' : '';
+      const common = it.common ? '【共性】' : '';
+      lines.push(`- ${mark} **${it.id}**${tagStr} ${common}${it.text}`);
+    });
+    return lines.join('\n');
+  });
+  EXTRAS.forEach(g => {
+    const lines = [`## ${g.title}`, ''];
+    g.items.forEach(it => {
+      const key = uid('extra-' + g.title.replace(/[^a-z]/gi, ''), it.id);
+      const mark = state[key] ? '[x]' : '[ ]';
+      lines.push(`- ${mark} **${it.id}** ${it.text}`);
+    });
+    parts.push(lines.join('\n'));
+  });
+  navigator.clipboard.writeText(parts.join('\n\n')).then(() => showToast('全部清单已复制到剪贴板'));
+}
+
+function resetAll() {
+  if (!confirm('确定重置所有勾选？')) return;
+  Object.keys(state).forEach(k => delete state[k]);
+  saveState();
+  renderAll();
+  showToast('已重置');
+}
+
+renderAll();
+</script>
+
+</body>
+</html>

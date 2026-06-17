@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声音接线核对</title>
+<script src="/planets/_shared/ms-config.js"></script>
+<style>
+  body { margin:0; min-height:100vh; font:16px/1.6 -apple-system,"PingFang SC",sans-serif; background:#0d1320; color:#e8eef6;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:30px; }
+  h1 { font-size:20px; margin:0 0 6px; }
+  .sub { color:#8aa0b8; font-size:13px; margin:0 0 18px; text-align:center; max-width:520px; }
+  .card { width:min(520px,100%); display:flex; align-items:center; gap:16px; background:#16202f; border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:18px 20px; }
+  .card .meta { flex:1; }
+  .card .name { font-size:17px; font-weight:600; }
+  .card .src { font-size:12px; color:#8aa0b8; font-variant-numeric:tabular-nums; word-break:break-all; }
+  .card button { padding:12px 20px; border:0; border-radius:10px; background:#3aa7e0; color:#04121d; font-size:15px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .card button.playing { background:#f0c060; }
+  .note { color:#8aa0b8; font-size:12px; margin-top:10px; }
+</style>
+</head>
+<body>
+  <h1>声音接线核对</h1>
+  <p class="sub">下面每张卡 = 一颗星实际配置指向的背景文件。点「播放」直接听这颗星会响什么，旁边是文件名。听完就知道有没有接反。</p>
+  <div id="cards"></div>
+  <p class="note">数据来自 ms-config.js（真实配置），不是我手写的。</p>
+
+<script>
+let ctx, current, currentBtn;
+const PLANETS = ['sea','hiking','beizi'];
+function fname(s){ return (s||'').split('/').pop(); }
+
+const cards = document.getElementById('cards');
+PLANETS.forEach(key=>{
+  const cfg = (window.MS_PLANETS && window.MS_PLANETS[key]) || {};
+  const src = cfg.sound && cfg.sound.src;
+  if(!src) return;
+  const el = document.createElement('div'); el.className='card';
+  el.innerHTML = `<div class="meta"><div class="name">${cfg.name||key} <span style="color:#8aa0b8;font-weight:400">(${key})</span></div>
+    <div class="src">配置指向 → ${fname(src)}</div></div>
+    <button data-src="${src}">▶ 播放</button>`;
+  cards.appendChild(el);
+});
+
+cards.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  if(!ctx) ctx = new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state==='suspended') await ctx.resume();
+  // 停上一个
+  if(current){ try{current.stop();}catch(_){ } current=null; }
+  if(currentBtn){ currentBtn.classList.remove('playing'); currentBtn.textContent='▶ 播放'; }
+  if(currentBtn===btn){ currentBtn=null; return; } // 再点同一个 = 停
+  const r = await fetch(btn.dataset.src); const ab = await r.arrayBuffer();
+  const buf = await ctx.decodeAudioData(ab);
+  const s = ctx.createBufferSource(); s.buffer=buf; s.loop=true; s.connect(ctx.destination); s.start();
+  current=s; currentBtn=btn; btn.classList.add('playing'); btn.textContent='⏸ 停止';
+});
+</script>
+</body>
+</html>

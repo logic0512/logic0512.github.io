@@ -1,0 +1,439 @@
+/* ─────────────────────────────────────────────────────────
+   树星 · 孤独
+   颜色基准来自 planet-design-system.html → #tree
+   accent: #9db898 · 极暗绿黑夜空 · 深色卡片
+   ───────────────────────────────────────────────────────── */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'PingFang SC', -apple-system, 'Helvetica Neue', sans-serif;
+  color: rgba(185, 205, 180, 0.90);
+  background: #010302;
+  overflow: hidden;
+}
+
+.tree-page {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.tree-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── 背景层：极暗绿黑 + 底部深绿径向光 ── */
+.scene-background {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 18% 45% at 50% 2%, rgba(190,215,180,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 50% 100%, #021404 0%, #010903 50%, transparent 80%),
+    linear-gradient(180deg, #010302 0%, #020605 30%, #030a06 65%, #020805 100%);
+  z-index: 0;
+}
+
+/* 顶部细微光柱（设计系统里的 #tree::before） */
+.top-light-shaft {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 52%;
+  background: linear-gradient(180deg, rgba(175,205,165,0.22) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── 树底图（Lovart 生成的固定形态写实夜树） ── */
+.tree-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  z-index: 2;
+  pointer-events: none;
+  /* 进入时由 JS 用 GSAP 控制淡入与缩放 */
+}
+
+/* Canvas 粒子层：环境萤火 + 注入飞行粒子 */
+.particle-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* SVG 叶子层（关键词文字） */
+.leaf-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none; /* 叶子单独 enable */
+}
+
+/* ── 回退到 v7 用户认可的视觉：SVG <text> + leafGlow 多层 cyan 光晕 ── */
+.leaf-layer text.leaf-word {
+  font-family: 'PingFang SC', -apple-system, sans-serif;
+  font-weight: 300;
+  fill: rgba(220, 250, 235, 0.98);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  user-select: none;
+  cursor: pointer;
+  pointer-events: auto;
+  letter-spacing: 0.04em;
+  filter: url(#leafGlow);
+  transition: fill 0.3s ease;
+}
+.leaf-layer text.leaf-word:hover {
+  fill: rgba(255, 255, 250, 1);
+}
+.leaf-layer text.leaf-word.faded {
+  fill: rgba(120, 220, 195, 0.85);
+  font-size: 10px !important;
+  letter-spacing: -0.45em;
+  filter: url(#leafDot);
+}
+.leaf-layer text.leaf-word.highlighted {
+  fill: rgba(255, 255, 245, 1);
+}
+
+/* 注入飞行中的词粒子（GSAP MotionPath 控制位置） */
+.particle-layer text.flying-word {
+  font-family: 'PingFang SC', -apple-system, sans-serif;
+  font-weight: 300;
+  font-size: 13px;
+  fill: rgba(220, 240, 215, 0.95);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  filter: url(#leafGlow);
+}
+
+/* ── 左上 intro-card ── */
+.intro-card {
+  position: absolute;
+  top: clamp(28px, 4vh, 52px);
+  left: clamp(24px, 3.5vw, 48px);
+  z-index: 10;
+  width: min(360px, 31vw);
+  padding: 22px;
+  border-radius: 24px;
+  background: rgba(2, 12, 4, 0.58);
+  border: 1px solid rgba(157, 184, 152, 0.18);
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  color: rgba(185, 205, 180, 0.90);
+}
+
+/* card-fold 折叠机制 */
+.card-fold {
+  overflow: hidden;
+  max-height: 600px;
+  opacity: 1;
+  transition: max-height 0.42s cubic-bezier(0.4,0,0.2,1), opacity 0.30s cubic-bezier(0.4,0,0.2,1);
+}
+.intro-card.collapsed .card-fold { max-height: 0; opacity: 0; }
+.intro-card.collapsed { cursor: pointer; padding: 14px 22px 16px; }
+.intro-card { transition: padding 0.38s cubic-bezier(0.4,0,0.2,1); }
+
+.planet-orb {
+  width: 88%;
+  margin: 0 auto 14px;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.planet-orb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.5));
+}
+
+.intro-card .p-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  margin-bottom: 8px;
+  opacity: 0.45;
+  transition: margin-bottom 0.35s;
+}
+.intro-card.collapsed .p-eyebrow { margin-bottom: 4px; }
+
+.intro-card .p-name {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  transition: font-size 0.35s, margin-bottom 0.35s;
+}
+.intro-card.collapsed .p-name { font-size: 19px; margin-bottom: 0; }
+
+.intro-card .p-story {
+  font-size: 13px;
+  line-height: 2.0;
+  letter-spacing: 0.04em;
+  font-weight: 300;
+  margin-bottom: 18px;
+  opacity: 0.78;
+}
+
+.intro-card .hint-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  opacity: 0.62;
+  cursor: pointer;
+  user-select: none;
+}
+.intro-card .hint-row:hover { opacity: 0.85; }
+
+.intro-card .icon-button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(157, 184, 152, 0.40);
+  color: rgba(185, 205, 180, 0.82);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+/* ── 右下「＋」浮动按钮 ── */
+.float-add {
+  position: absolute;
+  right: clamp(28px, 4vw, 56px);
+  bottom: clamp(36px, 5vh, 64px);
+  z-index: 15;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(2, 12, 4, 0.50);
+  border: 1px solid rgba(157, 184, 152, 0.48);
+  color: rgba(185, 205, 180, 0.92);
+  font-size: 22px;
+  font-weight: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.48);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.float-add:hover {
+  background: rgba(20, 40, 20, 0.6);
+  transform: translateY(-2px) scale(1.05);
+}
+.float-add .plus-icon {
+  line-height: 1;
+  transform: translateY(-1px);
+}
+
+/* ── 写作面板（composer） — 统一屏幕居中 ── */
+.composer {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  z-index: 80;
+  width: min(420px, 92vw);
+  padding: 20px;
+  border-radius: 22px;
+  background: rgba(2, 12, 4, 0.85);
+  border: 1px solid rgba(157, 184, 152, 0.22);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  /* docx 第二轮：用 opacity/visibility 控制显隐，display 始终 flex，避免 list-mode 时被覆盖 */
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: rgba(185, 205, 180, 0.92);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.24s ease, transform 0.24s ease, visibility 0s linear 0.24s;
+}
+.composer.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.24s ease, transform 0.24s ease, visibility 0s;
+}
+
+.composer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  opacity: 0.78;
+}
+.composer-head button {
+  background: transparent;
+  border: none;
+  color: rgba(185, 205, 180, 0.7);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.composer textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  font-family: inherit;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid rgba(157, 184, 152, 0.18);
+  color: rgba(220, 235, 215, 0.95);
+  resize: vertical;
+  outline: none;
+}
+.composer textarea::placeholder {
+  color: rgba(157, 184, 152, 0.45);
+}
+
+.weight-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.78;
+}
+.weight-row .weight {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid rgba(157, 184, 152, 0.30);
+  color: rgba(185, 205, 180, 0.78);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.weight-row .weight:hover { border-color: rgba(157, 184, 152, 0.6); }
+.weight-row .weight.active {
+  background: rgba(157, 184, 152, 0.22);
+  border-color: rgba(157, 184, 152, 0.8);
+  color: rgba(245, 255, 230, 1);
+}
+
+.submit-lone {
+  align-self: flex-end;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(157, 184, 152, 0.22);
+  border: 1px solid rgba(157, 184, 152, 0.55);
+  color: rgba(230, 245, 220, 0.95);
+  font-size: 13px;
+  letter-spacing: 0.10em;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.submit-lone:hover {
+  background: rgba(157, 184, 152, 0.36);
+  transform: translateY(-1px);
+}
+
+/* ── 记录详情卡 ── */
+.leaf-card {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(40px, 6vh, 72px);
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(480px, 88vw);
+  padding: 22px 24px;
+  border-radius: 22px;
+  background: rgba(2, 12, 4, 0.78);
+  border: 1px solid rgba(157, 184, 152, 0.28);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+  color: rgba(220, 235, 215, 0.95);
+  display: none;
+}
+.leaf-card.open { display: block; }
+
+.leaf-card .card-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: rgba(185, 205, 180, 0.7);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.leaf-card .leaf-date {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.leaf-card .leaf-text {
+  font-size: 14px;
+  line-height: 1.85;
+  margin-bottom: 14px;
+}
+
+.leaf-card .leaf-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.leaf-card .leaf-keywords span {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(157, 184, 152, 0.16);
+  border: 1px solid rgba(157, 184, 152, 0.32);
+  color: rgba(220, 235, 215, 0.85);
+}
+
+body.tree-composer-open .ms-add-fab,
+body.tree-composer-open .ms-add-fab::before { animation-play-state: paused !important; }
+
+/* 添加按钮：绿色向外扩散的发光呼吸，提示「点这里记录」（参照 行星/被子/云星/繁星，不改图标）*/
+.ms-add-fab { animation: treeFabPulse 2.8s ease-in-out infinite; }
+.ms-add-fab:hover { animation-play-state: paused; }
+@keyframes treeFabPulse {
+  0%, 100% {
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.48),
+      0 0 0 0 rgba(157, 184, 152, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  50% {
+    box-shadow:
+      0 12px 36px rgba(0, 0, 0, 0.48),
+      0 0 0 15px rgba(157, 184, 152, 0),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+}

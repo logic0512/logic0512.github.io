@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="night">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Logic-Claudio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app-wrap">
+  <div id="app">
+
+    <!-- ── Header ────────────────────────────────── -->
+    <header id="app-header">
+      <div class="brand">
+        <div class="brand-logo"></div>
+        <div class="brand-text">
+          <span class="brand-name">随心电台</span>
+          <span class="brand-sub">Personal Radio</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="theme-toggle" class="glass-pill theme-btn" aria-label="切换主题">
+          <span class="th-moon">☽</span><span class="th-sun">☀</span>
+          <span class="th-label-night">夜晚模式</span>
+          <span class="th-label-day">白昼模式</span>
+        </button>
+        <button id="mode-toggle" class="glass-circle hdr-btn" aria-label="迷你模式" title="迷你模式">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M9 15h6M9 12h3" opacity=".5"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Player Section ────────────────────────── -->
+    <div id="player-section">
+      <!-- Waveform animation bars -->
+      <div id="waveform-bg" aria-hidden="true"></div>
+
+      <div id="player-inner">
+
+        <!-- Album card -->
+        <div id="card-stage">
+          <div id="card-float">
+            <div id="card-tilt">
+              <div id="card-face">
+                <img id="cover-img" src="" alt="" draggable="false" />
+                <div id="cover-placeholder">
+                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" opacity="0.25"/>
+                    <circle cx="24" cy="24" r="7"  stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+                    <circle cx="24" cy="24" r="2"  fill="currentColor" opacity="0.5"/>
+                  </svg>
+                </div>
+                <div class="card-holo"></div>
+                <div class="card-holo2"></div>
+                <div class="card-gloss"></div>
+                <div class="card-edge"></div>
+                <!-- Info button -->
+                <button id="btn-info" class="album-info-btn" aria-label="歌曲详情">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Song info + controls -->
+        <div id="player-info">
+          <div id="on-air-badge">
+            <span class="on-air-dot"></span>
+            <span class="on-air-text">ON AIR</span>
+            <span class="on-air-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          </div>
+
+          <div id="song-title-row">
+            <div id="song-name">等待选曲…</div>
+            <button id="btn-like" class="like-btn" aria-label="收藏">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div id="song-artist"></div>
+          <div class="song-host">主播 · Claudio</div>
+          <div id="weather-chip"></div>
+
+          <div id="clock-row">
+            <span id="clock-time"></span>
+            <span class="clock-sep">·</span>
+            <span id="clock-date"></span>
+            <span id="clock-weekday"></span>
+            <span id="clock-badge"></span>
+          </div>
+
+          <div id="player-controls">
+            <button id="btn-prev" class="glass-circle ctrl" aria-label="上一首" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+            </button>
+            <button id="btn-play-pause" class="glass-circle ctrl large" aria-label="播放/暂停">
+              <svg id="icon-play"  width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <svg id="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 19h4V5H6zm8-14v14h4V5z"/></svg>
+            </button>
+            <button id="btn-next" class="glass-circle ctrl" aria-label="下一首">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            </button>
+          </div>
+
+          <div id="progress-wrap">
+            <div id="progress-bar"><div id="progress-fill"></div></div>
+            <div id="time-row">
+              <span id="time-current">0:00</span>
+              <span id="time-total">0:00</span>
+            </div>
+          </div>
+        </div><!-- /#player-info -->
+
+      </div><!-- /#player-inner -->
+    </div><!-- /#player-section -->
+
+
+    <!-- ── Chat Section ──────────────────────────── -->
+    <div id="chat-section">
+
+      <!-- DJ profile row -->
+      <div id="dj-profile-row">
+        <div class="dj-av-wrap">
+          <div class="dj-avatar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+          </div>
+          <span class="dj-live-dot"></span>
+        </div>
+        <div class="dj-meta">
+          <div class="dj-name-row">
+            <span class="dj-name">Claudio</span>
+            <span class="dj-wave" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+          <div class="dj-status">正在为你播送</div>
+        </div>
+        <div class="dj-tabs">
+          <div id="panel-tabs">
+            <button id="tab-chat"    class="tab-btn active">聊天</button>
+            <button id="tab-history" class="tab-btn">历史</button>
+            <button id="tab-lyrics"  class="tab-btn">歌词</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div id="chat-area">
+        <div id="chat-messages" role="log" aria-live="polite"></div>
+      </div>
+
+      <!-- History -->
+      <div id="history-area" hidden>
+        <div id="history-list"></div>
+      </div>
+
+      <!-- Lyrics -->
+      <div id="lyrics-area" hidden>
+        <div id="lyrics-content">
+          <div id="lyrics-loading" class="lyrics-loading">加载中…</div>
+          <div id="lyrics-text" class="lyrics-text"></div>
+          <div id="lyrics-empty" class="lyrics-empty" hidden>暂无歌词</div>
+        </div>
+      </div>
+
+      <!-- Song info panel (replaces chat view in-place) -->
+      <div id="song-info-popup" aria-hidden="true">
+        <div class="song-info-head">
+          <span class="song-info-label">歌曲介绍</span>
+          <button id="btn-close-popup" class="glass-circle song-info-close" aria-label="关闭">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="song-info-body">
+          <div id="card-back-name"   class="popup-song-name"></div>
+          <div id="card-back-artist" class="popup-song-artist"></div>
+          <div id="song-info-divider" class="song-info-divider"></div>
+          <div id="card-back-story"  class="popup-song-story"></div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div id="quick-actions">
+        <button id="btn-qa-calm" class="glass-pill qa-pill">更安静 🌙</button>
+        <button id="btn-qa-like" class="glass-pill qa-pill">收藏 ♡</button>
+        <button id="btn-qa-next" class="glass-pill qa-pill">下一段 ▶</button>
+      </div>
+
+      <!-- Input -->
+      <div id="input-area">
+        <input id="user-input" type="text" placeholder="对主播说…" autocomplete="off" maxlength="500" />
+        <button id="send-btn" aria-label="发送">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+
+    </div><!-- /#chat-section -->
+
+
+  </div><!-- /#app -->
+</div><!-- /.app-wrap -->
+
+<!-- Tap-to-start overlay: shown when browser blocks autoplay -->
+<div id="tap-overlay" hidden>
+  <div class="tap-inner">
+    <div class="tap-icon">▶</div>
+    <div class="tap-label">点击开始收听</div>
+  </div>
+</div>
+
+
+<!-- ── Mini mode ──────────────────────────────────── -->
+<div id="mini-player" hidden>
+  <img id="mini-cover" src="" alt="" />
+  <div id="mini-info">
+    <div id="mini-song-name">等待选曲…</div>
+    <div id="mini-song-artist"></div>
+  </div>
+  <button id="mini-play-pause" class="glass-circle" aria-label="播放/暂停">▶</button>
+  <button id="mini-next"       class="glass-circle" aria-label="下一首">⏭</button>
+  <button id="mini-expand"     class="glass-circle" aria-label="展开">⊞</button>
+  <div id="mini-progress-bar"><div id="mini-progress-fill"></div></div>
+</div>
+
+
+<!-- ── Login modal ────────────────────────────────── -->
+<div id="login-modal" hidden>
+  <div id="login-card">
+    <div id="login-logo">LC</div>
+    <h2 id="login-title">Logic-Claudio</h2>
+    <p  id="login-sub">登录网易云，才能播放你的音乐</p>
+    <div id="step-phone">
+      <input id="login-phone"   type="tel"  placeholder="大陆手机号" maxlength="11" />
+      <button id="login-send">发验证码</button>
+    </div>
+    <div id="step-captcha" hidden>
+      <input id="login-captcha" type="text" placeholder="验证码"   maxlength="6" />
+      <button id="login-confirm">登录</button>
+    </div>
+    <p id="login-msg"></p>
+  </div>
+</div>
+
+<audio id="dj-audio"     preload="auto"></audio>
+<audio id="audio-player" preload="auto"></audio>
+
+<!-- 离线 shim 必须在 app.js 之前：拦截 /api/* 用本地 manifest 应答 -->
+<script src="offline-shim.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
