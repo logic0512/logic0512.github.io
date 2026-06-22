@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>光合作用互动实验台</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="stage" id="stage" data-light="low" data-co2="false" data-response="low" data-phase="setup1" data-bubbles="scarce" data-fish="weak">
+    <div class="scene" aria-hidden="true"></div>
+
+    <!-- Top-center operation guidance (separate from the bottom objective state
+         caption, so neither overwrites the other). -->
+    <div class="setup-prompt" id="setupPrompt" aria-live="polite">调出实验一的条件，再点右上卡片记录。</div>
+
+    <div class="tank-shadow" aria-hidden="true"></div>
+
+    <section class="aquarium" aria-label="鱼缸实验反馈区">
+      <!-- Two buffers cross-fade between light levels to avoid black flash. -->
+      <video class="aquarium-video" id="aquariumVideoA" muted loop playsinline preload="auto"></video>
+      <video class="aquarium-video" id="aquariumVideoB" muted loop playsinline preload="auto"></video>
+      <div class="aquarium-fallback" id="aquariumFallback" aria-hidden="true">
+        <div class="fallback-water"></div>
+        <div class="fallback-plant"></div>
+        <div class="fallback-fish"></div>
+      </div>
+    </section>
+
+    <!-- Soda pour video: own stage-level screen layer so its black base keys out
+         and the tank stays visible underneath while powder pours in. -->
+    <video class="pour-video" id="pourVideo" muted playsinline preload="auto"></video>
+
+    <div class="tank-light" aria-hidden="true"></div>
+    <div class="water-lift" aria-hidden="true"></div>
+    <div class="plant-spark" aria-hidden="true"></div>
+    <!-- Restrained "liveliness" glow: opacity driven by --vigor-glow (<=0.18). -->
+    <div class="vigor-glow" aria-hidden="true"></div>
+    <div class="glass-glint" aria-hidden="true"></div>
+    <div class="bubble-layer" id="bubbleLayer" aria-hidden="true"></div>
+    <div class="co2-layer" id="co2Layer" aria-hidden="true"></div>
+
+    <section class="lamp-control" aria-label="调节光照">
+      <div class="slider-track-layer" aria-hidden="true">
+        <div class="slider-cover-mask"></div>
+        <div class="slider-slot-mask"></div>
+        <div class="slider-thumb" id="lightSliderThumb"></div>
+      </div>
+      <button class="lamp-zone lamp-high" type="button" data-light="high" aria-label="高光"></button>
+      <button class="lamp-zone lamp-mid" type="button" data-light="mid" aria-label="中光"></button>
+      <button class="lamp-zone lamp-low" type="button" data-light="low" aria-label="低光"></button>
+      <div class="lamp-pulse" aria-hidden="true"></div>
+    </section>
+
+    <button class="soda-control" id="sodaButton" type="button" aria-label="添加 CO₂"></button>
+
+    <button class="oxygen-chart" id="oxygenChart" type="button" aria-label="氧气曲线，点击记录当前实验">
+      <p class="oxygen-chart-title">氧气曲线</p>
+      <div class="oxygen-chart-plot" id="oxygenChartPlot"></div>
+      <span class="oxygen-chart-hint" id="oxygenChartHint">实验一 · 点这里记录</span>
+    </button>
+
+    <section class="trial-chips" id="trialChips" aria-label="实验一与实验二的条件">
+      <div class="trial-chip trial-exp1" id="trialExp1">
+        <strong class="trial-value" id="trialExp1Value">实验一　进行中…</strong>
+      </div>
+      <div class="trial-chip trial-exp2" id="trialExp2">
+        <strong class="trial-value" id="trialExp2Value">实验二　待记录</strong>
+      </div>
+    </section>
+
+    <div class="caption" id="caption" aria-live="polite">水草偶尔冒一两个气泡，小鱼懒懒地游。</div>
+
+    <!-- Debug overlay: hidden by default for the exhibit. Append ?debug=1 to show. -->
+    <aside class="asset-debug" id="assetDebug" aria-label="当前素材状态" hidden>
+      <div><span>状态</span><strong id="stateLabel">AQ-V1</strong></div>
+      <div><span>视频</span><strong id="videoLabel">aq-v1-low-loop.mp4</strong></div>
+    </aside>
+
+    <div class="reset-fade" id="resetFade" aria-hidden="true"></div>
+  </main>
+
+  <!-- PSL-028 tuning panel: dev tool to re-crop / reposition the soda-pour video
+       and kill its double-exposure. Hidden by default; press P to toggle.
+       Exhibit visitors never press P, so the live experience is untouched.
+       Built from a config in app.runtime.js, so this stays an empty mount. -->
+  <aside class="tuner" id="tuner" aria-label="倒粉视频调参面板"></aside>
+
+  <!-- Classic scripts (NOT modules) so file:// double-click works without CORS.
+       state.js must load first (exposes window.PSL), then the runtime. -->
+  <script src="./src/state.js"></script>
+  <script src="./src/app.runtime.js"></script>
+</body>
+</html>

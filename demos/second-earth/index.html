@@ -6,7 +6,7 @@
     <title>寻找第二个地球 - 单观测点 3D 原型</title>
     <style>
       :root {
-        color-scheme: dark;
+        /* ponytail: 不用 color-scheme:dark，否则 iframe 会强制画不透明深色底，盖不住、装置后有一层背景 */
         --bg: #05080d;
         --cyan: #76d9ff;
         --cyan-dim: #2e5a78;
@@ -50,9 +50,7 @@
         height: 100%;
         margin: 0;
         overflow: hidden;
-        background:
-          radial-gradient(circle at 50% 48%, rgba(18, 70, 96, 0.32), transparent 42%),
-          linear-gradient(180deg, #08121b 0%, var(--bg) 100%);
+        background: transparent; /* ponytail: 圆外透明，让圆形装置漂浮在作品集背景上（圆内由 canvas 自填深色） */
         color: var(--text);
         font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
       }

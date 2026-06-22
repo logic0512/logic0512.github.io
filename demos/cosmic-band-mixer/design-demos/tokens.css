@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════════════════════════════
+   Cosmic Band Mixer · 共享设计令牌  (Single Source of Truth)
+   引用方: design-demos/console-N.html (交互页) · card-vinyl.html (输出页)
+   两页均 834×1194 iPad 竖屏。颜色与字号只在此定义一处,改这里两页同步。
+   注: card-vinyl 唱片 canvas 由 JS 绘制,6 波段色须与下方 --radio..--gamma 保持一致。
+   各页特有的 --hair (边框/分隔线语义不同) 仍留在各自页内,不在此统一。
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  /* —— 底色 —— */
+  --bg:#0a0a0c; --panel:#17171c;
+
+  /* —— 主色: 暖橙(当前波段 / 强调) —— */
+  --cur:#e8893a; --cur-deep:#c96a22;
+  /* —— 选中态: 青绿(已锁定乐器) —— */
+  --sel:#2dd4bf; --sel-deep:#14b8a6;
+  /* —— 金色(唱片 / Voyager 语汇) —— */
+  --gold:#e0bb63; --gold-deep:#8a6a2c; --gold-soft:#f3d894;
+
+  /* —— 文字: 暖中性灰阶(与金/橙同色温,杜绝冷紫) —— */
+  --ink:#f6f3ec; --ink-2:#ddd5c6; --ink-3:#b3a994; --ink-4:#8a7d60;
+
+  /* —— 6 电磁波段色(产品 DNA,两页严格一致) —— */
+  --radio:#e0564f; --ir:#e8893a; --opt:#f1c40f; --uv:#4ea3f0; --xray:#9b6cf0; --gamma:#eef0f8;
+
+  /* —— 字族 —— */
+  --sora:"Sora"; --cn:"Noto Sans SC",sans-serif; --font:var(--sora),var(--cn);
+
+  /* —— 字号阶梯(8 档,最小 12.5px) —— */
+  --fs-display:54px; --fs-title:28px; --fs-lead:20px; --fs-body:16px;
+  --fs-data-lg:30px; --fs-data:17px; --fs-caption:13.5px; --fs-label:12.5px;
+
+  /* —— 间距 / 圆角 —— */
+  --s1:6px; --s2:8px; --s3:12px; --s4:16px; --s5:22px; --s6:28px;
+  --r-lg:26px; --r-md:14px; --r-pill:999px;
+}
+
+/* —— 字阶 utility class(交互页用;数值同 --fs-*,单一来源) —— */
+.t-display{font-family:var(--font);font-size:var(--fs-display);font-weight:200;letter-spacing:-.012em;line-height:1.0;}
+.t-title  {font-family:var(--font);font-size:var(--fs-title);font-weight:600;letter-spacing:-.004em;line-height:1.16;}
+.t-lead   {font-family:var(--font);font-size:var(--fs-lead);font-weight:500;letter-spacing:.004em;line-height:1.25;}
+.t-body   {font-family:var(--font);font-size:var(--fs-body);font-weight:350;line-height:1.75;text-wrap:pretty;}
+.t-caption{font-family:var(--font);font-size:var(--fs-caption);font-weight:350;line-height:1.5;text-wrap:pretty;}
+.t-label  {font-family:var(--font);font-size:var(--fs-label);font-weight:600;text-transform:uppercase;letter-spacing:.14em;line-height:1.2;}
+.t-data   {font-family:var(--font);font-size:var(--fs-data);font-weight:500;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:.01em;}
+.t-data-lg{font-family:var(--font);font-size:var(--fs-data-lg);font-weight:500;line-height:.95;font-variant-numeric:tabular-nums;letter-spacing:.005em;}

@@ -893,7 +893,7 @@
         </div>
         <div class="demo-area">
           <!-- 自适应填满视口的圆形望远镜外壳场景 → 以 16:9 桌面尺寸渲染再缩放 -->
-          <div class="scaled-frame" data-vw="1280" data-vh="720" style="border-radius:var(--radius); border:1px solid var(--border);">
+          <div class="scaled-frame" data-vw="1280" data-vh="720" style="background:transparent; border:none;">
             <iframe data-src="demos/second-earth/index.html" title="寻找第二个地球" loading="lazy"></iframe>
             <div class="iframe-placeholder"><span class="placeholder-text">Demo Loading</span></div>
             <!-- 底部居中的操作键位提示 -->
@@ -916,29 +916,64 @@
         </div>
       </div>
 
-      <!-- 04 · Voidrunner（放在 Demo 演示最后） -->
+
+      <!-- 05 · 听见·天体 -->
       <div class="project-row reveal">
         <div class="project-info">
           <p class="project-num">NO. 04</p>
-          <h2 class="project-title">Voidrunner</h2>
-          <p class="project-subtitle">游戏交互演示</p>
+          <h2 class="project-title">听见·天体</h2>
+          <p class="project-subtitle">天文科普 × 声音调音台</p>
           <p class="project-desc">
-            模拟一款科幻射击游戏的实操界面，完整还原游戏 UI 的操作质感。
+            把真实天体的 6 段电磁波段能量翻译成可听的声音：每个波段是一条声音轨道，强弱与角色由天体的真实能量结构决定。观众在 iPad 展台上触屏选波段、旋转旋钮为每段挑乐器，亲手把一个天体的能量「肖像」混成一段专属的 40 秒音乐，最后凝成一张天体声音黑胶卡。
           </p>
           <div class="project-tags">
-            <span class="tag">游戏原型预告</span>
-            <span class="tag">帧动画组合</span>
-            <span class="tag">HTML / JS</span>
+            <span class="tag">天文科普</span>
+            <span class="tag">声音可视化</span>
+            <span class="tag">旋钮互动装置</span>
+            <span class="tag">Web Audio / Tone.js</span>
           </div>
         </div>
-        <div class="demo-area">
-          <!-- 1920×1080 设计稿（含 vh 单位面板）→ 按原生尺寸渲染再缩放，面板精确归位 -->
-          <div class="scaled-frame" data-vw="1920" data-vh="1080" style="border-radius:var(--radius); border:1px solid var(--border);">
-            <iframe data-src="demos/voidrunner/index.html" title="Voidrunner" loading="lazy" scrolling="no"></iframe>
+        <!-- iPad 竖屏展台 834×1194 → 按原生尺寸渲染再整体缩放，居中展示 -->
+        <div class="demo-area" style="display:flex; flex-direction:column; align-items:center;">
+          <div class="scaled-frame" data-vw="834" data-vh="1194" style="max-width:480px; border-radius:28px; border:1px solid var(--border);">
+            <iframe data-src="demos/cosmic-band-mixer/design-demos/app.html" title="听见·天体" loading="lazy"></iframe>
             <div class="iframe-placeholder"><span class="placeholder-text">Demo Loading</span></div>
           </div>
           <div class="demo-actions">
-            <a class="btn-fullscreen" href="demos/voidrunner/index.html" target="_blank">
+            <a class="btn-fullscreen" href="demos/cosmic-band-mixer/design-demos/app.html" target="_blank">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M10 2h4v4M6 14H2v-4M14 6l-5 5M2 10l5-5"/>
+              </svg>
+              全屏打开
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 06 · 光合作用互动实验台 -->
+      <div class="project-row reveal">
+        <div class="project-info">
+          <p class="project-num">NO. 05</p>
+          <h2 class="project-title">光合作用互动实验台</h2>
+          <p class="project-subtitle">博物馆横屏 × 自由实验</p>
+          <p class="project-desc">
+            装置由实体灯光装置和透明柜组合而成，通过模拟中学实验看懂多个因素如何共同影响光合作用。观众可自由调节「光照」和「CO₂」两个变量，做两次实验、亲手对照——右上角的双曲线把两组条件叠在一起，鱼缸里的金鱼藻气泡、水体光泽随氧气量实时变化。
+          </p>
+          <div class="project-tags">
+            <span class="tag">互动实验</span>
+            <span class="tag">装置互动演示</span>
+            <span class="tag">帧动画组合</span>
+            <span class="tag">HTML / Canvas</span>
+          </div>
+        </div>
+        <div class="demo-area">
+          <!-- 16:9 横屏触摸装置，自适应填满视口 → 以桌面尺寸渲染再缩放 -->
+          <div class="scaled-frame" data-vw="1280" data-vh="720" style="background:transparent; border:none;">
+            <iframe data-src="demos/photosynthesis-lab/app/index.html" title="光合作用互动实验台" loading="lazy"></iframe>
+            <div class="iframe-placeholder"><span class="placeholder-text">Demo Loading</span></div>
+          </div>
+          <div class="demo-actions">
+            <a class="btn-fullscreen" href="demos/photosynthesis-lab/app/index.html" target="_blank">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M10 2h4v4M6 14H2v-4M14 6l-5 5M2 10l5-5"/>
               </svg>
@@ -965,7 +1000,7 @@
       <!-- 05 · 还能活多久 -->
       <div class="project-row reveal">
         <div class="project-info">
-          <p class="project-num">NO. 05</p>
+          <p class="project-num">NO. 06</p>
           <h2 class="project-title">还能活多久</h2>
           <p class="project-subtitle">App</p>
           <p class="project-desc">
@@ -998,7 +1033,7 @@
       <!-- 06 · 记忆星球 -->
       <div class="project-row reveal bottom-align">
         <div class="project-info">
-          <p class="project-num">NO. 06</p>
+          <p class="project-num">NO. 07</p>
           <h2 class="project-title">Memory Sparks</h2>
           <p class="project-subtitle">Web 应用</p>
           <p class="project-desc">
@@ -1039,7 +1074,7 @@
       <!-- 07 · 私人电台 Claudio -->
       <div class="project-row reveal bottom-align">
         <div class="project-info">
-          <p class="project-num">NO. 07</p>
+          <p class="project-num">NO. 08</p>
           <h2 class="project-title">私人电台 Claudio</h2>
           <p class="project-subtitle">Web 音乐</p>
           <p class="project-desc">

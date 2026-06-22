@@ -1,0 +1,1253 @@
+:root {
+  /* --tank-* = full 16:9 video FRAME box. The tank glass occupies a sub-region
+     of each video (x 33%..82%, y 33%..82% of the frame). These vars are sized so
+     that sub-region lands on the counter glass box (--glass-*) below. */
+  --tank-left: 11.3%;
+  --tank-top: 15.3%;
+  --tank-width: 71.2%;
+  --tank-height: 71.2%;
+  /* --glass-* = where the tank GLASS body actually sits on the counter.
+     Used by light effects, bubble layer, soda/CO2 layer and contact shadow. */
+  --glass-left: 34.8%;
+  --glass-top: 38.8%;
+  --glass-width: 34.9%;
+  --glass-height: 34.9%;
+  /* water body inside the glass (above gravel, below rim) */
+  --water-left: 35.9%;
+  --water-top: 44.1%;
+  --water-width: 32.7%;
+  --water-height: 23.1%;
+  /* 金鱼藻 water-plant region inside the glass */
+  --plant-left: 43.8%;
+  --plant-top: 53.7%;
+  --plant-width: 11.2%;
+  --plant-height: 16.7%;
+  --caption-bg: rgba(7, 7, 6, 0.56);
+  --caption-line: rgba(255, 255, 255, 0.13);
+  --warm: #f0c45d;
+  --lamp-left: 9.95%;
+  --lamp-top: 53.45%;
+  --lamp-width: 2.05%;
+  --lamp-height: 17.7%;
+  --cover-left: -8%;
+  --cover-top: 4%;
+  --cover-width: 112%;
+  --cover-height: 95%;
+  --cover-opacity: 1;
+  --slot-left: 32%;
+  --slot-top: 2%;
+  --slot-width: 34%;
+  --slot-height: 96%;
+  --slot-opacity: 0.94;
+  --thumb-left: 10%;
+  --thumb-width: 78%;
+  --thumb-height: 13%;
+  --thumb-opacity: 1;
+  --thumb-top-high: 24%;
+  --thumb-top-mid: 53%;
+  --thumb-top-low: 86%;
+
+  /* --pour-* drive the soda-pour video so a non-coder can re-crop / reposition
+     it to fix double-exposure. Defaults below were tuned by the user (2026-06-20)
+     to crop away the pour clip's own tank (clip-b 50.5%) and align the spoon to
+     the real aquarium. Adjust live via the P-key panel. */
+  --pour-x: -12%;
+  --pour-y: -6%;
+  --pour-scale: 1;
+  --pour-opacity: 1;
+  --pour-clip-t: 0%;
+  --pour-clip-r: 0%;
+  --pour-clip-b: 50.5%;
+  --pour-clip-l: 0%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* #5: this is a touchscreen kiosk exhibit — no keyboard navigation, so a stray
+   tap must never surface a blue focus ring on the lamp zones / soda button.
+   Drop all focus outlines (and the legacy focus-visible glow) globally. */
+:focus,
+:focus-visible {
+  outline: none;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0c0c0b;
+  color: rgba(255, 255, 255, 0.88);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.stage {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: min(100vw, 177.78vh);
+  aspect-ratio: 16 / 9;
+  transform: translate(-50%, -50%);
+  overflow: hidden;
+  background: #000;
+  --light-opacity: 0.035;
+  --light-blur: 16px;
+  --core-a: 0.08;
+  --core-b: 0.025;
+  --beam-a: 0.05;
+  --beam-b: 0.016;
+  --water-opacity: 0.012;
+  --plant-opacity: 0.015;
+  --glint-opacity: 0.035;
+  --light-x: -10%;
+  --light-scale: 0.84;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  background-image: url("../assets/reference/lab-scene-no-tank-v1.png");
+  background-size: cover;
+  background-position: center;
+}
+
+.scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 52% 52%, transparent 0 42%, rgba(0, 0, 0, 0.18) 82%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.24));
+}
+
+.aquarium {
+  position: absolute;
+  left: var(--tank-left);
+  top: var(--tank-top);
+  width: var(--tank-width);
+  height: var(--tank-height);
+  pointer-events: none;
+  /* DEV-C: black-base keying. screen makes the black video background
+     transparent on the counter; only the lit glass/water/fish show through. */
+  mix-blend-mode: screen;
+}
+
+.glass-glint {
+  position: absolute;
+  left: var(--glass-left);
+  top: var(--glass-top);
+  width: var(--glass-width);
+  height: var(--glass-height);
+  pointer-events: none;
+}
+
+/* DEV-C: programmatic contact shadow so the keyed glass looks placed on the
+   counter instead of floating. Sits just under the glass base. */
+.tank-shadow {
+  position: absolute;
+  left: calc(var(--glass-left) - 2%);
+  top: calc(var(--glass-top) + var(--glass-height) - 4%);
+  width: calc(var(--glass-width) + 4%);
+  height: 9%;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    ellipse at 50% 38%,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.34) 42%,
+    rgba(0, 0, 0, 0.12) 68%,
+    transparent 82%
+  );
+  filter: blur(6px);
+}
+
+/* Buffers fill the .aquarium frame box. The box is exactly 16:9 like the
+   video, so object-fit:fill maps the glass sub-region to the counter without
+   cropping. DEV-B: the buffer flagged .is-active fades in, the other fades out. */
+.aquarium-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  z-index: 2;
+}
+
+.aquarium-video.is-active {
+  opacity: 1;
+}
+
+/* DEV-E: pour video is a stage-level layer sharing the aquarium frame box.
+   Its own screen blend keys out the black base so the tank shows underneath. */
+.pour-video {
+  position: absolute;
+  left: var(--tank-left);
+  top: var(--tank-top);
+  width: var(--tank-width);
+  height: var(--tank-height);
+  pointer-events: none;
+  object-fit: fill;
+  mix-blend-mode: screen;
+  opacity: 0;
+  /* PSL-028: tuning vars let a non-coder re-crop / move / scale the pour clip to
+     kill the double-exposure (clip away its own tank, reposition over the rim). */
+  transform: translate(var(--pour-x), var(--pour-y)) scale(var(--pour-scale));
+  clip-path: inset(var(--pour-clip-t) var(--pour-clip-r) var(--pour-clip-b) var(--pour-clip-l));
+  transition: opacity 220ms ease;
+  z-index: 6;
+}
+
+/* Effective opacity while playing = the tunable --pour-opacity (default 1). */
+.pour-video.is-playing {
+  opacity: var(--pour-opacity);
+}
+
+/* Tuning helper: "钉住倒粉视频" keeps the pour clip visible while adjusting. */
+.pour-video.is-pinned {
+  opacity: var(--pour-opacity);
+}
+
+/* Tuning helper: highlighted glass outline to align the pour video to the rim.
+   Sits on the same glass box used by the in-tank effect layers. */
+.glass-outline {
+  position: absolute;
+  left: var(--glass-left);
+  top: var(--glass-top);
+  width: var(--glass-width);
+  height: var(--glass-height);
+  pointer-events: none;
+  z-index: 7;
+  border: 2px dashed rgba(120, 230, 255, 0.95);
+  box-shadow: 0 0 12px rgba(80, 210, 255, 0.6), inset 0 0 12px rgba(80, 210, 255, 0.35);
+  border-radius: 4px;
+}
+
+/* Error-only fallback (shown only if the video fails to load). Overrides the
+   parent screen blend so its dark water gradient stays visible; positioned on
+   the glass sub-region of the frame box. */
+.aquarium-fallback {
+  position: absolute;
+  left: 33%;
+  top: 33%;
+  width: 49%;
+  height: 49%;
+  opacity: 0.72;
+  mix-blend-mode: normal;
+  transition: opacity 260ms ease;
+  z-index: 1;
+}
+
+.aquarium:has(.aquarium-video.is-active) .aquarium-fallback {
+  opacity: 0;
+}
+
+.fallback-water {
+  position: absolute;
+  inset: 19% 3% 8%;
+  background:
+    radial-gradient(ellipse at 42% 56%, rgba(103, 147, 127, 0.18), transparent 42%),
+    linear-gradient(to bottom, rgba(46, 82, 83, 0.12), rgba(48, 76, 65, 0.22));
+  border-radius: 1%;
+}
+
+.fallback-plant {
+  position: absolute;
+  left: 25%;
+  bottom: 12%;
+  width: 26%;
+  height: 48%;
+  transform-origin: 50% 100%;
+  background:
+    radial-gradient(ellipse at 45% 80%, rgba(42, 80, 25, 0.8), transparent 45%),
+    repeating-linear-gradient(78deg, rgba(136, 168, 61, 0.72) 0 2px, transparent 2px 14px);
+  clip-path: polygon(48% 100%, 37% 62%, 23% 88%, 39% 55%, 26% 32%, 45% 56%, 53% 17%, 58% 57%, 78% 34%, 62% 65%, 82% 88%, 59% 67%, 56% 100%);
+  filter: blur(0.2px);
+  opacity: 0.6;
+}
+
+.fallback-fish {
+  position: absolute;
+  left: 65%;
+  top: 56%;
+  width: 13%;
+  height: 10%;
+  transform: translate(-50%, -50%);
+  opacity: 0.78;
+  filter: saturate(1.1);
+  transition: transform 500ms ease, opacity 500ms ease, top 500ms ease;
+}
+
+.fallback-fish::before,
+.fallback-fish::after {
+  content: "";
+  position: absolute;
+}
+
+.fallback-fish::before {
+  left: 22%;
+  top: 18%;
+  width: 58%;
+  height: 62%;
+  border-radius: 52% 48% 48% 52%;
+  background:
+    radial-gradient(circle at 78% 45%, rgba(48, 18, 7, 0.9) 0 6%, transparent 7%),
+    radial-gradient(circle at 55% 45%, rgba(255, 203, 69, 0.96), rgba(222, 92, 25, 0.94) 62%, rgba(151, 57, 24, 0.72));
+}
+
+.fallback-fish::after {
+  left: 0;
+  top: 22%;
+  width: 33%;
+  height: 54%;
+  clip-path: polygon(100% 50%, 0 0, 22% 50%, 0 100%);
+  background: rgba(226, 108, 31, 0.72);
+}
+
+.stage[data-fish="weak"] .fallback-fish {
+  top: 64%;
+  opacity: 0.55;
+  transform: translate(-50%, -50%) rotate(-4deg) scale(0.86);
+}
+
+.stage[data-fish="recovering"] .fallback-fish {
+  top: 58%;
+  opacity: 0.68;
+  transform: translate(-50%, -50%) rotate(0deg) scale(0.92);
+}
+
+.stage[data-fish="active"] .fallback-fish {
+  top: 48%;
+  opacity: 0.9;
+  transform: translate(-50%, -50%) rotate(2deg) scale(1.04);
+  animation: fishActive 2.8s ease-in-out infinite;
+}
+
+@keyframes fishActive {
+  0%, 100% { margin-left: -1.5%; }
+  50% { margin-left: 2.2%; }
+}
+
+.tank-light {
+  position: absolute;
+  left: calc(var(--glass-left) + 0.4%);
+  top: calc(var(--glass-top) + 2.6%);
+  width: calc(var(--glass-width) * 0.66);
+  height: calc(var(--glass-height) * 0.46);
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 2% 0 0 0;
+  opacity: var(--light-opacity);
+  mix-blend-mode: screen;
+  filter: blur(var(--light-blur));
+  transition: opacity 360ms ease, filter 360ms ease;
+  z-index: 3;
+}
+
+.tank-light::before {
+  content: "";
+  position: absolute;
+  inset: -42% -30% -22% -28%;
+  background:
+    radial-gradient(ellipse at 28% 36%, rgba(255, 226, 148, var(--core-a)) 0 9%, rgba(245, 190, 82, var(--core-b)) 28%, rgba(185, 126, 36, 0) 62%),
+    linear-gradient(122deg, rgba(255, 216, 112, var(--beam-a)) 0%, rgba(243, 182, 65, var(--beam-b)) 26%, rgba(243, 182, 65, 0.018) 48%, transparent 68%);
+  clip-path: polygon(0 0, 78% 13%, 100% 76%, 18% 100%);
+  transform: translateX(var(--light-x)) scale(var(--light-scale));
+  transform-origin: 6% 34%;
+  transition: transform 360ms ease, background 360ms ease;
+}
+
+.tank-light::after {
+  content: "";
+  position: absolute;
+  left: 0%;
+  top: 12%;
+  width: 76%;
+  height: 42%;
+  background: linear-gradient(118deg, rgba(255, 238, 172, 0.32), rgba(247, 194, 82, 0.12) 42%, transparent 74%);
+  clip-path: polygon(0 0, 100% 24%, 84% 100%, 0 72%);
+  opacity: calc(var(--light-opacity) * 1.8);
+  transform: translateX(var(--light-x)) scale(var(--light-scale));
+  transform-origin: 0 35%;
+}
+
+.water-lift {
+  position: absolute;
+  left: var(--water-left);
+  top: var(--water-top);
+  width: var(--water-width);
+  height: var(--water-height);
+  border-radius: 2%;
+  pointer-events: none;
+  opacity: var(--water-opacity);
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse at 22% 38%, rgba(255, 225, 142, 0.34), transparent 34%),
+    linear-gradient(112deg, rgba(255, 236, 170, 0.12) 0%, rgba(250, 188, 64, 0.03) 32%, transparent 58%);
+  transition: opacity 360ms ease;
+}
+
+.plant-spark {
+  position: absolute;
+  left: var(--plant-left);
+  top: var(--plant-top);
+  width: var(--plant-width);
+  height: var(--plant-height);
+  pointer-events: none;
+  opacity: var(--plant-opacity);
+  mix-blend-mode: color-dodge;
+  background: radial-gradient(ellipse at 36% 42%, rgba(255, 238, 142, 0.30), rgba(161, 215, 87, 0.12) 32%, transparent 64%);
+  filter: blur(12px);
+  transition: opacity 360ms ease;
+}
+
+/* Restrained "liveliness" glow over the water body. opacity = --vigor-glow,
+   set in JS as vigor * 0.18, so it is HARD-capped at 0.18 and can never wash out
+   the realistic scene. Higher oxygen => slightly brighter, greener-warm water. */
+.vigor-glow {
+  position: absolute;
+  left: var(--water-left);
+  top: var(--water-top);
+  width: var(--water-width);
+  height: var(--water-height);
+  border-radius: 3%;
+  pointer-events: none;
+  opacity: var(--vigor-glow, 0);
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse at 46% 64%, rgba(190, 240, 168, 0.5), rgba(150, 220, 150, 0.16) 44%, transparent 70%),
+    linear-gradient(to top, rgba(214, 245, 190, 0.22), transparent 60%);
+  filter: blur(8px);
+  transition: opacity 360ms ease;
+  z-index: 3;
+}
+
+.glass-glint {
+  opacity: var(--glint-opacity);
+  mix-blend-mode: screen;
+  transition: opacity 360ms ease;
+}
+
+.glass-glint::before,
+.glass-glint::after {
+  content: "";
+  position: absolute;
+  left: 1.6%;
+  right: 2.2%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 235, 170, 0.82) 32%, rgba(255, 255, 255, 0.42), transparent);
+  filter: blur(0.3px);
+}
+
+.glass-glint::before { top: 19%; }
+.glass-glint::after { top: 33%; opacity: 0.52; }
+
+.stage[data-light="mid"] {
+  --light-opacity: 0.22;
+  --light-blur: 15px;
+  --core-a: 0.19;
+  --core-b: 0.075;
+  --beam-a: 0.13;
+  --beam-b: 0.05;
+  --water-opacity: 0.05;
+  --plant-opacity: 0.035;
+  --glint-opacity: 0.075;
+  --light-x: -5%;
+  --light-scale: 0.95;
+}
+
+.stage[data-light="high"] {
+  --light-opacity: 0.58;
+  --light-blur: 12px;
+  --core-a: 0.42;
+  --core-b: 0.19;
+  --beam-a: 0.34;
+  --beam-b: 0.13;
+  --water-opacity: 0.12;
+  --plant-opacity: 0.10;
+  --glint-opacity: 0.12;
+  --light-x: -1%;
+  --light-scale: 1.08;
+}
+
+/* All in-tank effect layers are clipped to the glass body so particles/bubbles
+   never escape the tank. co2-layer sits above bubbles but below the soda glint. */
+.bubble-layer,
+.co2-layer {
+  position: absolute;
+  left: var(--glass-left);
+  top: var(--glass-top);
+  width: var(--glass-width);
+  height: var(--glass-height);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.co2-layer { z-index: 5; }
+
+.bubble {
+  position: absolute;
+  left: var(--x);
+  /* sit just above the gravel inside the glass */
+  bottom: 16%;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  border: 1.6px solid rgba(242, 255, 255, 0.78);
+  background: rgba(174, 229, 237, 0.14);
+  opacity: 0;
+  /* --rise is set in JS in px, sized to the glass so bubbles stop near surface */
+  animation: rise var(--duration) linear forwards;
+}
+
+@keyframes rise {
+  0% { transform: translateY(0) scale(0.62); opacity: 0; }
+  14% { opacity: 0.78; }
+  100% { transform: translateY(calc(var(--rise, -180px))) scale(1); opacity: 0; }
+}
+
+/* DEV-F: dissolved CO2 particle. Enters at the right-upper water surface,
+   sinks while drifting left toward the plant, then fades. All transforms are
+   px-based and clamped inside the glass-clipped co2-layer. */
+.co2-drop {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  /* #4: brighter core + crisper edge so the dissolve reads after the pour fades. */
+  background: radial-gradient(circle at 38% 34%, rgba(255, 255, 255, 1), rgba(214, 240, 247, 0.7) 60%, rgba(190, 226, 236, 0.18) 88%, transparent);
+  box-shadow: 0 0 7px rgba(225, 248, 255, 0.7);
+  /* --peak is set per intensity tier in JS (weak<medium<strong). */
+  opacity: 0;
+  animation: co2sink var(--duration) cubic-bezier(.3, .5, .4, 1) forwards;
+}
+
+@keyframes co2sink {
+  0% { transform: translate(0, 0) scale(0.45); opacity: 0; }
+  16% { opacity: var(--peak, 0.9); }
+  70% { opacity: calc(var(--peak, 0.9) * 0.8); }
+  100% { transform: translate(var(--dx), var(--dy)) scale(1.15); opacity: 0; }
+}
+
+.lamp-control {
+  position: absolute;
+  left: var(--lamp-left);
+  top: var(--lamp-top);
+  width: var(--lamp-width);
+  height: var(--lamp-height);
+  touch-action: none;
+  cursor: ns-resize;
+}
+
+.lamp-zone {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 33.33%;
+  border-radius: 999px;
+  z-index: 1;
+}
+
+.lamp-high { top: 0; }
+.lamp-mid { top: 33.33%; }
+.lamp-low { top: 66.66%; }
+
+.lamp-zone::after {
+  content: "";
+  position: absolute;
+  left: 24%;
+  top: 34%;
+  width: 44%;
+  height: 32%;
+  border-radius: 999px;
+  opacity: 0;
+  background: rgba(255, 225, 134, 0.38);
+  box-shadow: 0 0 18px rgba(255, 215, 113, 0.38);
+  transition: opacity 160ms ease;
+}
+
+.lamp-zone:active::after,
+.stage[data-hint="lamp"] .lamp-zone::after {
+  opacity: 1;
+}
+
+.slider-track-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.slider-cover-mask {
+  position: absolute;
+  left: var(--cover-left);
+  top: var(--cover-top);
+  width: var(--cover-width);
+  height: var(--cover-height);
+  z-index: 1;
+  border-radius: 999px;
+  opacity: var(--cover-opacity);
+  background:
+    linear-gradient(90deg, rgba(58, 50, 39, 0.88), rgba(17, 15, 12, 0.96) 34%, rgba(11, 10, 9, 0.98) 64%, rgba(54, 47, 38, 0.86)),
+    radial-gradient(ellipse at 42% 50%, rgba(0, 0, 0, 0.86), rgba(0, 0, 0, 0.56) 64%, transparent 72%);
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.66),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.slider-slot-mask {
+  position: absolute;
+  left: var(--slot-left);
+  top: var(--slot-top);
+  width: var(--slot-width);
+  height: var(--slot-height);
+  z-index: 2;
+  border-radius: 999px;
+  opacity: var(--slot-opacity);
+  background:
+    linear-gradient(to right, rgba(7, 7, 6, 0.62), rgba(24, 22, 18, 0.88) 42%, rgba(6, 6, 5, 0.72)),
+    radial-gradient(ellipse at 45% 8%, rgba(255, 245, 207, 0.18), transparent 38%);
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.slider-thumb {
+  position: absolute;
+  left: var(--thumb-left);
+  top: var(--slider-thumb-top, 50%);
+  width: var(--thumb-width);
+  height: var(--thumb-height);
+  z-index: 3;
+  min-height: 10px;
+  border-radius: 999px;
+  opacity: var(--thumb-opacity);
+  transform: translateY(-50%);
+  background:
+    linear-gradient(180deg, rgba(230, 223, 199, 0.95), rgba(132, 121, 99, 0.98) 52%, rgba(72, 66, 56, 0.98)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.34), transparent 42%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+  transition: top 190ms cubic-bezier(.2, .8, .2, 1), box-shadow 160ms ease;
+}
+
+.slider-thumb::after {
+  content: "";
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 42%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.lamp-control.is-dragging .slider-thumb,
+.lamp-control:active .slider-thumb {
+  box-shadow:
+    0 2px 7px rgba(0, 0, 0, 0.68),
+    0 0 16px rgba(240, 196, 93, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.stage[data-light="high"] {
+  --slider-thumb-top: var(--thumb-top-high);
+}
+
+.stage[data-light="mid"] {
+  --slider-thumb-top: var(--thumb-top-mid);
+}
+
+.stage[data-light="low"] {
+  --slider-thumb-top: var(--thumb-top-low);
+}
+
+.lamp-pulse {
+  position: absolute;
+  inset: 9% 34%;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(to bottom, transparent, rgba(255, 220, 122, 0.54), transparent);
+}
+
+.stage[data-hint="lamp"] .lamp-pulse {
+  animation: railPulse 1.4s ease-out 1;
+}
+
+@keyframes railPulse {
+  0% { opacity: 0; transform: translateY(32%); }
+  25% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(-32%); }
+}
+
+.soda-control {
+  position: absolute;
+  left: 78%;
+  top: 61%;
+  width: 17.5%;
+  height: 26%;
+  border-radius: 10px;
+}
+
+.soda-control::after {
+  content: "";
+  position: absolute;
+  left: 43%;
+  top: 6%;
+  width: 34%;
+  height: 76%;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 222, 139, 0);
+  box-shadow: 0 0 0 rgba(255, 222, 139, 0);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+/* #4 hint glow stays on the data-hint path only. The focus-visible glow was
+   removed: see the kiosk focus-ring reset below. */
+.stage[data-hint="soda"] .soda-control::after {
+  border-color: rgba(255, 222, 139, 0.55);
+  box-shadow: 0 0 24px rgba(255, 206, 98, 0.26);
+}
+
+.soda-control:active::after {
+  transform: scale(0.97);
+  border-color: rgba(255, 222, 139, 0.72);
+}
+
+/* Discoverability: a slow breathing glow on the slider + soda can until the
+   visitor first touches them. They stay real physical controls (drag/tap) —
+   this is only a "you can move these" cue, not a button. Cleared in JS by
+   flipping data-fresh to false on first interaction. */
+.stage[data-fresh="true"] .slider-thumb {
+  animation: freshBreath 2.6s ease-in-out infinite;
+}
+
+.stage[data-fresh="true"] .soda-control::after {
+  border-color: rgba(255, 222, 139, 0.4);
+  animation: freshBreathSoda 2.8s ease-in-out infinite;
+}
+
+@keyframes freshBreath {
+  0%, 100% {
+    box-shadow:
+      0 2px 5px rgba(0, 0, 0, 0.58),
+      0 0 0 rgba(240, 196, 93, 0),
+      inset 0 1px 0 rgba(255, 255, 255, 0.32),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 2px 7px rgba(0, 0, 0, 0.62),
+      0 0 14px rgba(240, 196, 93, 0.34),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+  }
+}
+
+@keyframes freshBreathSoda {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 206, 98, 0); }
+  50% { box-shadow: 0 0 20px rgba(255, 206, 98, 0.22); }
+}
+
+/* UI chrome corner-radius system (P2b): text STRIPS — caption, setup prompt,
+   experiment chips, card hint — are pills (999px); PANELS — the oxygen curve
+   card and the tuning panel — share a single 14px radius. (Physical-object
+   shapes: lamp knob, slider thumb, soda outline — keep their own forms.) */
+
+/* --- right-top oxygen curve (now a tappable record card) ------------------- */
+.oxygen-chart {
+  position: absolute;
+  right: 3.2%;
+  top: 13%;
+  z-index: 9;
+  width: 268px;
+  padding: 11px 13px 10px;
+  border-radius: 14px; /* panel */
+  background: rgba(7, 7, 6, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32);
+  /* it's a button now: visitors tap it to record an experiment */
+  pointer-events: auto;
+  cursor: pointer;
+  overflow: hidden;
+  display: block;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 120ms ease;
+}
+
+.oxygen-chart:active {
+  transform: scale(0.985);
+}
+
+/* draw attention to the card while it's the live "record" affordance */
+.oxygen-chart.is-armed {
+  border-color: rgba(240, 196, 93, 0.5);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(240, 196, 93, 0.28);
+  animation: cardArmPulse 2400ms ease-in-out infinite;
+}
+
+@keyframes cardArmPulse {
+  0%, 100% { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(240, 196, 93, 0.20); }
+  50% { box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32), 0 0 0 2px rgba(240, 196, 93, 0.45); }
+}
+
+/* P1b: the whole exhibit's conclusion lands on this small corner card. The
+   moment the result phase starts, play a one-shot "pop up" so the eye is pulled
+   to it, then settle back to normal. Triggered by JS adding .result-enter only
+   on the transition into result; the class is removed on animationend / reset. */
+.oxygen-chart.result-enter {
+  animation: chartResultPop 720ms cubic-bezier(.18, .9, .26, 1) 1;
+  transform-origin: 86% 14%; /* near the top-right corner it lives in */
+}
+
+@keyframes chartResultPop {
+  0% { transform: scale(1) translateY(0); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32); }
+  42% {
+    transform: scale(1.085) translateY(-6px);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42), 0 0 0 2px rgba(240, 196, 93, 0.5);
+  }
+  100% { transform: scale(1) translateY(0); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32); }
+}
+
+/* Respect reduced-motion: no pop, just show the card as-is. */
+@media (prefers-reduced-motion: reduce) {
+  .oxygen-chart.result-enter {
+    animation: none;
+    transform: none;
+  }
+}
+
+.oxygen-chart-title {
+  margin: 0 0 6px;
+  color: rgba(255, 226, 150, 0.95);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+/* clickable prompt line under the chart; text + emphasis change by phase */
+.oxygen-chart-hint {
+  display: block;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 236, 180, 0.96);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.oxygen-chart-plot {
+  width: 100%;
+  height: 132px;
+}
+
+.oxygen-chart-plot svg {
+  display: block;
+}
+
+/* single accent color, no neon — reads on a realistic counter scene */
+.oc-grid {
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1;
+}
+
+.oc-axis {
+  fill: rgba(255, 255, 255, 0.5);
+  font-size: 9px;
+}
+
+.oc-tier {
+  fill: rgba(255, 255, 255, 0.62);
+  font-size: 9px;
+}
+
+/* two experiment lines: a single warm accent family, distinguished by hue +
+   brightness (no neon, no purple). exp1 = soft amber, exp2 = brighter gold. */
+.oc-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.oc-line-exp1 {
+  stroke: rgba(214, 138, 74, 0.9); /* warm amber/clay */
+}
+
+.oc-line-exp2 {
+  stroke: rgba(246, 196, 92, 0.95); /* brighter gold */
+}
+
+.oc-dot-exp1 {
+  fill: rgba(224, 150, 86, 0.98);
+}
+
+.oc-dot-exp2 {
+  fill: rgba(248, 204, 110, 0.98);
+}
+
+/* end-point markers carry a light ring so they read against the deep plate */
+.oc-end-exp1,
+.oc-end-exp2 {
+  stroke: rgba(255, 248, 232, 0.85);
+  stroke-width: 1.2;
+}
+
+.oc-val {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.oc-val-exp1 {
+  fill: rgba(238, 178, 120, 0.98);
+}
+
+.oc-val-exp2 {
+  fill: rgba(255, 224, 150, 0.98);
+}
+
+/* small 实验一/实验二 label beside each end point */
+.oc-tag {
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.oc-tag-exp1 {
+  fill: rgba(228, 162, 104, 0.95);
+}
+
+.oc-tag-exp2 {
+  fill: rgba(250, 210, 130, 0.95);
+}
+
+/* --- bottom experiment bars: 实验一 / 实验二 ------------------------------- */
+.trial-chips {
+  position: absolute;
+  left: 50%;
+  bottom: 11.5%;
+  transform: translateX(-50%);
+  z-index: 8;
+  display: flex;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.trial-chip {
+  min-width: 184px;
+  max-width: 260px;
+  padding: 8px 16px 9px;
+  border-radius: 999px; /* text strip */
+  background: rgba(7, 7, 6, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  display: grid;
+  justify-items: center;
+}
+
+.trial-value {
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* color the left edge to match each experiment's curve color */
+.trial-exp1 {
+  border-left: 3px solid rgba(214, 138, 74, 0.85);
+}
+
+.trial-exp2 {
+  border-left: 3px solid rgba(246, 196, 92, 0.9);
+}
+
+/* placeholder (待记录 / 进行中…) reads quieter than a recorded condition */
+.trial-chip.is-empty .trial-value {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* the slot currently being set up gets a subtle accent edge */
+.trial-chip.is-active {
+  border-color: rgba(240, 196, 93, 0.42);
+}
+
+.trial-chip.is-active .trial-value {
+  color: rgba(255, 236, 180, 0.98);
+}
+
+/* Top-center operation guidance. Same half-transparent plate language as the
+   bottom caption, smaller + quieter so it reads as a "what to do" nudge, not
+   the main subtitle. Sits where the old status bar used to be. */
+.setup-prompt {
+  position: absolute;
+  left: 50%;
+  top: 3.6%;
+  transform: translateX(-50%);
+  max-width: min(56%, 760px);
+  padding: 8px 22px;
+  border-radius: 999px;
+  /* P1a: this is the first thing a visitor must read ("what do I do?"), so it
+     needs to read clearly at standing kiosk distance. Bumped one size step up
+     (was 13–17px) to sit just below the bottom caption, raised text to near-
+     white for contrast, and deepened the plate a touch to lift the text off it. */
+  background: rgba(7, 7, 6, 0.66);
+  border: 1px solid var(--caption-line);
+  backdrop-filter: blur(12px);
+  color: rgba(255, 248, 230, 0.99);
+  font-size: clamp(14px, 1.2vw, 19px);
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  z-index: 9;
+  transition: opacity 200ms ease;
+}
+
+.setup-prompt.is-hidden {
+  opacity: 0;
+}
+
+.caption {
+  position: absolute;
+  left: 50%;
+  bottom: 3.7%;
+  transform: translateX(-50%);
+  width: min(68%, 980px);
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  padding: 10px 24px;
+  border-radius: 999px;
+  background: var(--caption-bg);
+  border: 1px solid var(--caption-line);
+  backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(15px, 1.35vw, 22px);
+  line-height: 1.35;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 220ms ease;
+}
+
+.caption.is-updating {
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px);
+}
+
+.asset-debug {
+  position: absolute;
+  right: 2.4%;
+  top: 3%;
+  display: none;
+  gap: 5px;
+  min-width: 150px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(8, 8, 7, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* Only shown when ?debug=1 removes the [hidden] attribute (set in JS). */
+.stage[data-debug="true"] .asset-debug:not([hidden]) {
+  display: grid;
+}
+
+.asset-debug div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.asset-debug strong {
+  color: rgba(255, 255, 255, 0.84);
+  font-weight: 600;
+}
+
+.reset-fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(4, 4, 3, 0.55);
+  transition: opacity 600ms ease;
+}
+
+.reset-fade.is-active {
+  opacity: 1;
+}
+
+@media (max-aspect-ratio: 14 / 9) {
+  .asset-debug {
+    display: none;
+  }
+
+  .caption {
+    width: min(76%, 980px);
+    bottom: 3.2%;
+  }
+}
+
+/* PSL-028 tuning panel: dev-only overlay, hidden by default (display:none),
+   toggled with the P key. Fixed to the viewport (not the scaled stage) so it
+   stays readable at any window size. Never shown to exhibit visitors. */
+.tuner {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9999;
+  display: none;
+  width: 288px;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+  border-radius: 14px; /* panel */
+  background: rgba(12, 12, 11, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+
+.tuner.is-open {
+  display: block;
+}
+
+.tuner-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0c45d;
+}
+
+.tuner-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tuner-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 46px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.tuner-row label {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.tuner-row input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: #f0c45d;
+}
+
+.tuner-row .tuner-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.tuner-toggles {
+  margin: 10px 0 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tuner-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.tuner-toggle input {
+  margin: 0;
+  accent-color: #f0c45d;
+}
+
+.tuner-output {
+  width: 100%;
+  height: 76px;
+  margin-top: 8px;
+  padding: 6px 8px;
+  resize: vertical;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.42);
+  color: rgba(180, 240, 200, 0.95);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.tuner-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tuner-btn {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tuner-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}

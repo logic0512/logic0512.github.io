@@ -1,0 +1,264 @@
+{
+  "meta": {
+    "name": "Cosmic Band Mixer — 天体波段调音台",
+    "bands": ["radio", "ir", "optical", "uv", "xray", "gamma"],
+    "bandLabels": {
+      "radio": "射电",
+      "ir": "红外",
+      "optical": "可见光",
+      "uv": "紫外",
+      "xray": "X射线",
+      "gamma": "伽马"
+    },
+    "roles": {
+      "lead":    { "label": "主声部", "desc": "这个天体的主成分，建议配主旋律乐器", "min": 0.85 },
+      "support": { "label": "和声",   "desc": "重要辅助成分，适合和声/铺底乐器",   "min": 0.45 },
+      "accent":  { "label": "点缀",   "desc": "次要成分，适合点缀音色",             "min": 0.20 },
+      "trace":   { "label": "微弱",   "desc": "几乎沉默，可弱化或留白",             "min": 0.0  }
+    },
+    "valueMeaning": "每个波段的相对能量强度（νFν归一化到0-1，最强波段=1.0）。数值反映该天体SED的真实形状，来自公开文献数据。",
+    "audioNote": "音频映射采用对数压缩（√x）保证弱波段可听。能量数值由数据锁死，用户只可选择乐器。",
+    "bandPerception": {
+      "radio": "深空低频", "ir": "热辐射层", "optical": "主光",
+      "uv": "冷光", "xray": "小峰层", "gamma": "极端闪烁"
+    },
+    "knobSlots": {
+      "NW": "自然/和声", "NE": "明亮/颗粒", "SE": "电子/合成", "SW": "力量/氛围"
+    },
+    "instrumentEngineNote": "engine=sampler 用真实采样(钢琴/大提琴/小提琴/长笛/竖琴)，engine=synth 用 Tone.js 现场合成。default=true 为该波段未编辑时的推荐乐器。slot 对应旋钮四方位。",
+    "bandInstruments": {
+      "radio": [
+        { "id": "timpani",      "name": "定音鼓",       "slot": "NW", "engine": "synth" },
+        { "id": "bass-pluck",   "name": "低音拨弦",     "slot": "NE", "engine": "synth" },
+        { "id": "pulsar-pulse", "name": "脉冲星节拍",   "slot": "SE", "engine": "synth" },
+        { "id": "deep-drone",   "name": "深空低鸣",     "slot": "SW", "engine": "synth", "default": true }
+      ],
+      "ir": [
+        { "id": "cello",        "name": "大提琴",       "slot": "NW", "engine": "sampler", "default": true },
+        { "id": "warm-clarinet","name": "暖单簧管",     "slot": "NE", "engine": "synth" },
+        { "id": "warm-pad",     "name": "暖色合成铺底", "slot": "SE", "engine": "synth" },
+        { "id": "low-warm-pad", "name": "低频暖垫",     "slot": "SW", "engine": "synth" }
+      ],
+      "optical": [
+        { "id": "piano",        "name": "钢琴",         "slot": "NW", "engine": "sampler" },
+        { "id": "harp",         "name": "竖琴",         "slot": "NE", "engine": "sampler" },
+        { "id": "bright-lead",  "name": "清亮合成主音", "slot": "SE", "engine": "synth", "default": true },
+        { "id": "strings",      "name": "弦乐群",       "slot": "SW", "engine": "sampler" }
+      ],
+      "uv": [
+        { "id": "flute",        "name": "长笛",         "slot": "NW", "engine": "sampler" },
+        { "id": "glass-pluck",  "name": "玻璃拨弦",     "slot": "NE", "engine": "synth", "default": true },
+        { "id": "fm-keys",      "name": "FM电钢键",     "slot": "SE", "engine": "synth" },
+        { "id": "shimmer-pad",  "name": "冷色闪烁垫",   "slot": "SW", "engine": "synth" }
+      ],
+      "xray": [
+        { "id": "marimba",      "name": "马林巴",       "slot": "NW", "engine": "synth", "default": true },
+        { "id": "xylophone",    "name": "木琴",         "slot": "NE", "engine": "synth" },
+        { "id": "laser-pulse",  "name": "激光脉冲",     "slot": "SE", "engine": "synth" },
+        { "id": "pulse-perc",   "name": "脉冲打击",     "slot": "SW", "engine": "synth" }
+      ],
+      "gamma": [
+        { "id": "geiger",        "name": "盖革脉冲",    "slot": "NW", "engine": "synth" },
+        { "id": "crystal-bell",  "name": "水晶钟",      "slot": "NE", "engine": "synth", "default": true },
+        { "id": "granular-blip", "name": "颗粒点声",    "slot": "SE", "engine": "synth" },
+        { "id": "noise-spark",   "name": "噪声火花",    "slot": "SW", "engine": "synth" }
+      ]
+    }
+  },
+  "objects": [
+    {
+      "id": "sun",
+      "name": "太阳",
+      "nameEn": "The Sun",
+      "type": "G型主序星",
+      "blurb": "距地最近的恒星，几乎所有能量都集中在可见光和红外——这也是人眼进化为对黄绿光最敏感的原因。X射线仅在太阳风暴时才短暂蹿高。",
+      "params": [
+        "距地球1.5亿公里（光走8分20秒）",
+        "表面温度5778 K，日冕反常高达150万 K",
+        "还能再烧约50亿年"
+      ],
+      "recipe": "太阳是一颗核聚变炉——内部氢被极端高温高压强行'捏'成氦，同时释放光和热，以近乎完美的黑体辐射向外散发，峰值落在人眼最敏感的可见光范围。X射线来自日冕，那层反常高温的外层大气，机制至今未完全解开。",
+      "image": "images/sun.jpg",
+      "imageCredit": "NASA / Solar Dynamics Observatory (SDO)",
+      "multiband": [
+        { "band": "radio",   "label": "射电",   "file": "images/multiband/sun_radio.jpg",   "note": "橙黄色圆盘，明暗是色球层的温度图——ALMA 毫米波下的太阳。" },
+        { "band": "optical", "label": "可见光", "file": "images/multiband/sun_optical.jpg", "note": "明亮的米黄色圆面，散布着边缘模糊的黑子群——肉眼透过滤镜看到的太阳。" },
+        { "band": "uv",      "label": "紫外",   "file": "images/multiband/sun_uv.jpg",      "note": "一团燃烧的金色绒线球，无数日冕磁环从表面拱起——印象里的「火球太阳」。" },
+        { "band": "xray",    "label": "X射线",  "file": "images/multiband/sun_xray.jpg",    "note": "几乎全黑，只有几处数百万度的高温活动区亮成刺眼白斑。" }
+      ],
+      "bands": { "radio": 0.08, "ir": 0.80, "optical": 1.00, "uv": 0.40, "xray": 0.12, "gamma": 0.05 },
+      "bandDetail": {
+        "radio":   { "role": "trace",   "note": "色球层与日冕的微量射电发射，平静期几乎不可测。" },
+        "ir":      { "role": "support", "note": "5778K黑体辐射的近红外尾翼，约占总辐射37%。" },
+        "optical": { "role": "lead",    "note": "黑体辐射峰值在~500nm，对应人眼最敏感的黄绿光——进化的结果。" },
+        "uv":      { "role": "accent",  "note": "色球层与过渡区的紫外辐射，约占总辐射7%，对生物影响远超其比例。" },
+        "xray":    { "role": "trace",   "note": "日冕高温等离子体的软X射线，耀斑爆发时可激增1000倍。" },
+        "gamma":   { "role": "trace",   "note": "几乎为零，只在极强耀斑事件中有微弱探测记录。" }
+      },
+      "consoleReadout": {
+        "spectrumDesc": "稳定燃烧的主序星：能量集中于中段波段，两端极端射线极少",
+        "musicRanking": "可见光(100)→主旋律 ｜ 红外(80)→和声 ｜ 其余为配角"
+      },
+      "sources": [
+        "NASA SORCE任务太阳辐照测量（可见光+近红外占>90%）",
+        "NOAA太阳辐射科普数据"
+      ]
+    },
+    {
+      "id": "jupiter",
+      "name": "木星",
+      "nameEn": "Jupiter",
+      "type": "气态巨行星",
+      "blurb": "太阳系最大行星，自身散发的热量比吸收的太阳能多67%，磁场是太阳系行星中最强——连业余天文爱好者都能用收音机接收到它的射电信号。",
+      "params": [
+        "质量是地球的318倍，比其余所有行星加起来还重",
+        "自转一圈仅9.9小时——太阳系最快的行星",
+        "磁场强度是地球的14倍，驱动极强射电辐射"
+      ],
+      "recipe": "木星自身散发的热量比从太阳吸收的还多67%——45亿年前诞生时积累的引力热量还没散完，所以红外最强。与此同时，极强磁场把带电粒子加速到接近光速，形成太阳系最猛烈的射电辐射源。可见光只是反射来的太阳光。",
+      "image": "images/jupiter.jpg",
+      "imageCredit": "NASA / JPL-Caltech / SwRI / MSSS",
+      "multiband": [
+        { "band": "ir",      "label": "红外",   "file": "images/multiband/jupiter_ir.jpg",      "note": "变成一团自身散发热量的发光体，两极泛红色极光，连暗淡的行星环都被照亮（JWST）。" },
+        { "band": "optical", "label": "可见光", "file": "images/multiband/jupiter_optical.jpg", "note": "奶白与橙褐相间的横向云带，右下一颗大红斑——刮了几百年的巨型风暴。" },
+        { "band": "uv",      "label": "紫外",   "file": "images/multiband/jupiter_uv.jpg",      "note": "北极扣着一顶幽蓝紫色的「极光皇冠」，比地球极光强上千倍。" },
+        { "band": "xray",    "label": "X射线",  "file": "images/multiband/jupiter_xray.jpg",    "note": "本体几乎隐去，只在两极各亮起一团紫色 X 射线光斑。" }
+      ],
+      "bands": { "radio": 0.85, "ir": 1.00, "optical": 0.52, "uv": 0.12, "xray": 0.05, "gamma": 0.02 },
+      "bandDetail": {
+        "radio":   { "role": "lead",    "note": "磁层同步辐射，在30MHz时亮度比安静太阳高出数个数量级，地面业余台可收到。" },
+        "ir":      { "role": "lead",    "note": "内部引力热量 + 反射太阳光，辐射出的能量是吸收太阳能的1.67倍，这是主角。" },
+        "optical": { "role": "support", "note": "反射的太阳光，Bond反照率0.503，那些云层条纹就在这里可见。" },
+        "uv":      { "role": "trace",   "note": "极光区有少量远紫外辐射，整体极弱。" },
+        "xray":    { "role": "trace",   "note": "极光区X射线（Chandra测得约0.45 GW），非常微弱。" },
+        "gamma":   { "role": "trace",   "note": "无显著伽马射线源，近乎为零。" }
+      },
+      "consoleReadout": {
+        "spectrumDesc": "自体发热与极强磁场：红外与射电双峰并列，同为主角；高能端几乎沉默",
+        "musicRanking": "红外(100)·射电(85)→主旋律 ｜ 可见光(52)→和声 ｜ 其余为配角"
+      },
+      "sources": [
+        "Nature Communications 2018（Cassini数据，木星内部热通量，比例1.668±0.085）",
+        "LOFAR/Goldstone木星射电长期监测数据（arXiv:2007.09184）",
+        "Chandra/XMM-Newton木星极光X射线观测（AGU/Wiley 2019）"
+      ]
+    },
+    {
+      "id": "orion",
+      "name": "猎户座大星云",
+      "nameEn": "Orion Nebula (M42)",
+      "type": "恒星诞生地 / 发射星云",
+      "blurb": "距地1344光年，正在孕育数千颗新生恒星。核心热星发出的紫外线几乎全被尘埃吸收，再以红外热辐射的形式重新散发出来。",
+      "params": [
+        "距地球约1,344光年，视角超过满月两倍",
+        "核心梯形四边形星团年龄约300万年",
+        "Chandra望远镜在此探测到超过1000个X射线点源（年轻星磁暴）"
+      ],
+      "recipe": "星云里的梯形四边形OB型热星是效率极高的紫外发射机，但发出的紫外线几乎立刻被周围尘埃云吸收——尘埃被烤热后，把能量以红外热辐射重新向外散发。我们肉眼看到的红色光芒，是氢气被电离后发出的荧光，那不是被照亮的尘埃，而是气体在'自己发光'。",
+      "image": "images/orion.jpg",
+      "imageCredit": "NASA / ESA / Hubble Space Telescope",
+      "multiband": [
+        { "band": "radio",   "label": "射电",   "file": "images/multiband/orion_radio.jpg",   "note": "中央热恒星周围电离气体向外流动的平滑发光结构。" },
+        { "band": "ir",      "label": "红外",   "file": "images/multiband/orion_ir.jpg",      "note": "红外穿透浓密尘埃，露出成百上千颗正在诞生的年轻恒星（JWST）。" },
+        { "band": "optical", "label": "可见光", "file": "images/multiband/orion_optical.jpg", "note": "绚烂的红橙气体云幔包裹着中央四合星——印象里星云该有的样子。" },
+        { "band": "xray",    "label": "X射线",  "file": "images/multiband/orion_xray.jpg",    "note": "气体云幔几乎消失，只剩上千个点，每个是一颗爆发 X 射线耀斑的年轻恒星。" }
+      ],
+      "bands": { "radio": 0.55, "ir": 1.00, "optical": 0.55, "uv": 0.38, "xray": 0.22, "gamma": 0.05 },
+      "bandDetail": {
+        "radio":   { "role": "support", "note": "电离气体的热轫致辐射（自由-自由），8.4GHz约415Jy——HII区的典型射电特征，能量比红外低约100倍，但对数尺度下仍显著。" },
+        "ir":      { "role": "lead",    "note": "尘埃吸收紫外后重新辐射的热量，SED峰值在远红外30-100μm——这里的绝对主角。" },
+        "optical": { "role": "support", "note": "氢气被电离后复合时发出的Hα红色荧光，那不是被照亮的尘埃，而是气体在'自己发光'。" },
+        "uv":      { "role": "accent",  "note": "OB型热星发出的电离紫外线，大部分在源头被尘埃截获转化为红外，剩余少量可探测。" },
+        "xray":    { "role": "accent",  "note": "年轻T-Tauri星的磁冕活动，Chandra探测到742个X射线点源，总量微弱但在对数尺度可见。" },
+        "gamma":   { "role": "trace",   "note": "无脉冲星或黑洞活动，几乎不产生伽马射线。" }
+      },
+      "consoleReadout": {
+        "spectrumDesc": "尘埃吸收紫外后转化为红外：多波段同时活跃，能量分布最宽阔平坦",
+        "musicRanking": "红外(100)→主旋律 ｜ 可见光(55)·射电(55)→和声 ｜ 紫外(38)·X射线(22)→点缀"
+      },
+      "sources": [
+        "arXiv:2603.04521（GLEAM+VLA射电连续谱观测，M42射电通量）",
+        "IRAS全天巡天 + Herschel/PACS远红外数据",
+        "Chandra Orion Ultradeep Project, COUP（arXiv:astro-ph/0506503）"
+      ]
+    },
+    {
+      "id": "andromeda",
+      "name": "仙女星系",
+      "nameEn": "Andromeda Galaxy (M31)",
+      "type": "螺旋星系",
+      "blurb": "距地254万光年，是肉眼可见的最远天体，也是银河系最终的命运——约40亿年后两者将碰撞合并成一个椭圆星系。",
+      "params": [
+        "距地球约254万光年，是肉眼可见的最远天体",
+        "约1万亿颗恒星，是银河系的两倍",
+        "正以110公里/秒飞向银河系，约40亿年后碰撞合并"
+      ],
+      "recipe": "仙女座是一个'正常'螺旋星系——数千亿颗各种年龄的恒星共同发出白光，可见光是绝对主角。年轻蓝色热星贡献紫外，老年红色冷星贡献红外，偶尔爆发的超新星留下射电辐射，少量X射线双星提供高能辐射，但这一切和庞大的恒星光海相比，都是点缀。",
+      "image": "images/andromeda.jpg",
+      "imageCredit": "NASA / ESA / Hubble Space Telescope",
+      "multiband": [
+        { "band": "ir",      "label": "红外",   "file": "images/multiband/andromeda_ir.jpg",      "note": "恒星全部隐去，只剩被加热的尘埃在发光，一圈火红的「甜甜圈」尘埃环（Spitzer）。" },
+        { "band": "optical", "label": "可见光", "file": "images/multiband/andromeda_optical.jpg", "note": "金白色椭圆盘，年老恒星的核球居中，蓝色旋臂裹着尘埃带——熟悉的仙女座。" },
+        { "band": "uv",      "label": "紫外",   "file": "images/multiband/andromeda_uv.jpg",      "note": "整个星系变成一圈圈炽蓝火环，只剩高温年轻恒星勾出的同心蓝环（GALEX）。" },
+        { "band": "xray",    "label": "X射线",  "file": "images/multiband/andromeda_xray.jpg",    "note": "星系盘消失，只剩中心高能光点——吞噬伴星的黑洞与中子星。" }
+      ],
+      "bands": { "radio": 0.05, "ir": 0.81, "optical": 1.00, "uv": 0.71, "xray": 0.24, "gamma": 0.05 },
+      "bandDetail": {
+        "radio":   { "role": "trace",   "note": "超新星遗迹的同步辐射，谱指数α≈1.1，光度~10^38 erg/s——比可见光低七个数量级，极其微弱。" },
+        "ir":      { "role": "support", "note": "老年恒星的近红外（4.6×10^43 erg/s）+ 尘埃温热辐射（1.2×10^43 erg/s），合计约5.8×10^43 erg/s。" },
+        "optical": { "role": "lead",    "note": "约1万亿颗恒星的可见光之和，光度1.2×10^45 erg/s——普通星系的'标准音色'，比其余所有波段亮10倍以上。" },
+        "uv":      { "role": "support", "note": "年轻OB型热星的FUV+NUV，加上老年星的'UV upturn'现象，GALEX测得~10^43 erg/s——与红外旗鼓相当。" },
+        "xray":    { "role": "accent",  "note": "X射线双星和星系际热气体，ROSAT/XMM测得~5×10^39 erg/s，对数尺度下可见。" },
+        "gamma":   { "role": "trace",   "note": "宇宙线与星际气体碰撞产生，Fermi LAT 2017年确认探测，光度~1.4×10^38 erg/s，极微弱。" }
+      },
+      "consoleReadout": {
+        "spectrumDesc": "成熟螺旋星系的均衡分布：可见光领衔，红外与紫外并驾，射电几乎缺席",
+        "musicRanking": "可见光(100)→主旋律 ｜ 红外(81)·紫外(71)→和声 ｜ X射线(24)→点缀"
+      },
+      "sources": [
+        "Battistelli et al. 2019（M31综合射电谱，谱指数测量）",
+        "GALEX UV + Spitzer/WISE IR多波段测光",
+        "Ackermann et al. 2017（Fermi LAT伽马射线探测，Xing et al. 2023更新）"
+      ]
+    },
+    {
+      "id": "m87",
+      "name": "M87 黑洞",
+      "nameEn": "M87 / Virgo A",
+      "type": "活动星系核 / 射电星系",
+      "blurb": "2019年人类首张黑洞照片的主角。中心65亿倍太阳质量的黑洞喷出1500光年的等离子体喷流，从射电到伽马射线全波段发光，是宇宙中最强的粒子加速器之一。",
+      "params": [
+        "距地球约5500万光年",
+        "中心黑洞质量65亿倍太阳质量（人类首张黑洞照片拍摄对象）",
+        "等离子体喷流长达1500光年，以接近光速运动"
+      ],
+      "recipe": "中心超大质量黑洞在'吞'物质的过程中，把其中一部分以接近光速从两极喷出，形成1500光年长的等离子体喷流。喷流里的高速电子在磁场里旋转，产生从射电到X射线的同步辐射；电子再把自己发出的光'踢'成更高能量的伽马射线。这是一台由黑洞驱动的全波段宇宙粒子加速器。",
+      "image": "images/m87.jpg",
+      "imageCredit": "ESO / Event Horizon Telescope Collaboration",
+      "multiband": [
+        { "band": "radio",   "label": "射电",       "file": "images/multiband/m87_radio.jpg",   "note": "两团横跨 20 万光年的巨大发光「气泡」（射电瓣），远超星系本体。" },
+        { "band": "optical", "label": "可见光",     "file": "images/multiband/m87_optical.jpg", "note": "朦胧的金黄色椭圆星系，中心射出一道蓝白色细喷流，像探照灯。" },
+        { "band": "xray",    "label": "X射线",      "file": "images/multiband/m87_xray.jpg",    "note": "整个星系笼罩在高温气体的弥漫蓝白光晕里。" },
+        { "band": "eht",     "label": "事件视界",   "file": "images/multiband/m87_eht.jpg",     "note": "1.3mm 毫米波下，中心黑洞现身为橙红色发光圆环——人类首张黑洞照片。" }
+      ],
+      "bands": { "radio": 1.00, "ir": 0.70, "optical": 0.40, "uv": 0.35, "xray": 0.55, "gamma": 0.45 },
+      "bandDetail": {
+        "radio":   { "role": "lead",    "note": "喷流同步辐射的主峰，在1.5GHz流量约198Jy，Virgo A是全天最亮射电源之一。" },
+        "ir":      { "role": "support", "note": "同步辐射的红外延伸段，谱斜率较平坦（α≈0.6），能量仍可观。" },
+        "optical": { "role": "accent",  "note": "同步辐射尾部 + 喷流的蓝色可见光，哈勃可直接拍到那条光柱。" },
+        "uv":      { "role": "accent",  "note": "同步辐射继续向高频延伸，紫外波段仍有可探测辐射。" },
+        "xray":    { "role": "support", "note": "喷流X射线 + 室女座星系团高温气体ICM（数千万度）双重贡献，Chandra观测明亮。" },
+        "gamma":   { "role": "support", "note": "逆康普顿散射把射电光子踢到GeV-TeV能量，MAGIC、HESS、Fermi均已探测到。" }
+      },
+      "consoleReadout": {
+        "spectrumDesc": "黑洞喷流驱动的全波段辐射：射电最强，多个波段同时显著，无寂静区",
+        "musicRanking": "射电(100)→主旋律 ｜ 红外(70)·X射线(55)·伽马(45)→和声 ｜ 可见光(40)·紫外(35)→点缀"
+      },
+      "sources": [
+        "EHT Multi-wavelength Science Working Group 2021（arXiv:2104.06855）",
+        "Aleksić et al. 2012（MAGIC VHE伽马射线，arXiv:2112.09179）",
+        "EHT 2019首张黑洞图像（ESO eso1907a，黑洞质量测定）"
+      ]
+    }
+  ]
+}
