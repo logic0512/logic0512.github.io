@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>从泥土到巨兽 · 霸王龙化石交互解析</title>
+<style>
+  /* first paint = the shared dig-pit photo (warm-earth fallback), never a black flash */
+  html, body { margin: 0; height: 100%; overflow: hidden;
+    background: #8a6f49 url(./assets/dig-pit-Bw7GMixv.png) center / cover no-repeat fixed; }
+
+  /* persistent experience title (top-left). Restrained field-record mark — small amber
+     tick + warm-white wordmark with a strong shadow so it lifts off the light sky area.
+     z below the transition overlay (9999) and the end-card scrim (80). */
+  #app-title {
+    position: fixed; top: 20px; left: 26px; z-index: 60;
+    display: flex; align-items: center; gap: 12px;
+    font: 600 27px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", system-ui, sans-serif;
+    letter-spacing: 0.16em; color: #f6efe1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 3px 20px rgba(0, 0, 0, 0.5);
+    pointer-events: none; user-select: none;
+  }
+  #app-title::before {
+    content: ""; width: 10px; height: 10px; border-radius: 3px;
+    background: #e9b96b; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+</style>
+  <script type="module" crossorigin src="./assets/index-BJhiF4pO.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DL16N0mv.css">
+</head><body>
+
+<!-- persistent experience title across all three acts -->
+<div id="app-title">寻找恐龙化石</div>
+
+<!-- ===================== 幕1 · 发现 (discover) ===================== -->
+<section id="act-discover" class="act">
+  <div id="discover-stage">
+    <canvas id="discover-canvas"></canvas>
+
+    <!-- small, low-contrast site label (bottom-left) — context, not a status bar -->
+    <div id="discover-site" class="disc-site">Site A · 主骨层</div>
+
+    <!-- "specimen exposed" confirmation beat on click -->
+    <div id="discover-found" class="disc-found" hidden></div>
+
+    <!-- one-time opening hint (teaches the first action; fades after the first find) -->
+    <div id="discover-start" class="disc-start">点坑里半埋的骨头，开始发掘</div>
+
+    <!-- 放回：取出/清理一块骨头后可随时退回坑里重新选别的（只在有骨头被取出时出现） -->
+    <button id="discover-back" class="disc-back" hidden>← 放回，重新选</button>
+
+    <!-- one light, auto-fading hint shown the first time cleaning begins -->
+    <div id="discover-prompt" class="disc-prompt" hidden>用刷子刷去围岩与浮土</div>
+
+    <!-- round brush cursor shown while wiping -->
+    <div id="discover-brush" class="disc-brush" hidden></div>
+
+    <!-- tiny clean gauge tucked in a corner (not a center % readout) -->
+    <div id="discover-clean" class="disc-clean" hidden>
+      <span class="disc-clean-dot"></span>
+      <div class="disc-clean-track"><div id="disc-clean-fill" class="disc-clean-fill"></div></div>
+      <span class="disc-clean-pct"><span id="disc-clean-pct">0</span>%</span>
+    </div>
+
+    <!-- 出土记录卡 — field-record placard, slides in from the desk side -->
+    <div id="discover-card" class="disc-card-wrap" hidden>
+      <div class="disc-card">
+        <div class="disc-card-top">
+          <span class="disc-card-id" id="disc-card-id">TX-01</span>
+          <span class="disc-card-stamp">已清理 · 待登记</span>
+        </div>
+        <div class="disc-card-head">
+          <span id="disc-card-zh" class="disc-card-zh"></span>
+          <span id="disc-card-la" class="disc-card-la"></span>
+        </div>
+
+        <div class="disc-card-section">现场记录</div>
+        <div class="disc-card-meta">
+          <div class="disc-meta-row"><span class="mk">部位</span><span class="mv" id="disc-card-region"></span></div>
+          <div class="disc-meta-row"><span class="mk">关联</span><span class="mv" id="disc-card-link"></span></div>
+        </div>
+
+        <div class="disc-card-section">科学解释</div>
+        <ul id="disc-card-science" class="disc-card-science"></ul>
+
+        <div class="disc-card-section">复原意义</div>
+        <p id="disc-card-restore" class="disc-card-restore"></p>
+
+        <div class="disc-card-datum" id="disc-card-datum" hidden>
+          <span id="disc-card-datum-n" class="disc-card-datum-n"></span>
+          <span id="disc-card-datum-d" class="disc-card-datum-d"></span>
+        </div>
+
+        <button id="disc-card-next" class="disc-card-next">记录并移交</button>
+      </div>
+    </div>
+
+    <!-- 标本登记盘 (specimen tray) -->
+    <div class="disc-tray-frame">
+      <div class="disc-tray-label">标本登记</div>
+      <div id="discover-tray" class="disc-tray"></div>
+    </div>
+
+    <!-- collection-end transition (low-key hand-off, not a game-complete modal) -->
+    <div id="discover-done" class="disc-done-wrap" hidden>
+      <div class="disc-done">
+        <div class="disc-done-line">标本已移交复原台</div>
+        <button id="disc-done-next" class="disc-done-next">查看骨架复原</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 幕3 · 组装 (assembly) ===================== -->
+<section id="act-assembly" class="act">
+  <div id="asm-stage">
+    <canvas id="asm-canvas"></canvas>
+    <div id="asm-hint" class="fc-hud fc-hud--soft">拖动骨块靠近骨架，会自动吸附归位</div>
+
+    <!-- 装配完成后的 T. rex 总览展牌（内容由 assembly-preview.js 从 OVERVIEW 注入） -->
+    <aside id="asm-placard" role="dialog" aria-label="霸王龙骨架总览" hidden>
+      <div class="asm-pl__body">
+        <div class="asm-pl__kicker">骨架复原完成</div>
+        <div class="asm-pl__zh" id="asm-pl-zh"></div>
+        <div class="asm-pl__la" id="asm-pl-la"></div>
+        <div class="asm-pl__rule"></div>
+        <div class="asm-pl__rows" id="asm-pl-rows"></div>
+        <div class="asm-pl__sec">
+          <div class="asm-pl__sec-h">核心特征</div>
+          <ul class="asm-pl__feat" id="asm-pl-feat"></ul>
+        </div>
+        <div class="asm-pl__sec">
+          <div class="asm-pl__sec-h">从骨架到复原</div>
+          <p class="asm-pl__bridge" id="asm-pl-bridge"></p>
+        </div>
+        <div class="asm-pl__acts">
+          <button id="asm-revive" class="fc-btn fc-btn--primary">进入生命复原 →</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ===================== 幕4 · 复活 (revival) ===================== -->
+<section id="act-revival" class="act">
+  <div id="rev-stage">
+    <video id="rev-video" preload="auto"></video>
+    <div id="rev-hint" class="fc-hud fc-hud--soft">骨架正在复活…</div>
+    <div id="rev-end" class="fc-scrim" hidden>
+      <div class="fc-card" style="text-align:center">
+        <h1>霸王龙复活了</h1>
+        <p>从泥土到巨兽，一具化石的重生</p>
+        <div class="btns">
+          <button id="rev-replay" class="fc-btn fc-btn--ghost">再看一次复活</button>
+          <button id="rev-restart" class="fc-btn fc-btn--primary">从头再玩一遍</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body></html>

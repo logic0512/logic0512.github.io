@@ -145,6 +145,15 @@ button {
   /* DEV-C: black-base keying. screen makes the black video background
      transparent on the counter; only the lit glass/water/fish show through. */
   mix-blend-mode: screen;
+  /* The 3 base clips look near-identical, so a light change between them is
+     imperceptible. Drive tank brightness + saturation off oxygen-vigor so every
+     light/CO2 step is visibly distinct: more light -> brighter, clearer water.
+     Physically honest (a brighter lamp lights the tank more) and needs no new
+     footage. Range spans dim low-light to vivid high+CO2. */
+  filter:
+    brightness(calc(0.80 + var(--vigor, 0.111) * 0.42))
+    saturate(calc(0.88 + var(--vigor, 0.111) * 0.34));
+  transition: filter 360ms ease;
 }
 
 .glass-glint {
